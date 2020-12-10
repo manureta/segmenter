@@ -16,10 +16,21 @@ class MyDB extends Model
     segmentar_excedidos_ffrr($esquema,$frac,$radio,$umbral=20,$deseado=20)
 	{
         try{
+            Log::debug('Resegmentando segmentos excedidos de fraccion
+            '.$frac.', radio '.$radio);
+            self::cambiarSegmentarBigInt($esquema);
     		DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
             'e".$esquema."',".$frac.",".$radio.",".$umbral.",".$deseado.");");
-        }catch(Exception $e){
-         Log::error('No se pudo segmentar segmentos excedidos');
+        }catch(Illuminate\Database\QueryException $e){
+            Log::debug('No se pudo segmentar segmentos excedidos, reintentando');
+            $self::cambiarSegmentarBigInt($esquema);
+
+            try{
+    		    DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
+                'e".$esquema."',".$frac.",".$radio.",".$umbral.",".$deseado.");");
+            }catch(Exception $e){
+                 Log::error('No se pudo segmentar segmentos excedidos');
+            }
         }
          Log::debug('Se resegmentaron los segmentos excedidos!');
     }
@@ -30,6 +41,8 @@ class MyDB extends Model
     lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio)
 	{
         try{
+            self::addSequenceSegmentos('e'.$esquema);
+            self::generarSegmentacionVacia($esquema);
     		DB::statement("SELECT
             indec.lados_completos_a_tabla_segmentacion_ffrr('e".$esquema."',".$frac.",".$radio.");");
         }catch(Exception $e){
@@ -297,11 +310,11 @@ FROM
      // SQL retrun: Select segmento_id,count(*) FROM e0777.segmentacion GROUP BY segmento_id;
 	}
 	
-    public static function segmentar_equilibrado_ver($esquema)
+    public static function segmentar_equilibrado_ver($esquema,$max=100)
 	{
         $esquema = 'e'.$esquema;
         if (Schema::hasTable($esquema.'.segmentos_desde_hasta')){
-        	return DB::select("SELECT segmento_id, frac, radio, mza , lado , 
+           return DB::select("SELECT segmento_id, frac, radio, mza, lado,
                         CASE  WHEN completo THEN 'Lado Completo'
                         ELSE 'Desde ' ||
                         indec.descripcion_domicilio('".$esquema."',seg_lado_desde) || '
@@ -311,7 +324,7 @@ FROM
                         null vivs, null ts
                     	FROM ".$esquema.".segmentos_desde_hasta
                         order by frac,radio,segmento_id,mza,lado
-                        LIMIT 1000;");
+                        LIMIT ".$max.";");
             
         }else{
         	return DB::select('
@@ -325,15 +338,18 @@ FROM
                         '.$esquema.'.listado l ON s.listado_id=l.id 
                         GROUP BY segmento_id,l.frac,l.radio 
                         ORDER BY count(*) asc, array_agg(mza), segmento_id 
-                        LIMIT 1000;');
+                        LIMIT '.$max.';');
         }
     }
 
     public static function segmentar_equilibrado_ver_resumen($esquema)
 	{
         $esquema = 'e'.$esquema;
-    	return DB::select('SELECT vivs,count(*) cant_segmentos FROM (
-                        SELECT segmento_id,count(*) vivs,count(distinct mza) as mzas,array_agg(distinct prov||dpto||codloc||frac||radio||mza||lado),count(distinct lado) as lados FROM 
+        return DB::select('SELECT vivs,count(*) cant_segmentos,
+                        string_agg(distinct array_to_string(en_lados,\' \'),\',\') en_lados FROM (
+                        SELECT segmento_id,count(*) vivs,count(distinct mza) as
+                        mzas,array_agg(distinct
+                        frac||radio) en_lados,count(distinct lado) as lados FROM
                         '.$esquema.'.
                         segmentacion s JOIN 
                         '.$esquema.'.
@@ -506,9 +522,9 @@ and
     public static function getNodos($esquema,$radio = '%01103')
     {
         return DB::select('SELECT distinct *, substr(mza_i,13,3)||\':\'||lado_i as label,c.conteo FROM (
-                                            SELECT mza_i,lado_i from e'.$esquema.'.lados_adyacentes WHERE mza_i like :radio UNION 
+                                            SELECT mza_i,lado_i from e'.$esquema.'.lados_adyacentes WHERE mza_i like :radio UNION
                                             SELECT mza_j,lado_j from e'.$esquema.'.lados_adyacentes WHERE mza_j like :radio) foo
-LEFT JOIN 
+    LEFT JOIN
     e'.$esquema.'.conteos c
     ON (c.prov,c.dpto,c.codloc,c.frac,c.radio,c.mza,c.lado)=
         (substr(mza_i,1,2)::integer,
@@ -531,19 +547,19 @@ LEFT JOIN
     public static function getSegmentos($esquema,$radio = '%01103')
     {
         if (Schema::hasTable('e'.$esquema.'.arc')) {
-                return DB::select('SELECT array_agg(mza||\'-\'||lado) segmento 
-FROM
-(SELECT 
-mzai mza,ladoi lado, segi seg
-FROM e'.$esquema.'.arc
-UNION
- SELECT
-mzad mza,ladod lado, segd seg
-FROM e'.$esquema.'.arc
-) segs
-WHERE mza like :radio
-GROUP BY seg
-;',['radio'=>$radio.'%']);
+                return DB::select('SELECT array_agg(mza||\'-\'||lado) segmento
+                                    FROM
+                                    (SELECT
+                                        mzai mza,ladoi lado, segi seg
+                                        FROM e'.$esquema.'.arc
+                                    UNION
+                                         SELECT
+                                        mzad mza,ladod lado, segd seg
+                                        FROM e'.$esquema.'.arc
+                                    ) segs
+                                    WHERE mza like :radio
+                                    GROUP BY seg
+                                    ;',['radio'=>$radio.'%']);
         }else{
             return null;
         }
@@ -631,6 +647,16 @@ FROM ".$esquema.".conteos WHERE prov=".$prov." and dpto = ".$dpto." and frac=".$
     }
 
 
-
+    // Cambio a bigint id segmentacion.
+	public static function cambiarSegmentarBigInt($esquema)
+	{
+        try{
+    		DB::statement("ALTER TABLE \"e".$esquema."\".segmentacion ALTER
+            COLUMN segmento_id SET DATA TYPE bigint ;");
+        }catch(Exception $e){
+         Log::error('NO Se pudo realizar el cambio del tipo segmento_id a bigint');
+        }
+         Log::debug('Se cambio el tipo segmento_id a bigint');
+    }
 }
 
