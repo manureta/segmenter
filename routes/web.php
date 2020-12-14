@@ -51,6 +51,8 @@ Route::get('/contact', function()
 
 Route::get('/setup', 'SetupController@index')->name('setup');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
+Route::get('/setup/topo/{esquema}',
+'SetupController@cargarTopologia')->name('setup.topologia');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
@@ -152,5 +154,10 @@ Route::middleware(['auth:' . config('admin-auth.defaults.guard'), 'admin'])->gro
     });
 });
 Auth::routes();
+
+Route::get('/clear-cache', function() {
+    Artisan::call('cache:clear');
+    return "Cache is cleared";
+});
 
 Route::get('/home', 'HomeController@index')->name('home');

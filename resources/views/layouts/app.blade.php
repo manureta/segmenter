@@ -41,11 +41,12 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav mr-auto btn">
                     @auth
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/users') }}"> Users </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/listado') }}"> Listado </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{
+                        url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
+                        }}"> Descargar plugin </a> </li>
                     @endauth
                     </ul>
 
@@ -91,7 +92,9 @@
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-        style="display:block"><hr />© Copyright 2020 INDEC - Geoestadística - {{ Git::version() }}</div>
+            style="display:block"><hr />© Copyright 2020 INDEC - Geoestadística
+            <div>{{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
+            </div>
 <!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->
 <script src="//code.jquery.com/jquery.js"></script>
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
