@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Model\Radio;
 use Illuminate\Http\Request;
 use App\Segmentador;
+use App\Model\Localidad;
+use App\Model\Departamento;
 
-class RadioController extends Controller
+class RadiosController extends Controller
 {
 
     public function __construct()
@@ -48,14 +50,31 @@ class RadioController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Model\Radio  $radio
+     * @param  \App\Model\Localidad  $localidad
+     * @param  \App\Model\Departamento  $departamento
      * @return \Illuminate\Http\Response
      */
-    public function show(Radio $radio)
+    public function show(Localidad $localidad, Departamento $departamento)
     {
         //
-
-        dd($radio);
+        if($departamento->provincia->codigo=='02'){
+            $radios= $departamento->radios;
+        }else{
+            $radios= $localidad->radios;
+        }
+        $aglomerado=$localidad->aglomerado;
+        $carto=$aglomerado->Carto;
+        $listado=$aglomerado->Listado;
+        $svg=$aglomerado->getSVG();
+        return view('radios.list_view',[
+                    'aglomerado' => $aglomerado,
+                    'carto' => $carto,
+                    'listado'=>$listado,
+                    'radios'=>$radios,
+                    'localidad'=>$localidad,
+                    'departamento'=>$departamento,
+                    'svg'=>$svg]);
+        
     }
 
     /**

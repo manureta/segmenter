@@ -40,15 +40,42 @@ class SetupController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function permisos($schema )
+    public function permisos($schema)
     {
         MyDB::darPermisos($schema);
         return view('home');
     }
 
-    public function cargarTopologia($schema )
+    public function cargarTopologia($schema)
     {
         MyDB::cargarTopologia($schema);
         return view('home');
     }
+   
+    public function addIndexListado($schema)
+    {
+        MyDB::addIndexListado($schema);
+        flash('Se creo el indice para lados en listado en '.$schema);
+        MyDB::addIndexListadoId($schema);
+        flash('Se creo el indice para id listado en '.$schema);
+        MyDB::addIndexListadoRadio($schema);
+        flash('Se creo el indice para radio en listado en '.$schema);
+        return view('home');
+    }
+
+    public function addIndexId($tabla)
+    {
+        MyDB::addIndexId($tabla);
+        flash('Se creo el indice para id en '.$tabla);
+        return view('home');
+    }
+
+    public function georeferenciarEsquema($schema)
+    {
+        MyDB::georeferenciar_listado($schema);
+        flash('Se georeferencio el listado del esquema '.$schema);
+        return view('home');
+    
+    }
+    
 }
