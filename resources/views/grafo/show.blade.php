@@ -1,10 +1,20 @@
 @extends('layouts.app')
 @section('content')
-<div>Grafo de segmentación ({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</div>
-<div>Radio: {{ $radio->codigo}}</div>
-<pre style="line-height: initial;font-size: 75%;">
-{{ $radio->Resultado ?? 'No hay resultado de segmenta' }}
-</pre>
+<div class="row center"><div class="col-lg-12 text-center">
+<h3>({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</h3>
+
+Radio: {{ $radio->codigo}}
+</div></div>
+  <div class="row">
+    <div class="col-lg-3">
+        <pre style="line-height: initial;font-size: 75%;">
+        {{ $radio->Resultado ?? 'No hay resultado de segmenta' }}
+        </pre>
+    </div>
+    <div class="col-lg-4" title=MiniMap> {!! $radio->getSVG() !!}</div>
+</div>
+@endsection
+@section('content')
 @endsection
 @section('header_scripts')
 <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>

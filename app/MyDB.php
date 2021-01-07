@@ -47,6 +47,7 @@ class MyDB extends Model
             self::generarSegmentacionVacia($esquema);
     		DB::statement("SELECT
             indec.lados_completos_a_tabla_segmentacion_ffrr('e".$esquema."',".$frac.",".$radio.");");
+            DB::statement("SELECT indec.segmentos_desde_hasta('e".$esquema."');");
         }catch(Exception $e){
              DB::unprepared('create sequence '.$esquema.'.segmentos_seq');
              Log::debug('Create sequence xq no exisitia...');
@@ -338,7 +339,7 @@ FROM
         {
             if ($radio){
                 $filtro= ' where (frac,radio) =
-                    ('.$radio->getCodigoFrac().','.$radio->getCodigoRad().') ';
+                    ('.$radio->CodigoFrac.','.$radio->CodigoRad.') ';
             } else
             { $filtro = '';}
 
@@ -346,8 +347,9 @@ FROM
             if (Schema::hasTable($esquema.'.segmentos_desde_hasta')){
             if (Schema::hasColumn($esquema.'.segmentos_desde_hasta','viviendas')){
             return DB::select("
-                        SELECT segmento_id, frac, radio, viviendas vivs,
-                            descripcion detalle, null ts
+                        SELECT segmento_id, lpad(frac::text,2,'0') frac,
+                        lpad(radio::text,2,'0') radio, viviendas vivs,
+                            descripcion detalle, lpad(seg,2,'0') seg, null ts
                             FROM
                             indec.describe_segmentos_con_direcciones('".$esquema."')
                             ".$filtro."
@@ -394,7 +396,7 @@ FROM
             $esquema = 'e'.$esquema;
             return DB::select('SELECT vivs,count(*) cant_segmentos,
                             string_agg(distinct array_to_string(en_lados,\' \'),\',\') en_lados FROM (
-                            SELECT segmento_id,count(*) vivs,count(distinct mza) as
+                            SELECT segmento_id,count(indec.contar_vivienda(tipoviv)) vivs,count(distinct mza) as
                             mzas,array_agg(distinct
                             frac||radio) en_lados,count(distinct lado) as lados FROM
                             '.$esquema.'.
@@ -504,7 +506,7 @@ FROM
             e.mza like 
             '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3) 
         );");
-        DB::statement("GRANT SELECT ON TABLE  ".$esquema.".listado_geo TO sig");
+        DB::statement("GRANT SELECT ON TABLE  ".$esquema.".listado_geo TO geoestadistica");
             return $resultado;
         }
 
@@ -617,27 +619,38 @@ FROM
             }
         }
 
-        public static function getCantMzas($radio,$esquema){
-            $prov=substr($radio,0,2);
-            $dpto=substr($radio,2,3);
-            $frac=substr($radio,5,2);
-            $radio=substr($radio,7,2);
-            if (Schema::hasTable($esquema.'.arc')) {
+        public static function getCantMzas(Radio $radio){
+            $esquema=$radio->esquema;
+            $prov=substr($radio->codigo,0,2);
+            $dpto=substr($radio->codigo,2,3);
+            $frac=substr($radio->codigo,5,2);
+            $rad=substr($radio->codigo,7,2);
+            if (Schema::hasTable($esquema.'.conteos')) {
                 return DB::select("
     SELECT count( distinct mza)  cant_mzas 
-    FROM ".$esquema.".conteos WHERE prov=".$prov." and dpto = ".$dpto." and frac=".$frac." and radio=".$radio." ;");
+    FROM ".$esquema.".conteos WHERE prov=".$prov." and dpto = ".$dpto." and
+    frac=".$frac." and radio=".$rad." ;")[0]->cant_mzas;
+
             }else{
-                return 0;
+                Log::debug('No se encontro esquema para '.$radio);
+                return -2;
             }
         }
 
-        public static function isSegmentado($radio,$esquema){
-            if (Schema::hasTable($esquema.'.arc')) {
+        public static function isSegmentado(Radio $radio=null){
+            $esquema=$radio->esquema;
+            if ($radio){
+                $filtro= " and (frac,radio) =
+                    ('".$radio->CodigoFrac."','".$radio->CodigoRad."') ";
+            } else
+            { $filtro = '';}
+            if (Schema::hasTable($esquema.'.segmentacion')) {
                 try {
-                    return DB::select("SELECT true FROM ".$esquema.
-                        ".arc WHERE (substr(mzad,1,5)||substr(mzad,9,4)='".$radio."' and segd is not null and segd>0) 
-                            or (substr(mzai,1,5)||substr(mzai,9,4)='".$radio."' and segi is not null and segi>0)
-            limit 1;");
+                    return DB::select("SELECT true FROM ".$esquema.".segmentacion s JOIN
+                            ".$esquema.".listado l ON s.listado_id=l.id
+                            WHERE segmento_id is not null
+                            ".$filtro."
+                        limit 1;");
                     } catch (Exception $e)  { return null;}
             }else{
                 return null;
