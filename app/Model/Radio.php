@@ -9,14 +9,15 @@ use App\Model\Frccion;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class Radio extends Model
 {
     //
     protected $table='radio';
-
+    protected $primaryKey = 'id';
     protected $fillable = [
-        'id','codigo','nombre'
+            'codigo','nombre'
     ];
 
     private $_isSegmentado;
@@ -98,7 +99,9 @@ class Radio extends Model
 
         $segmenta->vista_segmentos_lados_completos($esquema);
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
-        return $this->_resultado = $segmenta->ver_segmentacion();
+        $this->resultado = $segmenta->ver_segmentacion();
+        $this->save();
+        return $this->resultado;
     }
 
     /**
@@ -119,8 +122,9 @@ class Radio extends Model
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
         $segmenta->segmentar_excedidos_ffrr($esquema,$frac,$radio,$max,$deseadas);
 
-//        dd($segmenta);
-        return $this->_resultado = $segmenta->ver_segmentacion();
+        $this->resultado = $segmenta->ver_segmentacion();
+        $this->save();
+        return $this->resultado;
     }
 
      /**
@@ -147,7 +151,6 @@ class Radio extends Model
                     $result =
                     MyDB::isSegmentado($this);
 
-//        $cant_mzas = $cant_mzas[0]->cant_mzas;
               if ($result):
                   $this->_isSegmentado = true;
               else:
@@ -161,17 +164,6 @@ class Radio extends Model
             return $this->_isSegmentado;
         }
      }
-
-    public function getResultadoAttribute($value)
-    {
-        return $this->_resultado;
-    }
-
-    public function setResultadoAttribute($value)
-    {
-        return $this->_resultado=$value;
-        $this->save();
-    }
 
     public function getCodigoRadAttribute($value){
         return $radio= substr(trim($this->codigo), 7, 2);
@@ -225,27 +217,38 @@ class Radio extends Model
         if (Schema::hasTable($this->esquema.'.manzanas')){
             $mzas= "
                 UNION
-                 ( SELECT st_buffer(wkb_geometry,-2) geom, mza::integer
+                 ( SELECT st_buffer(wkb_geometry,-5) geom, -1*mza::integer, 'mza' tipo
                          FROM ".$this->esquema.".manzanas
                     WHERE  prov||dpto||frac||radio='".$this->codigo."'
                  ) ";
-            }else{$mzas='';}
+            $mzas_labels="
+                UNION (SELECT '<text x=\"'||st_x(st_centroid(wkb_geometry))||'\"
+                y=\"-'||st_y(st_centroid(wkb_geometry))||'\">'||mza||'</text>'
+                as svg ,20 as orden
+                FROM ".$this->esquema.".manzanas
+                    WHERE  prov||dpto||frac||radio='".$this->codigo."' )";
+            }else{$mzas='';$mzas_labels='';}
 
             //dd($viewBox.'/n'.$this->viewBox($extent,$epsilon,$height,$width).'/n'.$x0." -".$y0." ".$x1." -".$y1);
             $svg=DB::select("
-WITH shapes (geom, attribute) AS (
-    ( SELECT st_buffer(lg.wkb_geometry,1) wkb_geometry, segmento_id::integer
+WITH shapes (geom, attribute, tipo) AS (
+    ( SELECT st_buffer(CASE WHEN trim(lg.tipoviv) in ('','LSV') then lg.wkb_geometry_lado
+    else lg.wkb_geometry END,1) wkb_geometry, segmento_id::integer,
+    lg.tipoviv tipo
     FROM ".$this->esquema.".listado_geo lg JOIN ".$this->esquema.".segmentacion
     s ON s.listado_id=id_list
     WHERE  substr(mzae,1,5)||substr(mzae,9,4)='".$this->codigo."'
     ) ".$mzas." 
   ),
-  paths (svg) as (
-     SELECT concat(
+  paths (svg,orden) as (
+     SELECT * FROM ( 
+     (SELECT concat(
          '<path d= \"',
-         ST_AsSVG(st_buffer(geom,5),0), '\" ',
+         ST_AsSVG(st_buffer(geom,3),0), '\" ',
          CASE WHEN attribute = 0 THEN 'stroke=\"gray\" stroke-width=\"2\"
          fill=\"gray\"'
+              WHEN tipo='mza' THEN 'stroke=\"white\"
+              stroke-width=\"1\" fill=\"#BBBBC5\"'
               WHEN attribute < 5 THEN 'stroke=\"none\"
               stroke-width=\"".$stroke."\" fill=\"#' || attribute*20 || 'AAAA\"'
               WHEN attribute < 10 THEN 'stroke=\"none\"
@@ -256,8 +259,13 @@ WITH shapes (geom, attribute) AS (
             'stroke=\"black\" stroke-width=\"".$stroke."\" fill=\"#22' ||
             attribute*10 || '88\"'
          END,
-          ' />')
-     FROM shapes
+          ' />') as svg,
+          CASE WHEN tipo='mza' then 0
+               WHEN tipo='LSV' then 1
+          ELSE 10 END as orden
+     FROM shapes 
+     ORDER BY attribute asc)
+     ".$mzas_labels." ) foo order by orden asc
  )
  SELECT concat(
          '<svg id=\"radio_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.

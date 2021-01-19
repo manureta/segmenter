@@ -50,15 +50,20 @@ Route::get('/contact', function()
 });
 
 Route::get('/setup', 'SetupController@index')->name('setup');
+Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/topo/{esquema}',
 'SetupController@cargarTopologia')->name('setup.topologia');
+Route::get('/setup/topo_drop/{esquema}',
+'SetupController@dropTopologia')->name('setup.drop.topologia');
 Route::get('/setup/index/{esquema}',
 'SetupController@addIndexListado')->name('setup.index');
 Route::get('/setup/index/id/{tabla}',
 'SetupController@addIndexId')->name('setup.indexId');
 Route::get('/setup/geo/{esquema}',
 'SetupController@georeferenciarEsquema')->name('setup.geo');
+Route::get('/setup/segmenta/{esquema}',
+'SetupController@segmentarEsquema')->name('setup.segmenta');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
