@@ -26,9 +26,8 @@
 <body>
     @yield('divs4content')
     <div id="app">
-        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
-		@include('flash::message')
                 <a class="navbar-brand text-uppercase" href="{{ url('/') }}">
                 <img src="/images/mandarina.svg" width="30" height="30" class="d-inline-block align-top" alt="">
                     {{ config('app.name', 'App sin nombre') }}
@@ -64,11 +63,14 @@
                             @endif
                         @else
                             <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }} <span class="caret"></span>
+                                <a id="navbarDropdownLogin" class="nav-link
+                                dropdown-toggle" href="#logout" role="button"
+                                aria-controls=logout
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre> {{ Auth::user()->name }} <span class="caret"></span>
                                 </a>
 
-                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                                <div id=logout class="dropdown-menu dropdown-menu-right collapse"
+                                aria-labelledby="navbarDropdownLogin">
                                     <a class="dropdown-item" href="{{ route('logout') }}"
                                        onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">
@@ -85,8 +87,8 @@
                 </div>
             </div>
         </nav>
-
         <main class="py-4">
+		    @include('flash::message')
             @yield('content')
         </main>
         </div>
@@ -101,11 +103,12 @@
 <script>
    $(document).ready( function () {
     $('#flash-overlay-modal').modal();
+    $('div.alert').not('.alert-important').delay(5000).fadeOut(350);
 });
 </script>
+    @yield ('footer_scripts')
 <script>
 $('div.alert').not('.alert-important').delay(3000).fadeOut(350);
 </script>
-    @yield ('footer_scripts')
 </body>
 </html>

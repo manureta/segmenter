@@ -9,6 +9,7 @@ use App\MyDB;
 use App\Model\Aglomerado;
 use App\Model\Radio;
 
+
 class SegmentacionController extends Controller
 {
     
@@ -37,7 +38,12 @@ class SegmentacionController extends Controller
         foreach ($segmentacion_data as $data){ 
                 $segmentacion[]=explode(',',str_replace('}','',str_replace('{','',$data->segmento)));
                 }
-        return view('grafo.show',['nodos'=>$nodos,'relaciones'=>$edges,'segmentacion'=>$segmentacion,'aglomerado'=>$aglomerado,'radio'=>$radio]);
+        $segmentacion_listado=MyDB::segmentar_equilibrado_ver($aglomerado->codigo,100,$radio);
+//        $segmentacion_data_listado = json_encode ($segmentacion_listado, JSON_PRETTY_PRINT);
+
+        $radio->refresh();
+        return
+        view('grafo.show',['nodos'=>$nodos,'relaciones'=>$edges,'segmentacion'=>$segmentacion,'segmentacion_data_listado'=>$segmentacion_listado,'aglomerado'=>$aglomerado,'radio'=>$radio]);
     }
 
     public function ver_grafico(Aglomerado $aglomerado,Radio $radio) {

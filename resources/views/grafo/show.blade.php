@@ -1,10 +1,14 @@
 @extends('layouts.app')
 @section('content')
-<div>Grafo de segmentación ({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</div>
-<div>Radio: {{ $radio->codigo}}</div>
-<pre style="line-height: initial;font-size: 75%;">
-{{ $radio->Resultado ?? 'No hay resultado de segmenta' }}
-</pre>
+<div class="row center"><div class="col-lg-12 text-center">
+<h3>({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</h3>
+Radio: {{ $radio->codigo}}
+</div></div>
+  <div class="row">
+    </div>
+</div>
+@endsection
+@section('content')
 @endsection
 @section('header_scripts')
 <script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
@@ -15,19 +19,66 @@
 <script src="/js/cytoscape-cola.js"></script>
 <script src="/js/cola.min.js"></script>
 <style>
-#cy {
-  width: 800px;
-  height: 400px;
+#grafo_cy {
+  width: 400px;
+  height: 500px;
   display: block;
+}
+.no-gutters {
+  margin-right: 0;
+  margin-left: 0;
+
+  > .col,
+  > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }
 </style>
 @endsection
 @section('content_main')
-	<div width= 800px;
-         height= 400px
-         id=cy>
-	<button type="button" class="btn btn-primary" onClick="ordenar();"value="Ordenar">ReOrdenar</button>
+<div class="container-xl" >
+    <div class="col no-gutters">
+      <div class="row no-gutters">
+        <div class="col-sm-12">
+        <pre style="line-height: initial;font-size: 75%;">
+        {{ $radio->resultado ?? 'No hay resultado de segmenta' }}
+        </pre>
+        </div>
+      </div>
+      <div class="row no-gutters">
+        <div class="col" title=MiniMap> {!! $radio->getSVG() !!}</div>
+        <div class="col ">
+            <div id=grafo_cy width= 400px; height= 500px
+               title="Grafo de adyacencias" >
+            </div>
+            <div class="text-center">
+        	  <button type="button" class="btn btn-primary" onClick="ordenar();"value="Ordenar">ReOrdenar</button>
+            </div>
+        </div>  
+      </div>
+      <div class="row no-gutters">
+        <div class="col">
+        <div class="row text-center border">
+            <div class="col-sm-1 border">id</div>
+            <div class="col-sm-1 border">Seg</div>
+            <div class="col-sm-9 border">Descripción</div>
+            <div class="col-sm-1 border">Viviendas</div>
+        </div>
+        @forelse ($segmentacion_data_listado as $segmento)
+        <div class="row border">
+        <div class="col-sm-1 ">{{ $segmento->segmento_id }}</div>
+        <div class="col-sm-1 ">{{ $segmento->seg }}</div>
+        <div class="col-sm-9 ">{{ $segmento->detalle }}</div>
+        <div class="col-sm-1 ">{{ $segmento->vivs }}</div>
+        </div>
+        @empty
+            <p>No hay segmentos</p>
+        @endforelse
+        </div>
+      </div>
     </div>
+</div>
 @endsection
 @section('footer_scripts')
 	<script>
@@ -36,7 +87,7 @@
                         ,'#555','#CCC','#A00','#0A0','#00A','#F00','#0F0','#00F','#008','#800','#080'];
 		var cy = cytoscape({
 
-  container: document.getElementById('cy'), // container to render in
+    container: document.getElementById('grafo_cy'), // container to render in
 
   elements: [ // list of graph elements to start with
     @foreach ($nodos as $nodo)
@@ -77,15 +128,15 @@
       ],
     layout: {
         name: 'grid',
-        rows: 25
+        rows: 9
     }
     });
     cy.on('click', 'node', function(evt){
       var node = evt.target;
       alert( 'Lado: ' + node.id() );
     });
-    var layout = cy.layout({ name: 'random'});
-    layout.run();
+//    var layout = cy.layout({ name: 'cose'});
+//    layout.run();
     function ordenar(){
         var layout = cy.layout({ name: 'cose'});
         layout.run();

@@ -6,6 +6,7 @@ use App\Archivo;
 use Illuminate\Http\Request;
 use Auth;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\MyDB;
@@ -13,6 +14,7 @@ use App\Listado;
 use App\Imports\CsvImport;
 use Maatwebsite\Excel;
 use App\Model\Aglomerado;
+use Illuminate\Support\Facades\Log;
 
 class SegmenterController extends Controller
 {
@@ -21,12 +23,13 @@ class SegmenterController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->epsgs['22182']='EPSG:22182';
-        $this->epsgs['22183']='EPSG:22183';
-        $this->epsgs['22184']='EPSG:22184';
-        $this->epsgs['22185']='EPSG:22185';
-        $this->epsgs['22186']='EPSG:22186';
-        $this->epsgs['22187']='EPSG:22187';
+        $this->epsgs['22182']='(EPSG:22182) POSGAR 94 / Argentina 2 - San Juan, Mendoza, Neuquén, Chubut, Santa Cruz y Tierra del Fuego...';
+        $this->epsgs['22183']='(EPSG:22183) POSGAR 94 / Argentina 3 - Jujuy, Salta, Tucuman, Catamárca, La Rioja, San Luis, La Pampa y Río Negro';
+        $this->epsgs['22184']='(EPSG:22184) POSGAR 94 / Argentina 4 - Santiago del Estero y Córdoba';
+        $this->epsgs['22185']='(EPSG:22185) POSGAR 94 / Argentina 5 - Formosa, Chaco, Santa Fe, Entre Ríos y Buenos Aires';
+        $this->epsgs['22186']='(EPSG:22186) POSGAR 94 / Argentina 6 - Corrientes';
+        $this->epsgs['22187']='(EPSG:22187) POSGAR 94 / Argentina 7 - Misiones';
+        $this->epsgs['8333']='(SR-ORG:8333) Gauss Krugger BA';
     }
 
     public function index()
@@ -42,6 +45,70 @@ class SegmenterController extends Controller
     $data = [];
     $epsg_id = $request->input('epsg_id')?$request->input('epsg_id'):'22183';
     $data['epsg']['id']=$epsg_id;
+
+
+
+    if ($request->hasFile('c1')) {
+        $random_name='t_'.$request->c1->hashName();
+        $data['file']['c1'] = $request->c1->storeAs('segmentador', $random_name); //.'.'.$request->c1->getClientOriginalExtension());
+        $original_extension = $request->c1->getClientOriginalExtension();
+        $original_name = $request->c1->getClientOriginalName();
+
+        //Si no se cargo geometria tomo del nombre del listado los utilmos 8
+        //caracteres del nombre, puede ser fecha
+        $codaglo=isset($codaglo)?$codaglo:substr($original_name,-13,9);
+
+	     if ($original_extension == 'csv'){
+		    $data['file']['csv_info'] = 'Se Cargo un csv.';
+            $process = Process::fromShellCommandline('echo "C1 CSV: $name" >> archivos.log');
+		    $process->run(null, ['name' => "Archivo: ".$original_name." subido como: ".$data['file']['c1']]);
+    /*
+		    $data['file']['csv_detail'] = Listado::cargar_csv( storage_path().'/app/'.$data['file']['c1']);
+		     return view('listado/all', ['listado' => $data['file']['csv_detail'],'epsgs'=> $epsgs]);
+    */
+		    $import = new CsvImport;
+		    Excel::import($import, storage_path().'/app/'.$data['file']['c1']);
+	    //	dd('Row count: ' . $import->getRowCount()); 
+		    return view('listado/all', ['listado' => $data['file']['csv_detail'],'epsgs'=> $epsgs]);
+
+	      }elseif ($original_extension == 'dbf'){
+            // Mensaje de subida de DBF y logeo en archivo.
+            $data['file']['csv_info'] = 'Se Cargo un DBF.';
+		    $processLog = Process::fromShellCommandline('echo "C1 DBF: $name" >> archivos.log');
+		    $processLog->run(null, ['name' => "Archivo: ".$original_name." subido como: ".$data['file']['c1']]);
+
+		    // Subo DBF con pgdbf a una tabla temporal.
+            $process = Process::fromShellCommandline('pgdbf -s latin1 $c1_dbf_file | psql -h $host -p $port -U $user $db');
+		    $process->run(null, ['c1_dbf_file' => storage_path().'/app/'.$data['file']['c1'],'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'port'=>Config::get('database.connections.pgsql.port'),'PGPASSWORD'=>Config::get('database.connections.pgsql.password')]);
+        // executes after the command finishes
+        if (!$process->isSuccessful()) {
+            $data['file']['error']=$process->getErrorOutput();
+        }else{
+            // Leo dentro del csv que aglo/s viene/n o localidad depto CABA
+
+            $tabla = strtolower(
+            substr($data['file']['c1'],strrpos($data['file']['c1'],'/')+1,-4) );
+            $aglo_interno=MyDB::getAglo($tabla,'public');
+            $codprov=MyDB::getProv($tabla,'public');
+            if ($codprov=='02'){
+                $ppdddlll=MyDB::getLoc($tabla,'public');
+                $data['file']['caba']='Se detecto CABA: '.$ppdddlll;
+                $codaglo=$ppdddlll;
+            }else{
+                $codaglo=$aglo_interno;
+            }
+
+		    MyDB::createSchema($codaglo);
+
+            MyDB::moverDBF(storage_path().'/app/'.$data['file']['c1'],$codaglo);
+            $data['file']['info_dbf']=MyDB::infoDBF('listado',$codaglo);
+//            $aglo= Aglomerado::where('codigo', $codaglo)->first();
+            $data['file']['codigo_usado']=$codaglo;
+        }
+      
+       }else{$data['file']['csv_info'] = 'Se Cargo un archivo de formato no esperado!';}
+    }
+
     if ($request->hasFile('shp')) {
         if ($request->file('shp')->isValid() or true) {
             $data['file']['shp_msg'] = "Subió una base geográfica ";
@@ -55,7 +122,7 @@ class SegmenterController extends Controller
         $original_name = $request->shp->getClientOriginalName();
 
         if ($original_extension == 'shp'){
-        $random_name='t_'.$request->shp->hashName();
+            $random_name='t_'.$request->shp->hashName();
             $data['file']['shp'] = $request->shp->storeAs('segmentador', $random_name.'.'.$request->shp->getClientOriginalExtension());
             if ($request->hasFile('shx')) {
                 $data['file']['shx'] = $request->shx->storeAs('segmentador', $random_name.'.'.$request->shx->getClientOriginalExtension());
@@ -73,12 +140,39 @@ class SegmenterController extends Controller
                                  'usuario_name' => $AppUser->name,
                                  'tiempo' => date('Y-m-d H:i:s')]);
                         
-            $codaglo = substr($original_name,1,4);
+            $codaglo=isset($codaglo)?$codaglo:$original_name;
             MyDB::createSchema($codaglo);
 
-            $processOGR2OGR = Process::fromShellCommandline('/usr/bin/ogr2ogr -f "PostgreSQL" PG:"dbname=$db host=$host user=$user port=$port active_schema=e$e00 password=$pass" --config PG_USE_COPY YES -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco PRELUDE_STATEMENTS="SET client_encoding TO latin1;CREATE SCHEMA IF NOT EXISTS e$e00;" -dsco active_schema=e$e00 -lco PRECISION=NO -lco SCHEMA=e$e00 -s_srs epsg:$epsg -t_srs epsg:$epsg -nln arc -skipfailures -overwrite $file ');
-            $processOGR2OGR->setTimeout(3600);
-            $processOGR2OGR->run(null, ['epsg' => $epsg_id, 'file' => storage_path().'/app/'.$data['file']['shp'],'e00'=>$codaglo,'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'pass'=>Config::get('database.connections.pgsql.password'),'port'=>Config::get('database.connections.pgsql.port')]);
+            if ($epsg_id=='8333'){
+                Log::debug('Proyeccion de CABA en '.$codaglo.', con SRID: '.$epsg_id);
+                // USO .prj 8333.prj
+                $prj_file='./app/developer_docs/8333.prj';
+                    $epsg_def='epsg:'.$epsg_id;
+                    $epsg_def='+proj=tmerc +lat_0=-34.6297166 +lon_0=-58.4627 +k=1 +x_0=100000 +y_0=100000 +ellps=intl +units=m +no_defs';
+                    $srs_name='sr-org:8333';
+
+                $processOGR2OGR =
+                Process::fromShellCommandline('(/usr/bin/ogr2ogr -f \
+                "PostgreSQL" PG:"dbname=$db host=$host user=$user port=$port \
+                active_schema=e$e00 password=$pass" --config PG_USE_COPY YES \
+                -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco \
+                PRELUDE_STATEMENTS="SET client_encoding TO latin1;CREATE SCHEMA \
+                IF NOT EXISTS e$e00;" -dsco active_schema=e$e00 -lco \
+                PRECISION=NO -lco SCHEMA=e$e00 -t_srs "$epsg" \
+                -s_srs "$epsg" \
+                -a_srs "$epsg" -nln arc \
+                -overwrite $file )');
+                $processOGR2OGR->setTimeout(3600);
+                $processOGR2OGR->run(null, ['epsg'=>$epsg_def,'file' => storage_path().'/app/'.$data['file']['shp'],'e00'=>$codaglo,'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'pass'=>Config::get('database.connections.pgsql.password'),'port'=>Config::get('database.connections.pgsql.port')]);
+            }else{
+                $processOGR2OGR = Process::fromShellCommandline('/usr/bin/ogr2ogr -f "PostgreSQL" PG:"dbname=$db host=$host user=$user port=$port active_schema=e$e00 password=$pass" --config PG_USE_COPY YES -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco PRELUDE_STATEMENTS="SET client_encoding TO latin1;CREATE SCHEMA IF NOT EXISTS e$e00;" -dsco active_schema=e$e00 -lco PRECISION=NO -lco SCHEMA=e$e00 -s_srs epsg:$epsg -t_srs epsg:$epsg -nln arc -overwrite $file ');
+                $processOGR2OGR->setTimeout(3600);
+                $processOGR2OGR->run(null, ['epsg' => $epsg_id, 'file' => storage_path().'/app/'.$data['file']['shp'],'e00'=>$codaglo,'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'pass'=>Config::get('database.connections.pgsql.password'),'port'=>Config::get('database.connections.pgsql.port')]);
+
+            }
+            if (!$processOGR2OGR->isSuccessful()) {
+                throw new ProcessFailedException($processOGR2OGR);
+            }
             MyDB::agregarsegisegd($codaglo);
 
         }elseif ($original_extension == 'e00'){
@@ -90,7 +184,8 @@ class SegmenterController extends Controller
             $processOGR->run(null, ['file' => storage_path().'/app/'.$data['file']['shp']]);
             $data['file']['e00_info'] = $processOGR->getOutput();
 
-            $codaglo = substr($original_name,1,4);
+            //$codaglo = substr($original_name,1,4);
+            $codaglo=isset($codaglo)?$codaglo:$original_name;
             MyDB::createSchema($codaglo);
 
             $processOGR2OGR = Process::fromShellCommandline('/usr/bin/ogr2ogr -f "PostgreSQL" PG:"dbname=$db host=$host user=$user port=$port active_schema=e$e00 password=$pass port=$port" --config PG_USE_COPY YES -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco PRELUDE_STATEMENTS="SET client_encoding TO latin1;CREATE SCHEMA IF NOT EXISTS e$e00;" -dsco active_schema=e$e00 -lco PRECISION=NO -lco SCHEMA=e$e00 -s_srs epsg:$epsg -t_srs epsg:$epsg -skipfailures -addfields -overwrite $file ARC');
@@ -106,68 +201,16 @@ class SegmenterController extends Controller
             MyDB::agregarsegisegd($codaglo);
         }
     }
+    MyDB::juntaListadoGeom($codaglo);
     }else {//dd($request->file('shp')); 
         flash('File geo not valid');
     }
-    if ($request->hasFile('c1')) {
-    $random_name='t_'.$request->c1->hashName();
-    $data['file']['c1'] = $request->c1->storeAs('segmentador', $random_name); //.'.'.$request->c1->getClientOriginalExtension());
-    $original_extension = $request->c1->getClientOriginalExtension();
-    $original_name = $request->c1->getClientOriginalName();
 
-    //Si no se cargo geometria tomo del nombre del listado los utilmos 8
-    //caracteres del nombre, puede ser fecha
-    $codaglo=isset($codaglo)?$codaglo:substr($original_name,-13,9);
 
-	     if ($original_extension == 'csv'){
-		    $data['file']['csv_info'] = 'Se Cargo un csv.';
-    $process = Process::fromShellCommandline('echo "C1 CSV: $name" >> archivos.log');
-		    $process->run(null, ['name' => "Archivo: ".$original_name." subido como: ".$data['file']['c1']]);
-    /*
-		    $data['file']['csv_detail'] = Listado::cargar_csv( storage_path().'/app/'.$data['file']['c1']);
-		     return view('listado/all', ['listado' => $data['file']['csv_detail'],'epsgs'=> $epsgs]);
-    */
-		    $import = new CsvImport;
-		    Excel::import($import, storage_path().'/app/'.$data['file']['c1']);
-	    //	dd('Row count: ' . $import->getRowCount()); 
-		    return view('listado/all', ['listado' => $data['file']['csv_detail'],'epsgs'=> $epsgs]);
-
-	      }elseif ($original_extension == 'dbf'){
-        $data['file']['csv_info'] = 'Se Cargo un DBF.';
-		          $processLog = Process::fromShellCommandline('echo "C1 DBF: $name" >> archivos.log');
-		    $processLog->run(null, ['name' => "Archivo: ".$original_name." subido como: ".$data['file']['c1']]);
-		    $process = Process::fromShellCommandline('pgdbf -s latin1 $c1_dbf_file | psql -h $host -p $port -U $user $db');
-		    $process->run(null, ['c1_dbf_file' => storage_path().'/app/'.$data['file']['c1'],'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'port'=>Config::get('database.connections.pgsql.port'),'PGPASSWORD'=>Config::get('database.connections.pgsql.password')]);
-        // executes after the command finishes
-        if (!$process->isSuccessful()) {
-        //        dd($process->getErrorOutput());
-            $data['file']['error']=$process->getErrorOutput();
-        }else{
-            // Leo dentro del scv que aglo/s viene/n
-            $aglo_interno=MyDB::getAglo(storage_path().'/app/'.$data['file']['c1'],'public');
-            if ($codaglo!=$aglo_interno){
-                $data['file']['aglo_dbf']='El nombre del archivo
-                '.$codaglo.' difiere del aglo '.$aglo_interno.'encontrado en el listado';
-                $codaglo=$aglo_interno;
-		            MyDB::createSchema($codaglo);
-            }
-
-          MyDB::moverDBF(storage_path().'/app/'.$data['file']['c1'],$codaglo);
-          $data['file']['info_dbf']=MyDB::infoDBF('listado',$codaglo);
-          $aglo= Aglomerado::where('codigo', $codaglo)
-            ->first();
-          $data['file']['codaglo']=$codaglo;
-    //              $data['file']['codaglo']=$aglo->nombre;
-    //              $data['file']['radios']=$aglo->radios;
-        }
-      
-       }else{$data['file']['csv_info'] = 'Se Cargo un archivo de formato no esperado!';}
-    }
-
-    if (Archivo::cargar($request, Auth::user())) {
-       return view('segmenter/index', ['data' => $data,'epsgs'=> $this->epsgs]);
-    } else {
-       echo "Error en el modelo cargar";
-    }
+     if (Archivo::cargar($request, Auth::user())) {
+        return view('segmenter/index', ['data' => $data,'epsgs'=> $this->epsgs]);
+     } else {
+        echo "Error en el modelo cargar";
+     }
     }
 }
