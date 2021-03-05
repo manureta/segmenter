@@ -22,6 +22,7 @@ class Radio extends Model
 
     private $_isSegmentado;
     private $_resultado;
+    private $_esquema;
 
      /**
       * Fix datos..
@@ -76,11 +77,18 @@ class Radio extends Model
      public function aglomerado()
      {  
         //TODO
-//        return $this->belongsToMany('App\Model\Localidad', 'radio_localidad');
-        if ($localidad=$this->localidades()->first())
-            return $localidad->aglomerado()->get();
-        else
-            return null; //new Aglomerado();
+    //    return $this->hasOneThrough(Aglomerado::class,Fraccion::class);
+    //    return $this->belongsToMany('App\Model\Localidad', 'radio_localidad');
+            if ($this->localidades->count()>1){
+                Log::warning('Varias localidades: Tomo la primera
+                '.$this->localidades->first()->codigo);
+                return $aglo = $this->localidades->first()->aglomerado;
+            }elseif ($localidad=$this->localidades->first())
+                {
+                    return $aglo=$localidad->aglomerado;
+                }
+                else
+                    return null; //new Aglomerado();
      }
 
     /**
@@ -148,8 +156,7 @@ class Radio extends Model
      {
         if (! isset($this->_isSegmentado)){
           if ($this->aglomerado() != null){
-                    $result =
-                    MyDB::isSegmentado($this);
+                    $result = MyDB::isSegmentado($this);
 
               if ($result):
                   $this->_isSegmentado = true;
@@ -174,21 +181,27 @@ class Radio extends Model
     }
 
     public function getEsquemaAttribute($value){
+        if (! $this->_esquema){
+          $this->_esquema='foo';
           if ($this->aglomerado() != null){
-                if ($this->departamento){
-                    if ($this->departamento->provincia->codigo == '02') {
-                        return $esquema = 'e'.$this->departamento->provincia->codigo.
-                        Str::padLeft(((int)$this->departamento->codigo*7),2,0).$this->localidad->codigo;
+                if ($this->aglomerado()->codigo=='0001'){
+                    if ($this->fraccion->departamento->provincia->codigo == '02') {
+                        $this->_esquema = 'e'.
+                                    $this->fraccion->departamento->codigo.
+                                    $this->localidades()->first()->codigoLoc;
                     }else{
-                        return $esquema = 'e'.$this->aglomerado->codigo;
+                        $this->_esquema = 'e'.$this->aglomerado()->codigo;
                     }
                 }else
                 { 
-                    return $esquema = 'e'.$this->aglomerado()->first()->codigo;
+                    $this->_esquema = 'e'.$this->aglomerado()->codigo;
                 }
-           Log::debug('Radio en esquema: '.$esquema);
+           Log::debug('Radio '.$this->codigo.' esperado en esquema: '.$this->_esquema);
+        }else{
+            $this->_esquema='e'.$this->codigo;
         }
-        return 'foo';
+        }
+        return $this->_esquema;
     }
 
     public function getSVG()
@@ -269,9 +282,17 @@ WITH shapes (geom, attribute, tipo) AS (
  )
  SELECT concat(
          '<svg id=\"radio_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
-         "\" height=\"".$height."\" width=\"".$width."\">',
+         "\" height=\"".$height."\" width=\"".$width."\">
+         <circle class=\"button\" cx=\"".($x0+25)."\" cy=\"-".($y0+20)."\"
+         r=\"10\"
+         onclick=\"zoom(0.00001)\"/>
+        <circle class=\"button\" cx=\"".($x0+25)."\" cy=\"-".($y0+50)."\"
+        r=\"10\"
+        onclick=\"zoom(1.00001)\"/>
+         <g id=\"matrix-group\" transform=\"matrix(1 0 0 1 0 0)\">
+        ',
          array_to_string(array_agg(svg),''),
-         '</svg>')
+         '</g></svg>')
  FROM paths;
 ");
             return $svg[0]->concat;

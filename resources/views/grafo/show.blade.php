@@ -1,8 +1,18 @@
 @extends('layouts.app')
 @section('content')
 <div class="row center"><div class="col-lg-12 text-center">
-<h3>({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</h3>
-Radio: {{ $radio->codigo}}
+<h4><a href="{{ url("/aglo/{$aglomerado->id}") }}" > ({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</a></h4>
+<h5>
+@foreach($radio->localidades as $localidad)
+@if($localidad)
+<a href="{{ url("/localidad/{$localidad->id}") }}" > ({{
+$localidad->codigo}}) {{ $localidad->nombre}}</a>
+@else
+ Rural? 
+@endif
+@endforeach
+</h5>
+<h3>Radio: {{ $radio->codigo}}</h3>
 </div></div>
   <div class="row">
     </div>
@@ -82,6 +92,27 @@ Radio: {{ $radio->codigo}}
 @endsection
 @section('footer_scripts')
 	<script>
+    var transformMatrix = [1, 0, 0, 1, 0, 0];
+    var svg = document.getElementById('radio_{{$radio->codigo}}');
+    var viewbox = svg.getAttributeNS(null, "viewBox").split(" ");
+    var centerX = parseFloat(viewbox[2]) / 2;
+    var centerY = parseFloat(viewbox[3]) / 2;
+    var matrixGroup = svg.getElementById("matrix-group");
+
+function zoom(scale) {
+  for (var i = 0; i < 4; i++) {
+    transformMatrix[i] *= scale;
+  }
+  transformMatrix[4] = centerX;
+  transformMatrix[5] = centerY;
+		        
+  var newMatrix = "matrix(" +  transformMatrix.join(' ') + ")";
+  matrixGroup.setAttributeNS(null, "transform", newMatrix);
+  console.log(scale);
+  console.log(transformMatrix);
+}
+
+
     let arrayOfClusterArrays = @json($segmentacion) ;  
     let clusterColors = ['#FF0', '#0FF', '#F0F', '#4139dd', '#d57dba', '#8dcaa4'
                         ,'#555','#CCC','#A00','#0A0','#00A','#F00','#0F0','#00F','#008','#800','#080'];
@@ -90,12 +121,17 @@ Radio: {{ $radio->codigo}}
     container: document.getElementById('grafo_cy'), // container to render in
 
   elements: [ // list of graph elements to start with
+    @if($nodos)
     @foreach ($nodos as $nodo)
         { data: { group: 'nodes',mza: '{{ $nodo->mza_i }}',label: '{{ $nodo->label }}', conteo: '{{ $nodo->conteo }}', id: '{{ $nodo->mza_i }}-{{ $nodo->lado_i }}'  } },
     @endforeach    
     @foreach ($relaciones as $nodo)
         { data: { group: 'edges',tipo: '{{ $nodo->tipo }}', id: '{{ $nodo->mza_i }}-{{ $nodo->lado_i }}->{{ $nodo->mza_j }}-{{ $nodo->lado_j }}', source:'{{ $nodo->mza_i }}-{{ $nodo->lado_i }}', target:'{{ $nodo->mza_j }}-{{ $nodo->lado_j }}'} },
     @endforeach    
+    @else
+        { data: { group: 'nodes',mza: 'A', label: 'A', conteo: '1', id: 'A-1'  } },
+        { data: { group: 'edges',tipo: 'test', id: 'A-1->A-1', source:'A-1', target:'A-1'} },
+    @endif
   ],
   style: [ // the stylesheet for the graph
     {
@@ -122,7 +158,9 @@ Radio: {{ $radio->codigo}}
         'line-color': function (ele) { if (ele.data('tipo')=='dobla') return '#555'; else return '#ccc'; },
         'target-arrow-color': '#aae',
         'target-arrow-shape': 'triangle',
-        'label': function (ele) { return ''; if (ele.data('tipo')=='dobla') return 'd'; else if (ele.data('tipo')=='enfrente') return 'e'; }
+        'label': function (ele) { return ''; if (ele.data('tipo')=='dobla')
+        return 'd'; else if (ele.data('tipo')=='enfrente') return 'e' else
+        return 'o'; }
       }
     }
       ],

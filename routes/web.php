@@ -49,6 +49,8 @@ Route::get('/contact', function()
     return View::make('pages.contact');
 });
 
+Route::get('/sala', 'SalaController@index')->name('sala');
+
 Route::get('/setup', 'SetupController@index')->name('setup');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
@@ -64,6 +66,8 @@ Route::get('/setup/geo/{esquema}',
 'SetupController@georeferenciarEsquema')->name('setup.geo');
 Route::get('/setup/segmenta/{esquema}',
 'SetupController@segmentarEsquema')->name('setup.segmenta');
+Route::get('/setup/muestrea/{esquema}',
+'SetupController@muestreaEsquema')->name('setup.muestrea');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
@@ -115,7 +119,7 @@ Route::get('localidad/{localidad}','LocalidadController@show');
 Route::get('aglos-list', 'AglomeradoController@aglosList');
 Route::post('aglos-list', 'AglomeradoController@aglosList');
 Route::get('aglos','AglomeradoController@index');
-Route::get('aglo/{aglomerado}','AglomeradoController@show');
+Route::get('aglo/{aglomerado}','AglomeradoController@show')->name('aglo-ver');
 Route::post('aglo/{aglomerado}','AglomeradoController@show_post');
 Route::post('aglo-segmenta/{aglomerado}','AglomeradoController@segmenta_post');
 Route::get('aglo-segmenta/{aglomerado}','AglomeradoController@segmenta_post');

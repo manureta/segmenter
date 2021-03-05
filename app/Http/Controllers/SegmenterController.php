@@ -45,13 +45,12 @@ class SegmenterController extends Controller
     $data = [];
     $epsg_id = $request->input('epsg_id')?$request->input('epsg_id'):'22183';
     $data['epsg']['id']=$epsg_id;
-
-
+    flash('SRS: '.$data['epsg']['id']);
 
     if ($request->hasFile('c1')) {
         $random_name='t_'.$request->c1->hashName();
         $data['file']['c1'] = $request->c1->storeAs('segmentador', $random_name); //.'.'.$request->c1->getClientOriginalExtension());
-        $original_extension = $request->c1->getClientOriginalExtension();
+        $original_extension = strtolower($request->c1->getClientOriginalExtension());
         $original_name = $request->c1->getClientOriginalName();
 
         //Si no se cargo geometria tomo del nombre del listado los utilmos 8
@@ -73,7 +72,7 @@ class SegmenterController extends Controller
 
 	      }elseif ($original_extension == 'dbf'){
             // Mensaje de subida de DBF y logeo en archivo.
-            $data['file']['csv_info'] = 'Se Cargo un DBF.';
+            flash($data['file']['csv_info'] = 'Se Cargo un DBF.');
 		    $processLog = Process::fromShellCommandline('echo "C1 DBF: $name" >> archivos.log');
 		    $processLog->run(null, ['name' => "Archivo: ".$original_name." subido como: ".$data['file']['c1']]);
 
@@ -82,7 +81,7 @@ class SegmenterController extends Controller
 		    $process->run(null, ['c1_dbf_file' => storage_path().'/app/'.$data['file']['c1'],'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'port'=>Config::get('database.connections.pgsql.port'),'PGPASSWORD'=>Config::get('database.connections.pgsql.password')]);
         // executes after the command finishes
         if (!$process->isSuccessful()) {
-            $data['file']['error']=$process->getErrorOutput();
+            flash($data['file']['error']=$process->getErrorOutput())->important();
         }else{
             // Leo dentro del csv que aglo/s viene/n o localidad depto CABA
 
@@ -92,7 +91,7 @@ class SegmenterController extends Controller
             $codprov=MyDB::getProv($tabla,'public');
             if ($codprov=='02'){
                 $ppdddlll=MyDB::getLoc($tabla,'public');
-                $data['file']['caba']='Se detecto CABA: '.$ppdddlll;
+                flash($data['file']['caba']='Se detecto CABA: '.$ppdddlll);
                 $codaglo=$ppdddlll;
             }else{
                 $codaglo=$aglo_interno;
@@ -106,20 +105,18 @@ class SegmenterController extends Controller
             $data['file']['codigo_usado']=$codaglo;
         }
       
-       }else{$data['file']['csv_info'] = 'Se Cargo un archivo de formato no esperado!';}
+       }else{flash($data['file']['csv_info'] = 'Se Cargo un archivo de formato
+       no esperado!')->error()->important();}
     }
 
     if ($request->hasFile('shp')) {
         if ($request->file('shp')->isValid() or true) {
             $data['file']['shp_msg'] = "Subió una base geográfica ";
-            flash($data['file']['shp_msg'])->success();
-        $extension = $request->shp->extension();
-            $data['file']['shp_msg'] .= " salvado con extensión: ".$extension;
-        $original_name = $request->shp->getClientOriginalName();
+            $original_name = $request->shp->getClientOriginalName();
             $data['file']['shp_msg'] .= " y nombre original: ".$original_name;
-        $original_extension = $request->shp->getClientOriginalExtension();
-        $data['file']['shp_msg'] .= ". Extension original: ".$original_extension;
-        $original_name = $request->shp->getClientOriginalName();
+            $original_extension = $request->shp->getClientOriginalExtension();
+            $data['file']['shp_msg'] .= ". Extension original: ".$original_extension;
+            flash($data['file']['shp_msg']);
 
         if ($original_extension == 'shp'){
             $random_name='t_'.$request->shp->hashName();
@@ -140,7 +137,7 @@ class SegmenterController extends Controller
                                  'usuario_name' => $AppUser->name,
                                  'tiempo' => date('Y-m-d H:i:s')]);
                         
-            $codaglo=isset($codaglo)?$codaglo:$original_name;
+            $codaglo=isset($codaglo)?$codaglo:'test'; //$random_name;
             MyDB::createSchema($codaglo);
 
             if ($epsg_id=='8333'){
@@ -158,9 +155,10 @@ class SegmenterController extends Controller
                 -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco \
                 PRELUDE_STATEMENTS="SET client_encoding TO latin1;CREATE SCHEMA \
                 IF NOT EXISTS e$e00;" -dsco active_schema=e$e00 -lco \
-                PRECISION=NO -lco SCHEMA=e$e00 -t_srs "$epsg" \
-                -s_srs "$epsg" \
-                -a_srs "$epsg" -nln arc \
+                PRECISION=NO -lco SCHEMA=e$e00 \
+                 -s_srs epsg:$epsg -t_srs epsg:$epsg \
+                -nln arc \
+                -skipfailures \
                 -overwrite $file )');
                 $processOGR2OGR->setTimeout(3600);
                 $processOGR2OGR->run(null, ['epsg'=>$epsg_def,'file' => storage_path().'/app/'.$data['file']['shp'],'e00'=>$codaglo,'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'pass'=>Config::get('database.connections.pgsql.password'),'port'=>Config::get('database.connections.pgsql.port')]);
@@ -171,6 +169,8 @@ class SegmenterController extends Controller
 
             }
             if (!$processOGR2OGR->isSuccessful()) {
+                dd($processOGR2OGR,'epsg '.$epsg_id,'epsg_def '.$epsg_def.
+                'file '.storage_path().'/app/'.$data['file']['shp'],'e00 '.$codaglo);
                 throw new ProcessFailedException($processOGR2OGR);
             }
             MyDB::agregarsegisegd($codaglo);
@@ -184,7 +184,7 @@ class SegmenterController extends Controller
             $processOGR->run(null, ['file' => storage_path().'/app/'.$data['file']['shp']]);
             $data['file']['e00_info'] = $processOGR->getOutput();
 
-            //$codaglo = substr($original_name,1,4);
+            $original_name = substr($original_name,1,4);
             $codaglo=isset($codaglo)?$codaglo:$original_name;
             MyDB::createSchema($codaglo);
 
@@ -196,15 +196,17 @@ class SegmenterController extends Controller
             $processOGR2OGR_lab->setTimeout(3600);
             $processOGR2OGR_lab->run(null, ['epsg' => $epsg_id, 'file' => storage_path().'/app/'.$data['file']['shp'],'e00'=>$codaglo,'db'=>Config::get('database.connections.pgsql.database'),'host'=>Config::get('database.connections.pgsql.host'),'user'=>Config::get('database.connections.pgsql.username'),'pass'=>Config::get('database.connections.pgsql.password'),'port'=>Config::get('database.connections.pgsql.port')]);
             //dd($processOGR2OGR_lab->getErrorOutput());
-            $data['file']['ogr2ogr_lab'] = $processOGR2OGR_lab->getErrorOutput().'<br />'.$processOGR2OGR_lab->getOutput();
-            $data['file']['ogr2ogr'] = $processOGR2OGR->getErrorOutput().'<br />'.$processOGR2OGR->getOutput();
+            flash($data['file']['ogr2ogr_lab'] = $processOGR2OGR_lab->getErrorOutput().'<br />'.$processOGR2OGR_lab->getOutput())->important();
+            flash($data['file']['ogr2ogr'] = $processOGR2OGR->getErrorOutput().'<br />'.$processOGR2OGR->getOutput())->important();
             MyDB::agregarsegisegd($codaglo);
+        }else {//dd($request->file('shp')); 
+            flash('File geo not valid')->error()->important();
+        }
+        if (isset($codaglo)){
+            MyDB::juntaListadoGeom('e'.$codaglo);
         }
     }
-    MyDB::juntaListadoGeom($codaglo);
-    }else {//dd($request->file('shp')); 
-        flash('File geo not valid');
-    }
+   }
 
 
      if (Archivo::cargar($request, Auth::user())) {

@@ -35,12 +35,17 @@ class Aglomerado extends Model
     public function getCartoAttribute($value)
     {
     //select * from information_schema.tables where table_schema = 'e0777' and table_name = 'arc' and table_type = 'BASE TABLE'
-        if (Schema::hasTable('e'.$this->codigo.'.arc')) {
+        if(! $this->carto){
+            if ($this->codigo!='0001'){
+            if (Schema::hasTable('e'.$this->codigo.'.arc')) {
             //
-            return true;
-        }else{
-            return false;
+                $this->carto = true;
+            }else{
+                $this->carto = false;
+            }
+            }else { $this->carto = false; }
         }
+        return $this->carto;
     }
 
     public function getListadoAttribute($value)
@@ -229,7 +234,7 @@ WITH shapes (geom, attribute) AS (
   paths (svg) as (
      SELECT concat(
          '<path d= \"', 
-         ST_AsSVG(st_buffer(geom,5),0), '\" ',
+         ST_AsSVG(st_buffer(st_union(geom),5),0), '\" ',
          CASE WHEN attribute = 0 THEN 'stroke=\"gray\" stroke-width=\"2\"
          fill=\"gray\"' 
               WHEN attribute < 5 THEN 'stroke=\"none\"
@@ -243,7 +248,7 @@ WITH shapes (geom, attribute) AS (
             attribute*10 || '88\"' 
          END,
           ' />') 
-     FROM shapes
+     FROM shapes GROUP BY attribute
  )
  SELECT concat(
          '<svg id=\"aglo_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
