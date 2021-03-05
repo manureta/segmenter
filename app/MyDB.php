@@ -16,7 +16,7 @@ class MyDB extends Model
 
     // Muestrea el esquema
     //
-	public static function muestrear($esquema)
+    public static function muestrear($esquema)
     {
         try{
             DB::beginTransaction();
@@ -27,7 +27,7 @@ class MyDB extends Model
         }catch(QueryException $e){
             DB::Rollback();
             $result=null;
-            Log::error('No se pudo muestrar el esquema '.$esquema);
+            Log::error('No se pudo muestrar el esquema '.$esquema.' Error:'.$e);
         }
         Log::debug('Se muestreo el esquema '.$esquema.' !');
         return $result;
@@ -35,62 +35,62 @@ class MyDB extends Model
 
     // Segmenta a listado lso lados excedidos segun umbral
     // 
-	public static function 
+    public static function 
     segmentar_excedidos_ffrr($esquema,$frac,$radio,$umbral=20,$deseado=20)
-	{
+    {
         try{
             Log::debug('Resegmentando segmentos excedidos de fraccion
             '.$frac.', radio '.$radio);
-    		DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
+            DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
             'e".$esquema."',".$frac.",".$radio.",".$umbral.",".$deseado.");");
         }catch(QueryException $e){
             Log::warning('No se pudo segmentar segmentos excedidos, reintentando...');
             self::cambiarSegmentarBigInt($esquema);
             self::recrea_vista_segmentos_lados_completos($esquema);
             try{
-    		    DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
+                DB::statement(" SELECT indec.segmentar_excedidos_ffrr(
                 'e".$esquema."',".$frac.",".$radio.",".$umbral.",".$deseado.");");
             }catch(QueryException $e){
-                 Log::error('No se pudo segmentar segmentos excedidos');
+                Log::error('No se pudo segmentar segmentos excedidos');
             }
         }
-         Log::debug('Se resegmentaron los segmentos excedidos!');
+        Log::debug('Se resegmentaron los segmentos excedidos!');
     }
 
     // Propaga la segmentacion a partir de lados completos hacia la tabla de
     // segmentacion.
-	public static function 
+    public static function 
     lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio)
-	{
+    {
         try{
             self::generarSegmentacionVacia($esquema);
-    		DB::statement("SELECT
+            DB::statement("SELECT
             indec.lados_completos_a_tabla_segmentacion_ffrr('e".$esquema."',".$frac.",".$radio.");");
             DB::statement("SELECT indec.segmentos_desde_hasta('e".$esquema."');");
         }catch(QueryException $e){
-             self::addSequenceSegmentos('e'.$esquema);
-             Log::warning('Create sequence xq no exisitia...');
-             self::recrea_vista_segmentos_lados_completos($esquema);
-    		DB::statement("SELECT
+            self::addSequenceSegmentos('e'.$esquema);
+            Log::warning('Create sequence xq no exisitia...');
+            self::recrea_vista_segmentos_lados_completos($esquema);
+            DB::statement("SELECT
             indec.lados_completos_a_tabla_segmentacion_ffrr('e".$esquema."',".$frac.",".$radio.");");
         
         }
-         Log::debug('Propagando segmentacion lados completos de tabla arc a
-         tabla segmentacion -> '.$esquema);
-	}
+        Log::debug('Propagando segmentacion lados completos de tabla arc a
+        tabla segmentacion -> '.$esquema);
+    }
 
     // crea o reemplaza la vista de segmentos generados por lados completos. 
-	public static function recrea_vista_segmentos_lados_completos($esquema)
-	{
-		DB::statement("SELECT
+    public static function recrea_vista_segmentos_lados_completos($esquema)
+    {
+        DB::statement("SELECT
         indec.v_segmentos_lados_completos('e".$esquema."');");
-         Log::debug('Creando vista manzana lado numero segmento en radio, cant
-         viviendas -> '.$esquema);
-	}
+        Log::debug('Creando vista manzana lado numero segmento en radio, cant
+        viviendas -> '.$esquema);
+    }
 
     // Obtengo segmentos excedidos. 
-	public static function segmentos_excedidos($esquema,$vivs,Radio $radio=null)
-	{
+    public static function segmentos_excedidos($esquema,$vivs,Radio $radio=null)
+    {
             if ($radio){
                 Log::debug('Filtro excedidos del radio: '.$radio->codigo.'
                 aplicando ppddcccffrr like 
@@ -103,21 +103,21 @@ class MyDB extends Model
                     $result = DB::select("SELECT * FROM e".$esquema.".v_segmentos_lados_completos
                 WHERE vivs > ".$vivs.";");
                 }
-         return $result;
-	}
+        return $result;
+    }
 
     //Crea el esquema si no existe y asigna los permisos.
-	public static function createSchema($esquema)
-	{
-		DB::statement('CREATE SCHEMA IF NOT EXISTS e'.$esquema);
+    public static function createSchema($esquema)
+    {
+        DB::statement('CREATE SCHEMA IF NOT EXISTS e'.$esquema);
         Log::debug('Creando esquema-> '.$esquema);
         self::darPermisos('e'.$esquema);
-	}
+    }
 
     //Develve data del DBF subido.
     public static function infoDBF($tabla,$esquema)
     {
-    	return json_encode(DB::select('
+        return json_encode(DB::select('
                         SELECT prov,dpto,nom_loc,codaglo, codloc, nom_loc, codent,nom_ent,count(*) registros, 
                         count(distinct frac||radio) as radios,
                         count(indec.contar_vivienda(tipoviv)) as viviendas 
@@ -148,43 +148,43 @@ FROM
     }
 
 //         $tabla = strtolower( substr($file_name,strrpos($file_name,'/')+1,-4) );
-	public static function moverDBF($file_name,$esquema)
-	{
-         Log::debug('Cargando dbf en esquema-> '.$esquema);
-         $tabla = strtolower( substr($file_name,strrpos($file_name,'/')+1,-4) );
-         $esquema = 'e'.$esquema;
-             DB::beginTransaction();
-             DB::unprepared('ALTER TABLE '.$tabla.' SET SCHEMA '.$esquema);
-             DB::unprepared('DROP TABLE IF EXISTS '.$esquema.'.listado CASCADE');
-             DB::unprepared('ALTER TABLE '.$esquema.'.'.$tabla.' RENAME TO listado');
-             DB::unprepared('ALTER TABLE '.$esquema.'.listado ADD COLUMN id serial');
-             if (! Schema::hasColumn($esquema.'.listado' , 'tipoviv')){
-                 if (Schema::hasColumn($esquema.'.listado' , 'cod_tipo_2')){
-                     DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_tipo_2 TO tipoviv');
-                 }elseif (Schema::hasColumn($esquema.'.listado' , 'cod_tipo_v')){
-                         DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_tipo_v TO tipoviv');
-                   }elseif (Schema::hasColumn($esquema.'.listado' , 'cod_viv')){
-                           DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_viv TO tipoviv');
-                       }elseif (Schema::hasTable($esquema.'.listado')){
-                           DB::statement('ALTER TABLE '.$esquema.'.listado ADD COLUMN tipoviv text;');
-                       }
-             }
-             if (! Schema::hasColumn($esquema.'.listado' , 'codent')){
-                           DB::statement('ALTER TABLE '.$esquema.'.listado ADD
-                           COLUMN codent text;');
-             }
-             if (! Schema::hasColumn($esquema.'.listado' , 'nom_ent')){
-                           DB::statement('ALTER TABLE '.$esquema.'.listado ADD
-                           COLUMN nom_ent text;');
-             }
-             if (! Schema::hasColumn($esquema.'.listado' , 'piso')){
-                    if (  Schema::hasColumn($esquema.'.listado' , 'pisoredef')){
-                         DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME pisoredef TO piso');
-                     }else{
-                        DB::statement('ALTER TABLE '.$esquema.'.listado ADD
-                               COLUMN piso text;');
+    public static function moverDBF($file_name,$esquema)
+    {
+        Log::debug('Cargando dbf en esquema-> '.$esquema);
+        $tabla = strtolower( substr($file_name,strrpos($file_name,'/')+1,-4) );
+        $esquema = 'e'.$esquema;
+            DB::beginTransaction();
+            DB::unprepared('ALTER TABLE '.$tabla.' SET SCHEMA '.$esquema);
+            DB::unprepared('DROP TABLE IF EXISTS '.$esquema.'.listado CASCADE');
+            DB::unprepared('ALTER TABLE '.$esquema.'.'.$tabla.' RENAME TO listado');
+            DB::unprepared('ALTER TABLE '.$esquema.'.listado ADD COLUMN id serial');
+            if (! Schema::hasColumn($esquema.'.listado' , 'tipoviv')){
+                if (Schema::hasColumn($esquema.'.listado' , 'cod_tipo_2')){
+                    DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_tipo_2 TO tipoviv');
+                }elseif (Schema::hasColumn($esquema.'.listado' , 'cod_tipo_v')){
+                        DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_tipo_v TO tipoviv');
+                }elseif (Schema::hasColumn($esquema.'.listado' , 'cod_viv')){
+                        DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME cod_viv TO tipoviv');
+                    }elseif (Schema::hasTable($esquema.'.listado')){
+                        DB::statement('ALTER TABLE '.$esquema.'.listado ADD COLUMN tipoviv text;');
                     }
-             }
+            }
+            if (! Schema::hasColumn($esquema.'.listado' , 'codent')){
+                        DB::statement('ALTER TABLE '.$esquema.'.listado ADD
+                        COLUMN codent text;');
+            }
+            if (! Schema::hasColumn($esquema.'.listado' , 'nom_ent')){
+                        DB::statement('ALTER TABLE '.$esquema.'.listado ADD
+                        COLUMN nom_ent text;');
+            }
+            if (! Schema::hasColumn($esquema.'.listado' , 'piso')){
+                    if (  Schema::hasColumn($esquema.'.listado' , 'pisoredef')){
+                        DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME pisoredef TO piso');
+                    }else{
+                        DB::statement('ALTER TABLE '.$esquema.'.listado ADD
+                            COLUMN piso text;');
+                    }
+            }
                 if (! Schema::hasColumn($esquema.'.listado' , 'nrocatastr')){
                         if (Schema::hasColumn($esquema.'.listado' , 'nro_catast')){
                         DB::unprepared('ALTER TABLE '.$esquema.'.listado RENAME
@@ -288,8 +288,9 @@ FROM
             self::addIndexListadoRadio($schema);
             flash('Se creo el indice para radio en listado en '.$schema);
 
-            self::cargarTopologia($schema);
-            flash('Se creo la topología para '.$schema);
+            if (self::cargarTopologia($schema)) {
+                flash('Se creo la topología para '.$schema);
+            }
 
             self::georeferenciar_listado($schema);
             flash('Se georeferencio el listado del esquema '.$schema);
@@ -363,7 +364,7 @@ FROM
                     return true;
                 }else{ 
                     return false; }
-            }catch (Exception $e){
+            }catch (QueryException $e){
                 dd($e);
             }
 
@@ -376,12 +377,13 @@ FROM
         {
             $esquema = 'e'.$esquema;
             if ($radio){
+                $esquema=$radio->esquema;
                 $filtro= ' where (frac::integer,radio::integer) =
                     ('.$radio->CodigoFrac.','.$radio->CodigoRad.') ';
                 $funcion_describe= " indec.describe_segmentos_con_direcciones_ffrr('".$esquema."',".$radio->CodigoFrac.",".$radio->CodigoRad.") ";
             } else
             { $filtro = '';
-              $funcion_describe= " indec.describe_segmentos_con_direcciones('".$esquema."') ";
+            $funcion_describe= " indec.describe_segmentos_con_direcciones('".$esquema."') ";
             }
 
             try{
@@ -393,7 +395,7 @@ FROM
                             ".$filtro." ;");
                 }catch(QueryException $e){
                     Log::debug('Sin muestreo...');
-              try{
+            try{
                 return DB::select("
                         SELECT segmento_id, lpad(frac::text,2,'0') frac,
                         lpad(radio::text,2,'0') radio, viviendas vivs,
@@ -426,6 +428,7 @@ FROM
                 
                         flash('Se detecto una carga antigua. No se encontro tabla de
                             "segmentos desde hasta". Se hace lo que se puede.');
+                        try{
                         return DB::select('
                             SELECT segmento_id,l.frac,l.radio,count(*)
                             vivs,count(distinct mza) as mza,array_agg(distinct
@@ -440,8 +443,12 @@ FROM
                             GROUP BY segmento_id,l.frac,l.radio 
                             ORDER BY count(*) asc, array_agg(mza), segmento_id 
                             LIMIT '.$max.';');
+                        }catch(QueryException $e){
+                            Log::error('No hubo modo de encontrar una segmentación!');
+                            return [];
+                        }
                 }
-              }
+            }
             }
         }
 
@@ -477,8 +484,8 @@ FROM
                         substr(lados.mza,9,2)::integer,substr(lados.mza,11,2)::integer,substr(lados.mza,13,3)::integer,lados.lado::integer)
                         JOIN  '.$esquema.'.descripcion_segmentos d ON
                             (d.prov::integer,d.depto::integer,d.codloc::integer,d.frac::integer,d.radio::integer,d.seg)=(
-                             substr(lados.mza,1,2)::integer,substr(lados.mza,3,3)::integer,substr(lados.mza,6,3)::integer,
-                             substr(lados.mza,9,2)::integer,substr(lados.mza,11,2)::integer,lados.seg::integer)
+                            substr(lados.mza,1,2)::integer,substr(lados.mza,3,3)::integer,substr(lados.mza,6,3)::integer,
+                            substr(lados.mza,9,2)::integer,substr(lados.mza,11,2)::integer,lados.seg::integer)
                                 WHERE substr(lados.mza,1,12)!=\'\'
                                 GROUP BY  substr(lados.mza,1,12), lados.seg,descripcion');
             // SQL retrun: 
@@ -574,7 +581,7 @@ FROM
                     ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8-(0.5*nro_en_numero))),1.0*(nro_en_lado)/(conteo+1)) 
                 end
                 END as wkb_geometry, e.ogc_fid||'-'||l.id id ,e.ogc_fid id_lin,l.id id_list, wkb_geometry wkb_geometry_lado,
-	CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN 
+    CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN 
     row_number() OVER (PARTITION BY prov,dpto,codloc,frac,radio,l.mza,l.lado
     ORDER BY l.nrocatastr,l.piso) 
     END orden_segun_numero,
@@ -583,14 +590,14 @@ FROM
     
     CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN 
         CASE 
-           WHEN (((nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)<0 
-                  or (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)>1 )) THEN
+        WHEN (((nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)<0 
+                or (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)>1 )) THEN
             ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),0.5)
-			ELSE
+            ELSE
             ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),1-
                                     (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer))
         END
-	ELSE
+    ELSE
     ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),
         0.5 --deberia usarse la posicion del anterior.. tiro null quizas ?
         )
@@ -614,17 +621,24 @@ FROM
             // para la prueba experimental. Yapa la comuna 3 para probar.
             {
                 self::geo_translate($esquema);
+                Log::debug('Traslado CABA '.$esquema);
             }
-
-            DB::statement("GRANT SELECT ON TABLE  ".$esquema.".listado_geo TO geoestadistica");
-                return $resultado;
 
             }catch(QueryException $e){
                     Log::error('No se pudo georeferenciar el listado.'.$e);
-                        flash('No se pudo georeferenciar el listado. Reintente. ')->error();
+                        flash('No se pudo georeferenciar el listado. 
+                        Reintente.')->error()->important();
                         self::juntaListadoGeom($esquema);
                     return false;
             }
+            try{
+                DB::statement("GRANT SELECT ON TABLE  ".$esquema.".listado_geo TO geoestadistica");
+            }catch(QueryException $e){
+                Log::error('No se pudo dar permiso a geoestadistica sobre el listado.'.$e);
+            }
+            
+                return $resultado;
+
             
             }
 
@@ -708,13 +722,14 @@ FROM
 
             public static function getNodos($esquema,$radio = '%01103')
             {
-                return DB::select('SELECT distinct *, substr(mza_i,13,3)||\':\'||lado_i as label,c.conteo FROM (
-                                                    SELECT mza_i,lado_i from e'.$esquema.'.lados_adyacentes WHERE mza_i like :radio UNION
+                try{
+                    return DB::select('SELECT distinct *, substr(mza_i,13,3)||\':\'||lado_i as label,c.conteo FROM (
+                                                    SELECT mza_i,lado_i from '.$esquema.'.lados_adyacentes WHERE mza_i like :radio UNION
                                                     SELECT mza_j,lado_j from
-                                                    e'.$esquema.'.lados_adyacentes
+                                                    '.$esquema.'.lados_adyacentes
                                                     WHERE mza_j like :radio2) foo
             LEFT JOIN
-            e'.$esquema.'.conteos c
+            '.$esquema.'.conteos c
             ON (c.prov,c.dpto,c.codloc,c.frac,c.radio,c.mza,c.lado)=
                 (substr(mza_i,1,2)::integer,
                 substr(mza_i,3,3)::integer,
@@ -725,33 +740,43 @@ FROM
                 lado_i)
 
                                 ',['radio'=>$radio.'%','radio2'=>$radio.'%']);
+                }catch(QueryException $e){
+                    Log::error('No se pudieron obtener los nodos');
+                }
             }
 
             public static function getAdyacencias($esquema,$radio = '%01103')
             {
-                        return DB::select('SELECT * from e'.$esquema.'.lados_adyacentes
+                try{
+                    return DB::select('SELECT * from '.$esquema.'.lados_adyacentes
                 WHERE mza_i like :radio and mza_j like :radio;',['radio'=>$radio.'%']);
+                }catch(QueryException $e){
+                    Log::error('No se pudieron obtener las adyacencias');
+                }
             }
             
             public static function getSegmentos($esquema,$radio = '%01103')
             {
-                if (Schema::hasTable('e'.$esquema.'.arc')) {
+            try{
                         return DB::select('SELECT array_agg(mza||\'-\'||lado) segmento
                                             FROM
                                             (SELECT
                                                 mzai mza,ladoi lado, segi seg
-                                                FROM e'.$esquema.'.arc
+                                                FROM '.$esquema.'.arc
                                             UNION
                                                 SELECT
                                                 mzad mza,ladod lado, segd seg
-                                                FROM e'.$esquema.'.arc
+                                                FROM '.$esquema.'.arc
                                             ) segs
                                             WHERE mza like :radio
                                             GROUP BY seg
                                             ;',['radio'=>$radio.'%']);
-                }else{
-                    return null;
+                }catch(QueryException $e){
+                    Log::error('No se pudieron obtener los segmentos de los
+                    arcos');
+                    return [];
                 }
+                return [];
             }
 
             public static function getCantMzas(Radio $radio){
@@ -760,180 +785,181 @@ FROM
                 $dpto=substr($radio->codigo,2,3);
                 $frac=substr($radio->codigo,5,2);
                 $rad=substr($radio->codigo,7,2);
-                if (Schema::hasTable($esquema.'.conteos')) {
+                try{
                     return DB::select("
         SELECT count( distinct mza)  cant_mzas 
         FROM ".$esquema.".conteos WHERE prov=".$prov." and dpto = ".$dpto." and
         frac=".$frac." and radio=".$rad." ;")[0]->cant_mzas;
 
-                }else{
-                    Log::debug('No se encontro esquema para '.$radio);
+                }catch(QueryException $e){
+                    Log::debug('No se encontro conteo manzanas para radio '.$radio);
                     return -2;
                 }
+                    return -3;
             }
 
             public static function isSegmentado(Radio $radio=null){
-                $esquema=$radio->esquema;
-                if ($radio){
-                    $filtro= " and (frac,radio) =
-                        ('".$radio->CodigoFrac."','".$radio->CodigoRad."') ";
-                } else
-                { $filtro = '';}
-                if (Schema::hasTable($esquema.'.segmentacion')) {
-                    try {
-                        return DB::select("SELECT true FROM ".$esquema.".segmentacion s JOIN
-                                ".$esquema.".listado l ON s.listado_id=l.id
-                                WHERE segmento_id is not null
-                                ".$filtro."
-                            limit 1;");
-                        } catch (Exception $e)  { return null;}
-                }else{
-                    return null;
-                }
-            }
+            $esquema=$radio->esquema;
+            if ($radio){
+                $filtro= " and (frac,radio) =
+                    ('".$radio->CodigoFrac."','".$radio->CodigoRad."') ";
+            } else
+            { $filtro = '';}
+                try {
+                    return DB::select("SELECT true FROM ".$esquema.".segmentacion s JOIN
+                            ".$esquema.".listado l ON s.listado_id=l.id
+                            WHERE segmento_id is not null
+                            ".$filtro."
+                        limit 1;");
+                    } catch (QueryException $e)  { return null;}
+                return null;
+        }
 
-            public static function darPermisos($esquema,$grupo='geoestadistica'){
-                    try {
-                    DB::statement("GRANT USAGE ON SCHEMA ".$esquema." TO ".$grupo.";");
-                    DB::statement("GRANT SELECT ON ALL TABLES IN SCHEMA  ".$esquema." TO ".$grupo);
-                    DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA  ".$esquema." GRANT
-            SELECT ON TABLES TO ".$grupo);
-                //GRANT geoestadistica TO manuel;
-                        
-                        } catch (Exception $e)  { 
-                            Log::Error('No se pudieron asignar permisos');
-                            return null;}
-                    Log::Debug('Se establecieron permisos para geoestadistica');
-                    return null;
-            }
+        public static function darPermisos($esquema,$grupo='geoestadistica'){
+                try {
+                DB::statement("GRANT USAGE ON SCHEMA ".$esquema." TO ".$grupo.";");
+                DB::statement("GRANT SELECT ON ALL TABLES IN SCHEMA  ".$esquema." TO ".$grupo);
+                DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA  ".$esquema." GRANT
+        SELECT ON TABLES TO ".$grupo);
+            //GRANT geoestadistica TO manuel;
+                    
+                    } catch (QueryException $e)  { 
+                        Log::Error('No se pudieron asignar permisos');
+                        return false;}
+                Log::Debug('Se establecieron permisos para geoestadistica');
+                return true;
+        }
 
-            public static function addUser($usuario,$grupo='geoestadistica'){
-                    try {
-        //                return DB::select("GRANT USAGE ON ".$esquema." TO ".$grupo.";");
-                    DB::unprepared("GRANT ".$grupo." TO ".$usuario.";");
-                        
-                        } catch (Exception $e)  { 
-                            Log::Debug('No se pudo agregar al grupo '.$grupo.' al '.$usuario);
-                            return null;}
-                    Log::Debug('Se pudo agregar al grupo '.$grupo.' al '.$usuario);
-                    return null;
-            }
+        public static function addUser($usuario,$grupo='geoestadistica'){
+                try {
+    //                return DB::select("GRANT USAGE ON ".$esquema." TO ".$grupo.";");
+                DB::unprepared("GRANT ".$grupo." TO ".$usuario.";");
+                    
+                    } catch (QueryException $e)  { 
+                        Log::Debug('No se pudo agregar al grupo '.$grupo.' al '.$usuario);
+                        return false;}
+                Log::Debug('Se pudo agregar al grupo '.$grupo.' al '.$usuario);
+                return true;
+        }
 
-            // Carga geometria en topologia y genera manzanas, fracciones y radios.
-            // Necesita arc y lab.
-            public static function cargarTopologia($esquema)
-            {
-                try{
-                    DB::statement(" SELECT indec.cargarTopologia(
-                    '".$esquema."','arc');");
-                    DB::statement(" DROP TABLE if exists ".$esquema.".manzanas;");
-                    DB::statement(" CREATE TABLE ".$esquema.".manzanas AS SELECT * FROM
-                    ".$esquema.".v_manzanas;");
-                }catch(Exception $e){
-                Log::error('No se pudo cargar la topologia');
-                }
-                Log::debug('Se genraron fracciones, radios y manzanas ');
+        // Carga geometria en topologia y genera manzanas, fracciones y radios.
+        // Necesita arc y lab.
+        public static function cargarTopologia($esquema)
+        {
+            try{
+                DB::statement(" SELECT indec.cargarTopologia(
+                '".$esquema."','arc');");
+                DB::statement(" DROP TABLE if exists ".$esquema.".manzanas;");
+                DB::statement(" CREATE TABLE ".$esquema.".manzanas AS SELECT * FROM
+                ".$esquema.".v_manzanas;");
+            }catch(QueryException $e){
+                Log::error('No se pudo cargar la topologia...'.$e);
+                return false;
             }
+            Log::debug('Se genraron fracciones, radios y manzanas ');
+            return true;
+        }
 
-            // DROPEA esquema de topologia si quedo desfazado por rollback mal
-            // hecho
-            public static function dropTopologia($esquema)
-            {
-                try{
-                    DB::statement(" SELECT topology.dropTopology('".$esquema."');");
-                }catch(QueryException $e){
-            Log::error('No se pudo borrar la topologia de topology');
+        // DROPEA esquema de topologia si quedo desfazado por rollback mal
+        // hecho
+        public static function dropTopologia($esquema)
+        {
+            try{
+                DB::statement(" SELECT topology.dropTopology('".$esquema."');");
+            }catch(QueryException $e){
+                Log::error('No se pudo borrar la topologia de topology');
             }
             Log::debug('Se borro la topologia ');
+
             try{
                 DB::statement(' DROP SCHEMA IF EXISTS "'.$esquema.'" CASCADE ;');
             }catch(Exception $e){
-            Log::error('No se pudo borrar la topologia');
+                Log::error('No se pudo borrar la topologia');
             }
             Log::debug('Se borro esquema con topos ');
         }
 
 
-        // Crea secuencia para id de segmentos.
-        //
-        public static function addSequenceSegmentos($esquema,$reset = false)
-        {
-            try{
-                if($reset){
-                    DB::unprepared('DROP sequence IF EXISTS '.$esquema.'.segmentos_seq CASCADE');
-                    }
-                DB::unprepared('create sequence IF NOT EXISTS '.$esquema.'.segmentos_seq');
-            }catch(Exception $e){
-                Log::error('No se pudo recrear la secuencia');
-            }
-            Log::debug('Se genero una nueva secuencia de segmentos, si no exisitia.');
+    // Crea secuencia para id de segmentos.
+    //
+    public static function addSequenceSegmentos($esquema,$reset = false)
+    {
+        try{
+            if($reset){
+                DB::unprepared('DROP sequence IF EXISTS '.$esquema.'.segmentos_seq CASCADE');
+                }
+            DB::unprepared('create sequence IF NOT EXISTS '.$esquema.'.segmentos_seq');
+        }catch(QueryException $e){
+            Log::error('No se pudo recrear la secuencia');
         }
+        Log::debug('Se genero una nueva secuencia de segmentos, si no exisitia.');
+    }
 
 
-        // Cambio a bigint id segmentacion.
-        public static function cambiarSegmentarBigInt($esquema)
-        {
-            try{
-                DB::statement("ALTER TABLE \"e".$esquema."\".segmentacion ALTER
-                COLUMN segmento_id SET DATA TYPE bigint ;");
-            }catch(Exception $e){
+    // Cambio a bigint id segmentacion.
+    public static function cambiarSegmentarBigInt($esquema)
+    {
+        try{
+            DB::statement("ALTER TABLE \"e".$esquema."\".segmentacion ALTER
+            COLUMN segmento_id SET DATA TYPE bigint ;");
+        }catch(QueryException $e){
             Log::error('NO Se pudo realizar el cambio del tipo segmento_id a bigint');
-            }
-            Log::debug('Se cambio el tipo segmento_id a bigint');
         }
-
-        // Generar indice en tabla de listados.
-        public static function addIndexListado($esquema)
-        {
-            try{
-                DB::statement(
-                "create index IF NOT EXISTS listado_piso on ".$esquema.".listado 
-                    (prov, dpto, codloc, frac, radio, mza, lado, 
-                    nrocatastr, sector, edificio, entrada, piso);");
-        }catch(Exception $e){
-         Log::debug('No se pudo generar indice de lado en '.$esquema);
-        }
-         Log::debug('Se creo indice de lado en '.$esquema);
+        Log::debug('Se cambio el tipo segmento_id a bigint');
     }
 
     // Generar indice en tabla de listados.
-	public static function addIndexListadoId($esquema)
-	{
+    public static function addIndexListado($esquema)
+    {
         try{
             DB::statement(
-             "create index IF NOT EXISTS idx_listado_id on ".$esquema.".listado
-                (id);");
-        }catch(Exception $e){
-         Log::debug('No se pudo generar indice en id para '.$esquema);
-        }
-         Log::debug('Se creo indice en id para '.$esquema);
+            "create index IF NOT EXISTS listado_piso on ".$esquema.".listado 
+                (prov, dpto, codloc, frac, radio, mza, lado, 
+                nrocatastr, sector, edificio, entrada, piso);");
+    }catch(QueryException $e){
+     Log::debug('No se pudo generar indice de lado en '.$esquema);
     }
+     Log::debug('Se creo indice de lado en '.$esquema);
+}
 
-    // Generar indice en tabla de listados x radio.
-	public static function addIndexListadoRadio($esquema)
-	{
-        try{
-            DB::statement(
-             "create index IF NOT EXISTS listado_radio on ".$esquema.".listado 
-                (prov, dpto, codloc, frac, radio);");
-        }catch(Exception $e){
-         Log::debug('No se pudo generar indice de radio en '.$esquema);
-        }
-         Log::debug('Se creo indice de radio en '.$esquema);
+// Generar indice en tabla de listados.
+public static function addIndexListadoId($esquema)
+{
+    try{
+        DB::statement(
+         "create index IF NOT EXISTS idx_listado_id on ".$esquema.".listado
+            (id);");
+    }catch(QueryException $e){
+     Log::debug('No se pudo generar indice en id para '.$esquema);
     }
+     Log::debug('Se creo indice en id para '.$esquema);
+}
 
-    // Generar indice en id de tabla.
-	public static function addIndexId($tabla)
-	{
-        try{
-            DB::statement(
-             "create index IF NOT EXISTS id_".$tabla." on ".$tabla."
-                (id);");
-        }catch(Exception $e){
-         Log::debug('No se pudo generar indice en id para '.$tabla);
-        }
-         Log::debug('Se creo indice en id para '.$tabla);
+// Generar indice en tabla de listados x radio.
+public static function addIndexListadoRadio($esquema)
+{
+    try{
+        DB::statement(
+         "create index IF NOT EXISTS listado_radio on ".$esquema.".listado 
+            (prov, dpto, codloc, frac, radio);");
+    }catch(QueryException $e){
+     Log::debug('No se pudo generar indice de radio en '.$esquema);
     }
+     Log::debug('Se creo indice de radio en '.$esquema);
+}
+
+// Generar indice en id de tabla.
+public static function addIndexId($tabla)
+{
+    try{
+        DB::statement(
+         "create index IF NOT EXISTS id_".$tabla." on ".$tabla."
+            (id);");
+    }catch(QueryException $e){
+     Log::debug('No se pudo generar indice en id para '.$tabla);
+    }
+     Log::debug('Se creo indice en id para '.$tabla);
+}
 
 }
 
