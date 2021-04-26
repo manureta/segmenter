@@ -98,7 +98,6 @@ class Radio extends Model
      */
     public function segmentar($esquema,$deseadas,$max,$min,$indivisible)
     {
-        $this->middleware('auth');
         $AppUser= Auth::user();
         $prov= substr(trim($this->codigo), 0, 2);
         $dpto= substr(trim($this->codigo), 2, 3);
@@ -111,7 +110,7 @@ class Radio extends Model
         $segmenta->vista_segmentos_lados_completos($esquema);
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
         $this->resultado = $segmenta->ver_segmentacion().' 
-        x '.$appUser.' en '.date("Y-m-d H:i:s");
+        x '.$AppUser.' en '.date("Y-m-d H:i:s");
         $this->save();
         return $this->resultado;
     }
@@ -122,7 +121,6 @@ class Radio extends Model
      */
     public function segmentarLucky($esquema,$deseadas,$max,$min,$indivisible)
     {
-        $this->middleware('auth');
         $AppUser= Auth::user();
         $prov= substr(trim($this->codigo), 0, 2);
         $dpto= substr(trim($this->codigo), 2, 3);
@@ -137,7 +135,7 @@ class Radio extends Model
         $segmenta->segmentar_excedidos_ffrr($esquema,$frac,$radio,$max,$deseadas);
 
         $this->resultado = $segmenta->ver_segmentacion().' 
-        x '.$appUser.' en '.date("Y-m-d H:i:s");
+        x '.$AppUser.' en '.date("Y-m-d H:i:s");
         $this->save();
         return $this->resultado;
     }

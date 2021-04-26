@@ -48,6 +48,10 @@ Route::get('/contact', function()
 {
     return View::make('pages.contact');
 });
+Route::get('/serverinfo', function()
+{
+    return View::make('pages.serverinfo');
+});
 
 Route::get('/sala', 'SalaController@index')->name('sala');
 
@@ -68,6 +72,8 @@ Route::get('/setup/segmenta/{esquema}',
 'SetupController@segmentarEsquema')->name('setup.segmenta');
 Route::get('/setup/muestrea/{esquema}',
 'SetupController@muestreaEsquema')->name('setup.muestrea');
+Route::get('/setup/junta/{esquema}',
+'SetupController@juntarSegmentos')->name('setup.junta');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
