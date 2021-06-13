@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
             SqlGobLocSeeder::class,
             SqlFraccionSeeder::class,
             SqlRadioSeeder::class,
-            SqlRadioLocSeeder::class
+            SqlRadioLocSeeder::class,
+            SqlSubtipoViviendaSeeder::class
 ]);
 
 
