@@ -36,7 +36,7 @@ class Radio extends Model
 
 
      /**
-      * Relación con Fraccion , un Radio pertenece a Una fracción. 
+      * Relación con Fraccion , un Radio pertenece a Una fracción.
       *
       */
 
@@ -46,7 +46,7 @@ class Radio extends Model
      }
 
      /**
-      * Relación con Departamento, una Fraccion pertenece a Un departamento. 
+      * Relación con Departamento, una Fraccion pertenece a Un departamento.
       *
       */
 /*
@@ -60,7 +60,7 @@ class Radio extends Model
 */
 
      /**
-      * Relación con Localidad, un Radio puede pertenecer a varias localidades. 
+      * Relación con Localidad, un Radio puede pertenecer a varias localidades.
       *
       */
 
@@ -71,12 +71,12 @@ class Radio extends Model
      }
 
      /**
-      * Relación con Aglomerado, un Radio puede pertenecer a varios aglomerado? Espero que solo este en 1. 
+      * Relación con Aglomerado, un Radio puede pertenecer a varios aglomerado? Espero que solo este en 1.
       *
       */
 
      public function aglomerado()
-     {  
+     {
         //TODO
     //    return $this->hasOneThrough(Aglomerado::class,Fraccion::class);
     //    return $this->belongsToMany('App\Model\Localidad', 'radio_localidad');
@@ -94,7 +94,7 @@ class Radio extends Model
 
     /**
      * Segmentar radio a lados completos
-     * 
+     *
      */
     public function segmentar($esquema,$deseadas,$max,$min,$indivisible)
     {
@@ -109,7 +109,7 @@ class Radio extends Model
 
         $segmenta->vista_segmentos_lados_completos($esquema);
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
-        $this->resultado = $segmenta->ver_segmentacion().' 
+        $this->resultado = $segmenta->ver_segmentacion().'
         x '.$AppUser.' en '.date("Y-m-d H:i:s");
         $this->save();
         return $this->resultado;
@@ -117,7 +117,7 @@ class Radio extends Model
 
     /**
      * Segmentar radio con metodo magico.
-     * 
+     *
      */
     public function segmentarLucky($esquema,$deseadas,$max,$min,$indivisible)
     {
@@ -134,7 +134,7 @@ class Radio extends Model
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
         $segmenta->segmentar_excedidos_ffrr($esquema,$frac,$radio,$max,$deseadas);
 
-        $this->resultado = $segmenta->ver_segmentacion().' 
+        $this->resultado = $segmenta->ver_segmentacion().'
         x '.$AppUser.' en '.date("Y-m-d H:i:s");
         $this->save();
         return $this->resultado;
@@ -195,11 +195,18 @@ class Radio extends Model
                                     $this->fraccion->departamento->codigo.
                                     $this->localidades()->first()->codigoLoc;
                     }else{
-                        $this->_esquema = 'e'.$this->aglomerado()->codigo;
+                        $this->_esquema = 'e'.$this->fraccion->departamento->codigo;
                     }
                 }else
-                { 
+                {
                     $this->_esquema = 'e'.$this->aglomerado()->codigo;
+                    try{
+                        if ($this->fraccion->departamento->provincia->codigo == '06') {
+                            $this->_esquema = 'e'.$this->fraccion->departamento->codigo;
+                        }
+                    }catch (Exception $e){
+                         Log::error('Algo muy raro paso: '.$e);
+                    };
                 }
            Log::debug('Radio '.$this->codigo.' esperado en esquema: '.$this->_esquema);
         }else{
@@ -213,7 +220,7 @@ class Radio extends Model
     {
         // return SVG Radio? Listado? Segmentación?
         if (Schema::hasTable($this->esquema.'.listado_geo')){
-            $height=800;
+            $height=600;
             $width=600;
             $escalar=false;
             $extent=DB::select("SELECT box2d(st_collect(wkb_geometry)) box FROM
@@ -256,10 +263,10 @@ WITH shapes (geom, attribute, tipo) AS (
     FROM ".$this->esquema.".listado_geo lg JOIN ".$this->esquema.".segmentacion
     s ON s.listado_id=id_list
     WHERE  substr(mzae,1,5)||substr(mzae,9,4)='".$this->codigo."'
-    ) ".$mzas." 
+    ) ".$mzas."
   ),
   paths (svg,orden) as (
-     SELECT * FROM ( 
+     SELECT * FROM (
      (SELECT concat(
          '<path d= \"',
          ST_AsSVG(st_buffer(geom,3),0), '\" ',
@@ -281,23 +288,32 @@ WITH shapes (geom, attribute, tipo) AS (
           CASE WHEN tipo='mza' then 0
                WHEN tipo='LSV' then 1
           ELSE 10 END as orden
-     FROM shapes 
+     FROM shapes
      ORDER BY attribute asc)
      ".$mzas_labels." ) foo order by orden asc
  )
  SELECT concat(
+         '<svg id=\"radio_".$this->codigo."_botonera\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0
+	 \" height=\"80\" width=\"".$width."\">',
+	 '<circle style=\"opacity: 10%;\" class=\"compass\" cx=\"".(+30)."\" cy=\"".(30)."\" r=\"28\"></circle>
+         <circle style=\"opacity: 20%;\" class=\"button\" cx=\"".(+30)."\" cy=\"".(36)."\"
+         r=\"7\"
+         onclick=\"zoom(0.9)\"/>
+        <circle style=\"opacity: 20%;\" class=\"button\" cx=\"".(30)."\" cy=\"".(+24)."\"
+	r=\"7\"
+	onclick=\"zoom(1.1)\"/>
+	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(0, 25)\" d=\"M".(+30)." ".(+5)." l6 10 a20 35 0 0 0 -12 0z\" />
+	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(25, 0)\" d=\"M".(+5)." ".(+30)." l10 -6 a35 20 0 0 0 0 12z\" />
+	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(0,-25)\" d=\"M".(+30)." ".(55)." l6 -10 a20 35 0 0,1 -12,0z\" />
+	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(-25, 0)\" d=\"M".(+55)." ".(+30)." l-10 -6 a35 20 0 0 1 0 12z\" />
+	',
+	 '</svg>',
          '<svg id=\"radio_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
-         "\" height=\"".$height."\" width=\"".$width."\">
-         <circle class=\"button\" cx=\"".($x0+25)."\" cy=\"-".($y0+20)."\"
-         r=\"10\"
-         onclick=\"zoom(0.00001)\"/>
-        <circle class=\"button\" cx=\"".($x0+25)."\" cy=\"-".($y0+50)."\"
-        r=\"10\"
-        onclick=\"zoom(1.00001)\"/>
-         <g id=\"matrix-group\" transform=\"matrix(1 0 0 1 0 0)\">
-        ',
-         array_to_string(array_agg(svg),''),
-         '</g></svg>')
+	 "\" height=\"".$height."\" width=\"".$width."\">',
+	 ' <g id=\"matrix-group\" transform=\"matrix(1 0 0 1 0 0)\">',
+	 array_to_string(array_agg(svg),''),
+	 '</g></svg>'
+	    )
  FROM paths;
 ");
             return $svg[0]->concat;
