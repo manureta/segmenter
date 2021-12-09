@@ -13,23 +13,21 @@ class CreateLocalidadDepartamentosTable extends Migration
      */
     public function up()
     {
-     /**
-        Schema::create('provincia', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->timestamps();
-
-        });
-	**/
-        // SI ya no esta la tabla de localidad_departamento.
-        if (! Schema::hasTable('localidad_departamento')){
+      // SI ya no esta la tabla de localidad_departamento.
+      if (! Schema::hasTable('localidad_departamento')){
 	    
-	 $sql = file_get_contents(app_path() . '/developer_docs/localidad_departamento.up.sql');
-	 DB::unprepared($sql);
-        }else{
+	      $sql = file_get_contents(app_path() . '/developer_docs/localidad_departamento.up.sql');
+        try{
+           DB::unprepared($sql);
+         }catch(Illuminate\Database\QueryException $e){
+          DB::Rollback();
+	        echo _('Omitiendo creación de tabla de relación localidad con departamentos...
+');
+         }
+       }else{
              echo 'No se crea tabla de localidad_departamento xq ya se encuentra una.
 ';
         }
-	 
     }
 
     /**
