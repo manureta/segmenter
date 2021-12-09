@@ -48,7 +48,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
-                        url('https://github.com/bichav/salidagrafica-atlas/archive/uat.zip')
+                        url('https://github.com/bichav/salidagrafica-atlas/archive/prd.zip')
                         }}"> Descargar plugin </a> </li>
                     @endauth
                     </ul>
