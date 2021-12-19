@@ -32,6 +32,6 @@ class RadiosTable extends Migration
     public function down()
     {
         //
-        //Schema::dropIfExists('radio');
+        Schema::dropIfExists('radio');
     }
 }
