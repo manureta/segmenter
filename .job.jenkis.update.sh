@@ -4,7 +4,8 @@ git pull
 git submodule init 
 git submodule update
 pwd
-composer dump-autoload
+composer install
+npm install
 npm run prod
 php artisan migrate
 #php artisan db:seed
