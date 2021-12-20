@@ -36,7 +36,8 @@ class Segmentador extends Model
         $esquema = 'e'.$aglo;
 
         // Ejemplo: python3 app/developer_docs/segmentacion-core/lados_completos/lados_completos.py e0777.arc 50 084 1 4 20 30 10 1 
-	$process = Process::fromShellCommandline('/usr/bin/python3 ../app/developer_docs/segmentacion-core/lados_completos/lados_completos.py $tabla $prov $dpto $frac $rad $min $max $deseada $indivisible',null,['PYTHONIOENCODING' => 'utf8',
+       	$process = Process::fromShellCommandline('/usr/bin/python3 ../app/developer_docs/segmentacion-core/lados_completos/lados_completos.py $tabla $prov $dpto $frac $rad $min $max $deseada $indivisible',
+     null,['PYTHONIOENCODING' => 'utf8',
 		'MANDARINA_DATABASE' => Config::get('database.connections.pgsql.database'),
 		'MANDARINA_USER' => Config::get('database.connections.pgsql.username'),
 		'MANDARINA_PASS' => Config::get('database.connections.pgsql.password'),
@@ -49,7 +50,9 @@ class Segmentador extends Model
                              'deseada'=>$vivs_deseada,'max'=>$vivs_max,'min'=>$vivs_min,'indivisible'=>$mza_indivisible]);
                         // executes after the command finishes
                         if (!$process->isSuccessful()) {
-                                dd($process->getErrorOutput());
+                                Log::error($process->getErrorOutput());
+                                flash('No se pudo correr la segmentación! ')->error()->important();
+                                return $this->resultado='No se pudo correr segmentación.';
                         }else{  
                             MyDB::lados_completos_a_tabla_segmentacion_ffrr($aglo,$frac,$radio);
                             return $this->resultado=$process->getOutput();
