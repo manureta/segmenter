@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class FraccionesTable extends Migration
+class AddIndexAglomerados extends Migration
 {
     /**
      * Run the migrations.
@@ -14,14 +14,17 @@ class FraccionesTable extends Migration
     public function up()
     {
         //
-	 $sql = file_get_contents(app_path() . '/developer_docs/fraccion.up.sql');
-      try{
-           DB::unprepared($sql);
-       }catch(Illuminate\Database\QueryException $e){
-          DB::Rollback();
-	        echo _('Omitiendo creación de tabla de fracciones...
-		      ');
-       }
+        try{
+          Schema::table('aglomerados', function(Blueprint $table)
+          {
+              $table->index('id');
+          });
+        } catch(Illuminate\Database\QueryException $e){
+            if ($e->getCode()=='42P07'){
+                echo "Ya existe el indice \n";
+            }
+        }
+
     }
 
     /**
@@ -32,6 +35,5 @@ class FraccionesTable extends Migration
     public function down()
     {
         //
-        Schema::dropIfExists('fraccion');
     }
 }

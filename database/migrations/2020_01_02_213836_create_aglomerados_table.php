@@ -43,6 +43,6 @@ class CreateAglomeradosTable extends Migration
      */
     public function down()
     {
-//        Schema::dropIfExists('aglomerados');
+        Schema::dropIfExists('aglomerados');
     }
 }
