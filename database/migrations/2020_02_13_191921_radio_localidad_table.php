@@ -38,6 +38,6 @@ class RadioLocalidadTable extends Migration
     public function down()
     {
         //
-//        Schema::dropIfExists('radio_localidad');
+        Schema::dropIfExists('radio_localidad');
     }
 }
