@@ -9,7 +9,7 @@
 <h4 class="text-center">Localidad ({{ $localidad->codigo }}) {{ $localidad->nombre }}</h4>
 @endif
 <div id ="resumen"></div>
-<canvas id="canvas" style="padding: 20px 50px 20px 50px; max-height: 600px; " height="280" width="600"></canvas>
+<canvas id="canvas" style="padding: 20px 50px 20px 50px; max-height: 500px; " height="280" width="600"></canvas>
 </div>
 @endsection
 @section('footer_scripts')
@@ -44,11 +44,11 @@
                 var myChart = new Chart(ctx, {
                   type: 'bar',
                   data: {
-                      labels:Viviendas,
+                      labels: Viviendas,
                       datasets: [{
-                          label: 'Cantidad de Segmentos ',
+                          label: 'Cantidad de Segmentos',
                           data: SegmentosCantidad,
-                          borderWidth: 1,
+                          borderWidth: 2,
                           backgroundColor: 'rgb(36, 125, 173)',
                           borderColor: 'rgb(66, 155, 213)'
                       }]
@@ -57,16 +57,40 @@
                       responsive: true,
                       borderRadius: 10,
                       scales: {
-                          yAxes: [{
-                              gridLines: {
-                                  title: 'Cantidad de segmentos',
+                          y: {
+                              title: 'Cantidad de segmentos',
+                              grid: {
                                   drawBorder: true,
-                                  color: ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple']
+                                  color:
+                                  function (context) {
+                                   const colores = [
+                                      'rgb(255, 99, 132)',
+                                      'rgb(255, 159, 64)',
+                                      'rgb(255, 205, 86)',
+                                      'rgb(75, 192, 192)',
+                                      'rgb(54, 162, 235)',
+                                      'rgb(153, 102, 255)',
+                                      'rgb(231,233,237)'
+                                    ];
+                                   return colores[context.tick.value % 7];
+                                  }
                               },
                               ticks: {
+                                  // valores enteros
+                                  precision: 0, 
                                   beginAtZero:true
+                              },
+                              title: {
+                                display: true,
+                                text: 'Segmentos'
                               }
-                          }]
+                          },
+                          x: {
+                              title: {
+                                display: true,
+                                text: 'Viviendas'
+                              }
+                          }
                       }
                   }
               });
