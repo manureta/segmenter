@@ -64,12 +64,12 @@ class MyDB extends Model
         lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio)
         {
             try{
-                self::generarSegmentacionVacia($esquema);
-                self::generarR3Vacia($esquema);
                 DB::statement("SELECT
                 indec.lados_completos_a_tabla_segmentacion_ffrr('e".$esquema."',".$frac.",".$radio.");");
                 DB::statement("SELECT indec.segmentos_desde_hasta('e".$esquema."');");
             }catch(QueryException $e){
+                self::generarSegmentacionVacia($esquema);
+                self::generarR3Vacia($esquema);
                 self::addSequenceSegmentos('e'.$esquema);
                 Log::warning('Create sequence xq no exisitia...');
                 self::recrea_vista_segmentos_lados_completos($esquema);
@@ -146,6 +146,21 @@ class MyDB extends Model
             return false;
         }
 
+        // Borra los esquemas temporales donde fallaron carga de arcos y etiquetas comenzados en e_ 
+        // * debo escapar el _ que es comodin de caracter en sql.
+        public static function limpiaEsquemasTemporales()
+        {
+            if ($esquemas_temporales=DB::select("SELECT schema_name from information_schema.schemata where schema_name like 'e\_%'")){
+                foreach ($esquemas_temporales as $esquema){
+                  DB::statement("DROP SCHEMA \"".$esquema->schema_name."\" CASCADE;"); //,[$esquema->schema_name]);
+                }
+                flash('Se borraron '.count($esquemas_temporales).' equemas temporales');
+               return true;
+            }
+            flash('No se encontraron esquemas temporales');
+            return false;
+        }
+
         //Dar permisos a una tabla.
         public static function darPermisosTabla($tabla,$rol='geoestadistica')
         {
@@ -183,7 +198,7 @@ FROM
     public static function getDataAglo($tabla,$esquema,$codloc)
     {
       if(isset($codloc)){
-          log::debug(' Aglomerado para la localidad : '.$codloc);
+          log::info('Buscando aglomerado para la localidad : '.$codloc);
                 $filtro=" WHERE codprov||coddepto||codloc= '".$codloc."'";
       }else{$filtro='';}
         try {
@@ -192,7 +207,7 @@ FROM
                          $filtro.
                          ' group by 1,2 order by count(*) desc Limit 1;')[0]);
         }catch (\Illuminate\Database\QueryException $exception) {
-    Log::warning('Aglomerado Sin Nombre: '.$exception);
+    Log::notice('Aglomerado Sin Nombre: '.$exception);
     //Supongo sin Nombre
     $codaglo=self::getAglo($tabla,$esquema,$filtro);
       return (object) ['codigo'=>$codaglo,'nombre'=>'Sin Nombre'];
@@ -368,14 +383,19 @@ FROM
 
     // Copia de esquema temporal a otro
     //
-    public static function copiaraEsquema($de_esquema,$a_esquema)
+    public static function copiaraEsquema($de_esquema,$a_esquema,$localidad_codigo=null)
     {
+        if (isset($localidad_codigo)) {
+                 $filtro=" WHERE substr(mzai,0,9)= '".$localidad_codigo."' or substr(mzad,0,9)= '".$localidad_codigo."' ";
+                 $filtro_lab=" WHERE prov || depto || codloc = '".$localidad_codigo."'";
+        } else { $filtro='';
+                 $filtro_lab=''; }
         try {
              DB::beginTransaction();
              DB::unprepared('DROP TABLE IF EXISTS '.$a_esquema.'.arc CASCADE');
              DB::unprepared('DROP TABLE IF EXISTS '.$a_esquema.'.lab CASCADE');
-             DB::unprepared('CREATE TABLE "'.$a_esquema.'".arc AS SELECT * FROM "'.$de_esquema.'".arc ');
-             DB::unprepared('CREATE TABLE "'.$a_esquema.'".lab AS SELECT * FROM "'.$de_esquema.'".lab ');
+             DB::unprepared('CREATE TABLE "'.$a_esquema.'".arc AS SELECT * FROM "'.$de_esquema.'".arc '.$filtro);
+             DB::unprepared('CREATE TABLE "'.$a_esquema.'".lab AS SELECT * FROM "'.$de_esquema.'".lab '.$filtro_lab);
              DB::commit();
          }catch (QueryException $exception) {
              DB::Rollback();
@@ -441,15 +461,20 @@ FROM
     }
 
 //         $tabla = strtolower( substr($file_name,strrpos($file_name,'/')+1,-4) );
-    public static function moverDBF($file_name,$esquema)
+    public static function moverDBF($file_name,$esquema,$localidad_codigo=null)
     {
+         if (isset($localidad_codigo)) {
+                 $filtro=" WHERE prov||dpto||codloc = '".$localidad_codigo."' ";
+          } else {
+                 $filtro='';
+         }
         self::createSchema($esquema);
         $tabla = strtolower( substr($file_name,strrpos($file_name,'/')+1,-4) );
         $esquema = 'e'.$esquema;
         Log::debug('Cargando dbf en esquema-> '.$esquema);
             DB::beginTransaction();
 //            DB::unprepared('ALTER TABLE "'.$tabla.'" SET SCHEMA '.$esquema);
-            DB::unprepared('CREATE TABLE "'.$esquema.'"."'.$tabla.'" AS SELECT * FROM "'.$tabla.'"');
+            DB::unprepared('CREATE TABLE "'.$esquema.'"."'.$tabla.'" AS SELECT * FROM "'.$tabla.'" '.$filtro);
             DB::unprepared('DROP TABLE IF EXISTS '.$esquema.'.listado CASCADE');
             DB::unprepared('ALTER TABLE "'.$esquema.'"."'.$tabla.'" RENAME TO listado');
             DB::unprepared('ALTER TABLE "'.$esquema.'".listado ADD COLUMN id serial');
@@ -638,16 +663,25 @@ FROM
         {
         // Borrar tabla "temporal"
         try {
-               DB::beginTransaction();
+              DB::beginTransaction();
               DB::statement('DROP TABLE "'.$tabla.'" CASCADE;');
               DB::commit();
-               Log::info('Se eliminó el tabla '.$tabla);
+              Log::info('Se eliminó el tabla '.$tabla);
               return true;
+             }catch (\Illuminate\Database\QueryException $exception) {
+                try {
+                  DB::Rollback();
+                  DB::beginTransaction();
+                  DB::statement('DROP TABLE "'.strtolower($tabla).'" CASCADE;');
+                  DB::commit();
+                  Log::info('Se eliminó la tabla '.strtolower($tabla).' en el segundo intento.');
+                  return true;
                 }catch (\Illuminate\Database\QueryException $exception) {
                     Log::error('No se pudo borrar la tabla: '.$exception);
                     DB::Rollback();
-              return false;
+                    return false;
                 }
+             }
         }
 
         public static function limpiar_esquema($esquema)
@@ -722,7 +756,12 @@ FROM
         public static function grabarSegmentacion($esquema,$frac=null,$radio=null)
         {
             if ($frac!=null) {
-              DB::statement("select indec.sincro_r3_ffrr('e".$esquema."', $frac, $radio);");
+              try{
+                 DB::statement("select indec.sincro_r3_ffrr('e".$esquema."', $frac, $radio);");
+              }catch(QueryException $e){
+                 Log::error($e);
+                 return false;
+              }
         // guarda indec.describe_segmentos_con_direcciones_ffrr en esquema.r3 (hace delete & insert)a
       }else{
         DB::statement("SELECT indec.sincro_r3('e".$esquema."');");
@@ -775,10 +814,18 @@ FROM
                 $esquema=$radio->esquema;
                 $filtro= ' where (frac::integer,radio::integer) =
                     ('.$radio->CodigoFrac.','.$radio->CodigoRad.') ';
-                $funcion_describe= " indec.describe_segmentos_con_direcciones_ffrr('".$esquema."',".$radio->CodigoFrac.",".$radio->CodigoRad.") ";
-            } else
-            { $filtro = '';
-            $funcion_describe= " indec.describe_segmentos_con_direcciones('".$esquema."') ";
+                if (Schema::hasTable($esquema.'.r3')){
+                  $funcion_describe= ' "'.$esquema.'".r3 '.$filtro;
+                }else{
+                  $funcion_describe= " indec.describe_segmentos_con_direcciones_ffrr('".$esquema."',".$radio->CodigoFrac.",".$radio->CodigoRad.") ";
+                }
+            }else{ 
+              $filtro = '';
+              if (Schema::hasTable($esquema.'.r3')){
+                $funcion_describe= ' "'.$esquema.'".r3 ';
+              }else{
+                $funcion_describe= " indec.describe_segmentos_con_direcciones('".$esquema."') ";
+              }
             }
 
             try{
@@ -836,7 +883,9 @@ FROM
                             ORDER BY count(*) asc, array_agg(mza), segmento_id
                             LIMIT '.$max.';');
                         }catch(QueryException $e){
-                            Log::error('No hubo modo de encontrar una segmentación! '.$e);
+                            if ($e->getCode() == '42P01'){
+                              Log::notice('No hubo modo de encontrar una segmentación en esquema: '.$esquema.' para el radio: ',[$radio]);
+                            }else{Log::error('Se produjo error no esperado buscando segmentación:',[$e]);}
                             return [];
                         }
                 }
@@ -856,6 +905,7 @@ FROM
                             segmentacion s JOIN
                             '.$esquema.'.
                             listado l ON s.listado_id=l.id
+                            WHERE segmento_id is not null
                             GROUP BY segmento_id
                             ORDER BY count(*) asc, array_agg(mza), segmento_id) foo GROUP BY vivs order by vivs asc;');
         // SQL retrun:
@@ -1010,12 +1060,12 @@ FROM
                 e.mza like
                 '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3)
             );";
-            Log::debug(' Georreferenciando: '.$query);
+            Log::debug('Georreferenciando: '.$esquema,[$query]);
 
       $resultado= DB::select($query);
 
             }catch(QueryException $e){
-                    Log::error('No se pudo georeferenciar el listado.'.$e);
+                    Log::error('No se pudo georeferenciar el listado.',[$e]);
                         flash('No se pudo georeferenciar el listado.
                         Reintente.')->error()->important();
                     return false;

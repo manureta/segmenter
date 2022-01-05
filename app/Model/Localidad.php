@@ -159,23 +159,31 @@ class Localidad extends Model
             $new_radios=[];
             $objRadios= Collect (new Radio);
             $nuevos_radios=0;
+//            $objRadios=Radio::whereIn('codigo',$radios);
+//            flash($radios->get('link').'a')->important();
         if($radios){
             foreach($radios as $radio){
-                if (Radio::where('codigo',$radio->link)->exists()){
+  //              if (Radio::where('codigo',$radio->link)->exists()){
                                $links[]=$radio->link;
-                }else{
-                    $new_radios[]=new Radio (['codigo'=>$radio->link,'nombre'=>'Nuevo: '.$radio->link]);
-        $nuevos_radios++;
-        flash('No se encontró radio  -> '.$radio->link)->error()->important();
-                }
+  //              }else{
+  //                  $new_radios[]=new Radio (['codigo'=>$radio->link,'nombre'=>'Nuevo x listado']);
+  //                  $nuevos_radios++;
+  //                flash('No se encontró radio  -> '.$radio->link.': Revisar y cargar PxRad ')->error()->important();
+  //              }
             }
         }
         if (count($links)>0){
-            $objRadios=Radio::whereIn('codigo',$links)->get();
-      flash('Radios verificados -> '.$objRadios->count())->success();
+            $objRadios=Radio::whereIn('codigo',$links)
+                        ->get();
+            if($objRadios->count()!=count($radios)){
+               flash('Radios existentes verificados: '.$objRadios->count().'. Radios encontrados en listado: '.count($radios))->warning()->important();
+               // TODO: Crear un nuevo radio para el radio encontrado, o avisar cuál es.
+            }else{
+               flash('Radios existentes verificados -> '.$objRadios->count())->success();
+            }
         }
             //dd($new_radios,$nuevos_radios);
-            $objs=$objRadios->union(Collect ($new_radios));
+            $objs=$objRadios->union(Collect ($new_radios))->sortBy('codigo');
         return $objs;
 
     }
@@ -217,7 +225,10 @@ class Localidad extends Model
 //    ((SELECT ST_MakeLine(ST_MakePoint(0,0), ST_MakePoint(50,50))), 2),
         //    ((SELECT ST_Envelope(ST_MakeBox2d(ST_MakePoint(0,0), st_makepoint(10,10)))), 3)
 
-        if ($this->Carto){
+      if ($this->Carto){
+        if ($this->radios->count()>50){
+           return __('Demasiados radios para previsualizar, son más de 50');
+        }
         $height=800;
         $width=900;
         $escalar=false;

@@ -246,8 +246,8 @@ class Radio extends Model
 		               			   Log::warning('TODO: Implementar radio multilocalidades'.$this->localidades()->get()->toJson(
 					                              JSON_PRETTY_PRINT));
                            foreach($loc_no_rural as $localidad){
-                        		     Log::info('Posible esquema:'.($localidad->codigo));
-                         		     $esquemas[]=$localidad->codigo;
+                                 Log::info('Posible esquema: e'.($localidad->codigo));
+                                 $esquemas[]='e'.$localidad->codigo;
                            }
               				      $esquemas[]='e'.$this->fraccion->departamento->codigo;
 				                }else{
@@ -255,8 +255,11 @@ class Radio extends Model
                          						    ($loc_no_rural->first()->codigo));
                               $esquemas[]='e'.$loc_no_rural->first()->codigo;
 				                }
-			              }else{
+			              }elseif($this->localidades()->count()==1){
                        $esquemas[]='e'.$this->localidades()->first()->codigo;
+                      }else{
+                       $esquemas[]='e'.$this->codigo;
+                       Log::error('No se encontró localidad para el radio: '.$this->codigo);
 			              }
                 }catch (Exception $e){
                  Log::error('Algo muy raro paso: '.$e);
@@ -375,7 +378,7 @@ WITH shapes (geom, attribute, tipo) AS (
  FROM paths;
 ");
             return $svg[0]->concat;
-        }else{ return "No geodata"; }
+        }else{ return "Por el momento no se puede previsualizar el radio."; }
 
     }
 
