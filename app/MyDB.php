@@ -653,8 +653,6 @@ FROM
             }
 
             self::georeferenciar_listado($schema);
-            flash('Se georeferencio el listado del esquema '.$schema);
-
 
             }
         }
@@ -771,7 +769,7 @@ FROM
         }
 
 
-        public static function segmentar_equilibrado($esquema,$deseado = 10)
+        public static function segmentar_equilibrado($esquema,$deseado = 10,Radio $radio=null)
         {
             $AppUser= Auth::user();
             $processLog = Process::fromShellCommandline('echo "$tiempo: $usuario_name ($usuario_id) -> va a segmentar a manzana independiente: $info_segmenta"  >> segmentaciones.log');
@@ -779,30 +777,43 @@ FROM
                                     'usuario_id' => $AppUser->id,
                                     'usuario_name' => $AppUser->name,
                                     'tiempo' => date('Y-m-d H:i:s')]);
-
-            try{
+            if ($radio){
+             try{
+                if ( DB::statement("SELECT indec.segmentar_equilibrado_ffrr(
+                      'e".$esquema."',".$radio->CodigoFrac.",".$radio->CodigoRad.",".$deseado.");") )
+                    {
+                     // Llamar a función guardar segmentación para actualizar la r3 con los resultados...
+                     // $esquema para el esquema completo.
+                     self::grabarSegmentacion($esquema,$radio->CodigoFrac,$radio->CodigoRad);
+                      return true;
+                    }else{
+                      return false; }
+                }catch (QueryException $e){
+                  LOG::error('Se produjo algún error luego de segmentar equilibrado a manzanas independientes '.$e);
+                  flash('Se produjo algún error luego de segmentar equilibrado a manzanas independientes')->error()->important();
+                  return false;
+             }
+            }else{ //Segmentar equilibrado esquema entero.
+             try{
                 self::addSequenceSegmentos('e'.$esquema,false);
                 self::generarSegmentacionNula('e'.$esquema);
                 if ( DB::statement("SELECT indec.segmentar_equilibrado('e".$esquema."',".$deseado.");") ){
                 // llamar generar r3 como tabla resultado de function indec.r3(agl)
                     ( DB::statement("SELECT indec.descripcion_segmentos('e".$esquema."');") );
                     ( DB::statement("SELECT indec.segmentos_desde_hasta('e".$esquema."');") );
-//               self::georeferenciar_segmentacion($esquema);
-    //
                  flash('Resultado: '.self::juntar_segmentos('e'.$esquema));
-             // Llamar a función guardar segmentación para actualizar la r3 con los resultados...
+                 // Llamar a función guardar segmentación para actualizar la r3 con los resultados...
                  // $esquema para el esquema completo.
-             self::grabarSegmentacion($esquema);
+                    self::grabarSegmentacion($esquema);
                     return true;
                 }else{
                     return false; }
-            }catch (QueryException $e){
+             }catch (QueryException $e){
                   LOG::error('Se produjo algún error luego de segmentar equilibrado a manzanas independientes '.$e);
-      flash('Se produjo algún error luego de segmentar equilibrado a manzanas independientes')->error()->important();
+                  flash('Se produjo algún error luego de segmentar equilibrado a manzanas independientes')->error()->important();
                   return false;
             }
-
-
+           }
         // SQL retrun: Select segmento_id,count(*) FROM e0777.segmentacion GROUP BY segmento_id;
         }
 
@@ -905,6 +916,7 @@ FROM
                             segmentacion s JOIN
                             '.$esquema.'.
                             listado l ON s.listado_id=l.id
+                            WHERE segmento_id is not null
                             GROUP BY segmento_id
                             ORDER BY count(*) asc, array_agg(mza), segmento_id) foo GROUP BY vivs order by vivs asc;');
         // SQL retrun:
@@ -948,16 +960,17 @@ FROM
             // SQL retrun:
             }
 
-            public static function georeferenciar_listado($esquema)
+            public static function
+            georeferenciar_listado($esquema,$desplazamiento_vereda=8)
             {
+              $desp=-1*$desplazamiento_vereda;
         //   --ALTER TABLE ' ".$esquema." '.arc alter column wkb_geometry type geometry('LineString',22182) USING (st_setsrid(wkb_geometry,22182));
-
             try{
-
+                DB::beginTransaction();
                 DB::statement("DROP TABLE IF EXISTS ".$esquema.".listado_geo;");
-      $query="
+              $query="
                 WITH listado as (
-            SELECT id, l.prov, nom_provin, l.dpto, nom_dpto, l.codaglo, l.codloc,
+                SELECT id, l.prov, nom_provin, l.dpto, nom_dpto, l.codaglo, l.codloc,
                 nom_loc, codent, nom_ent, l.frac, l.radio, l.mza, l.lado,
                 CASE WHEN nro_inicia='' THEN 0 ELSE nro_inicia::integer END
                 ::integer as nro_inicia,
@@ -973,7 +986,6 @@ FROM
             count(*) over w as conteo,
             conteo as conteo_vivs,
             row_number() over w_nrocatastr as nro_en_numero
-
             FROM
             ".$esquema.".listado l
             LEFT JOIN ".$esquema.".conteos c ON
@@ -987,7 +999,6 @@ FROM
             CASE WHEN orden_reco='' THEN 1::integer ELSE
             orden_reco::integer END asc),
             w AS (partition by l.frac, l.radio, l.mza, l.lado)
-
         ),
         arcos as (
       SELECT min(ogc_fid) ogc_fid, st_LineMerge(st_union(wkb_geometry)) wkb_geometry,
@@ -1011,18 +1022,18 @@ FROM
     )
     SELECT nro_en_lado, nro_en_numero, conteo,1.0*nro_en_lado/(conteo+1) interpolacion, l.orden_reco,
     case when 1.0*nro_en_lado/(conteo+1)>1 then
-        ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8-nro_en_lado)),0.5)
+        ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-nro_en_lado)),0.5)
     else
     CASE WHEN (
             e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado and (l.tipoviv='LSV' or
                     l.tipoviv='')
                     THEN
-                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8-(0.5*nro_en_numero))),0.5)
+                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),0.5)
             WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado
                     THEN
-                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8-(0.5*nro_en_numero))),1.0*(nro_en_lado)/(conteo+1))
+                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),1.0*(nro_en_lado)/(conteo+1))
                 end
                 END as wkb_geometry, e.ogc_fid||'-'||l.id id ,e.ogc_fid id_lin,l.id id_list, wkb_geometry wkb_geometry_lado,
     CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN
@@ -1036,13 +1047,13 @@ FROM
         CASE
         WHEN (((nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)<0
                 or (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)>1 )) THEN
-            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),0.5)
+            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),0.5)
             ELSE
-            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),1-
+            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),1-
                                     (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer))
         END
     ELSE
-    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),
+    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),
         0.5 --deberia usarse la posicion del anterior.. tiro null quizas ?
         )
         END geom_segun_nro_catastral,
@@ -1059,26 +1070,35 @@ FROM
                 e.mza like
                 '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3)
             );";
-            Log::debug('Georreferenciando: '.$esquema,[$query]);
-
-      $resultado= DB::select($query);
+            $resultado= DB::select($query);
+            DB::commit();
+            flash('Se georreferenció el listado para '.$esquema)->success()->important();
 
             }catch(QueryException $e){
-                    Log::error('No se pudo georeferenciar el listado.',[$e]);
-                        flash('No se pudo georeferenciar el listado.
-                        Reintente.')->error()->important();
-                    return false;
+                DB::Rollback();
+                    if ($desplazamiento_vereda==8){
+                            flash('No se pudo georreferenciar el listado dentro
+                            de la manzana para '.$esquema.'.
+                            Reintentado a 1m del eje.')->warning();
+                            if($resultado = self::georeferenciar_listado($esquema,1)){
+                              flash('Se georreferenció el listado sobre el eje de
+                              calle')->success()->important();
+                            }
+                    }else{
+                        flash('No se pudo georrefernciar el listado para '.$esquema)->error()->important();
+                        Log::error('No se pudo georreferenciar el
+                        listado.',[$e->getMessage()]);
+                        return false;
+                    }
             }
             try{
                 DB::statement("GRANT SELECT ON TABLE  ".$esquema.".listado_geo TO geoestadistica");
             }catch(QueryException $e){
                 Log::error('No se pudo dar permiso a geoestadistica sobre el listado.'.$e);
             }
-
-                return $resultado;
-
-
-            }
+            Log::debug('Georreferenciado: '.$esquema);
+            return $resultado;
+        }
 
         public static function geo_translate($esquema)
         {
@@ -1131,15 +1151,15 @@ FROM
         )
         SELECT segmento_id,nro_en_lado, conteo,1.0*nro_en_lado/(conteo+1) interpolacion, l.orden_reco,
         case when nro_en_lado/(conteo+1)>1
-        then ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8-nro_en_lado)),0.5)
+        then ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-nro_en_lado)),0.5)
         else
         CASE WHEN (
             e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado and l.tipoviv='LSV'
-                    THEN ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),0.5)
+                    THEN ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),0.5)
             WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado
-                    THEN ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),-8)),1.0*nro_en_lado/(conteo+1))
+                    THEN ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),1.0*nro_en_lado/(conteo+1))
                 end
                 END as wkb_geometry, e.ogc_fid||'-'||l.id id ,e.ogc_fid id_lin,l.id id_list, wkb_geometry wkb_geometry_lado,
                     codigo10, nomencla, codigo20,
@@ -1226,7 +1246,7 @@ FROM
                 $rad=substr($radio->codigo,7,2);
                 if(isset($esquema)){
                   if (in_array($esquema,$esquemas)){
-                    Log::debug('Buscando Mzas para radio '.$radio->codigo.' en esquema'.$esquema);
+                    Log::debug('Buscando Mzas para radio '.$radio->codigo.' en esquema '.$esquema);
                   }else{
                     Log::warning('Buscando Mzas para radio '.$radio->codigo.' en esquema '.$esquema.' fuera de lo esperado');
                   }
@@ -1559,6 +1579,24 @@ public static function getPxSeg($esquema)
             return 'Sin resultados de avances';
        }
     }
+
+    // Generar informe de avances del uso del segmentador.
+    public static function getAvancesProv($filtro=null)
+    {
+        try{
+            return DB::select(
+              "select substr(codigo,1,2) prov,date(updated_at),
+                      count(case when resultado is not null then 1 else null end) segmentados
+                from radio
+                where updated_at is not null
+                group by 1,date(updated_at)
+                order by date(updated_at);");
+       }catch(QueryException $e){
+            Log::error('Error al consultar avances en radios resumindos por provincias '.$filtro.$e);
+            return 'Sin resultados de avances';
+       }
+    }
+
 
 }
 
