@@ -1238,7 +1238,8 @@ FROM
             }
 
             public static function getCantMzas(Radio $radio,$esquema=null){
-               $esquemas=$radio->Esquemas;
+                $esquemas=$radio->Esquemas;
+                $esquema=$radio->esquema;                
                 Log::debug('Buscando Mzas para radio '.$radio->codigo);
                 $prov=substr($radio->codigo,0,2);
                 $dpto=substr($radio->codigo,2,3);
@@ -1292,18 +1293,16 @@ FROM
             }
 
        public static function isSegmentado(Radio $radio=null,$esquema=null){
-            $esquemas=$radio->Esquemas;
             if ($radio){
                 $filtro = " and (frac,radio) = ('".$radio->CodigoFrac."','".$radio->CodigoRad."') ";
               } else {
                 $filtro = '';
              }
-             if(isset($esquema)){
-                 if (in_array($esquema,$esquemas)){
-                   Log::debug('Viendo si esta segmentado el radio '.$radio->codigo.' en esquema '.$esquema);
-                 }else{
+             if(isset($esquema) and $esquema == $radio->esquema){
+                 Log::debug('Viendo si esta segmentado el radio '.$radio->codigo.' en esquema '.$esquema);
+                 if ($esquema != $radio->esquema){
                    Log::warning('Raro! Buscando segmentacion para radio '.$radio->codigo.' en esquema '.$esquema.
-                                ' fuera de los esperados ');
+                                ' fuera del esperados '.$this->esquema);
                  }
                   try{
                     return (int) DB::select("SELECT count(distinct segmento_id) FROM ".$esquema.".segmentacion s JOIN
@@ -1319,7 +1318,7 @@ FROM
                    }
              }else{
              $count=0;
-             foreach($esquemas as $esquema){
+             foreach($radio->esquemas as $esquema){
                   try { 
                     $count += (int) DB::select("SELECT count(distinct segmento_id) FROM ".$esquema.".segmentacion s JOIN
                            ".$esquema.".listado l ON s.listado_id=l.id WHERE segmento_id is not null ".
@@ -1567,7 +1566,9 @@ public static function getPxSeg($esquema)
             count(*) radios,
             count(r.resultado) probados,
             round((count(r.resultado)/(1.0*count(*)))*100,1) segmentado,
-             max(date(updated_at)) fecha
+            round((count(r.resultado)/(1.0*count(*)))*100,1) cant,
+             max(date(updated_at)) fecha,
+             max(date(updated_at)) hecho
         from localidad l JOIN aglomerados a ON a.id=l.aglomerado_id
              JOIN radio_localidad ON l.id=localidad_id
              JOIN radio r ON r.id=radio_localidad.radio_id
@@ -1585,18 +1586,43 @@ public static function getPxSeg($esquema)
     {
         try{
             return DB::select(
-              "select substr(codigo,1,2) prov,date(updated_at),
-                      count(case when resultado is not null then 1 else null end) segmentados
+              "select substr(codigo,1,2) prov,date(updated_at) hecho,
+                      count(case when resultado is not null then 1 else null end) cant
                 from radio
                 where updated_at is not null
                 group by 1,date(updated_at)
-                order by date(updated_at);");
+                order by substr(codigo,1,2),date(updated_at) asc;");
        }catch(QueryException $e){
             Log::error('Error al consultar avances en radios resumindos por provincias '.$filtro.$e);
             return 'Sin resultados de avances';
        }
     }
 
+    // Generar informe de avances del uso del segmentador.
+    // Acumulado
+    public static function getAvanceProvAcum($filtro=null)
+    {
+        try{
+            return DB::select(
+"with hechos_por_dia as (
+  select substr(codigo,1,2) prov,date(updated_at) hecho,
+  count(case when resultado is not null then 1 else null end) cant
+  from radio
+  where updated_at is not null
+  group by 1,date(updated_at)
+  )
+select hoy.prov, hoy.hecho, sum(antes.cant) cant
+from hechos_por_dia hoy
+join hechos_por_dia antes
+on antes.prov = hoy.prov and antes.hecho <= hoy.hecho
+group by 1,2
+order by 1,2
+    ;");
+       }catch(QueryException $e){
+            Log::error('Error al consultar avances en radios segmentados acumulados x provincia'.$filtro.$e);
+            return 'Sin resultados de avances';
+       }
+    }
 
 }
 

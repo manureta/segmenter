@@ -50,6 +50,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/prd.zip')
                         }}"> Descargar plugin </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/guia') }}"> Guia </a> </li>
                     @endauth
                     </ul>
 
@@ -104,7 +105,7 @@
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-            style="display:block"><hr />© Copyright 2021 INDEC - Geoestadística
+            style="display:block"><hr />© 2022 INDEC - Geoestadística
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
             </div>
 <!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->

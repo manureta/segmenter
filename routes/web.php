@@ -174,7 +174,8 @@ Route::get('radio/{radio}','RadioController@show');
 
 // ---------- GRAFOS AGLOMERADOS --------
 Route::get('grafo/{aglomerado}','SegmentacionController@index')->name('index');
-Route::get('grafo/{aglomerado}/{radio}/','SegmentacionController@ver_grafo')->name('ver-grafo');
+Route::get('grafo/{aglomerado}/{radio}/','SegmentacionController@ver_grafo_legacy')->name('ver-grafo-redirect');
+Route::get('radio/{localidad}/{radio}/','SegmentacionController@ver_grafo')->name('ver-grafo');
 
 // ---------- ARCHIVOS --------
 Route::post('archivos','ArchivoController@index');
@@ -182,6 +183,16 @@ Route::get('archivos','ArchivoController@index');
 Route::get('archivo/{archivo}','ArchivoController@show');
 Route::delete('archivo/{archivo}','ArchivoController@destroy');
 Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
+
+
+// ---------- TABLERO ---------
+
+Route::get('informe/prov','TableroController@GraficoProvincias');
+Route::post('informe/prov','TableroController@GraficoProvincias');
+Route::get('informe/avances','TableroController@GraficoAvances');
+Route::post('informe/avances','TableroController@GraficoAvances');
+Route::get('informe/avance','TableroController@GraficoAvance');
+Route::post('informe/avance','TableroController@GraficoAvance');
 
 //Route::get('mail', 'MailCsvController@index');
 

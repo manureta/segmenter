@@ -164,9 +164,15 @@ class Radio extends Model
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
 
         // Calculo de umbral ...
-      	// Según primer aproximación charlada con -h ...
-      	// Valor mayor entre el máximo y el doble del mínimo.
-      	$umbral=max($min*2,$max);
+      	// Según nuevo abordaje para forzar partir excedidos -h ...
+      	// Valor por encima del 5% del máximo.
+        // Prpongo sin holgura (=1) y revisar deseado según número de viviendas
+        // ya que el umbral sólo selecciona el segmento a partir y luego
+        // se usa el desaeado. 2022-01-19 M.
+        // Numeros enteros es lo que recibe al funcion uso piso (floor)
+
+        $holgura = 1.05;
+        $umbral = floor($holgura*$max);
 
         $segmenta->segmentar_excedidos_ffrr($esquema,$frac,$radio,$umbral,$deseadas);
         $this->resultado = $segmenta->ver_segmentacion().'
@@ -221,13 +227,21 @@ class Radio extends Model
     }
 
     public function getEsquemaAttribute($value){
-      if ($this->_esquema){
+      if (isset($this->_esquema)){
 	      return $this->_esquema;
      	}else{
 	     $this->_esquema='cualca';
 	     $posibles_esquemas=$this->esquemas;
+       Log::warning('Tomando primer esquema xq no está especificado');
 	    return $this->_esquema=$posibles_esquemas[0];
 	    }
+    }
+ 
+   public function setEsquemaAttribute($value){
+      if (isset($this->_esquema) and $this->_esquema!='e' and $this->_esquema!='' ){
+          Log::debug('Esquema seteado anterior:'.$this->_esquema.' - nuevo: '.$value);
+	    }
+          $this->_esquema=$value;
     }
 
     public function getEsquemasAttribute($value){
@@ -243,7 +257,7 @@ class Radio extends Model
                                               $q->where('codigo', 'not like', '%0000%');
                                                })->get();
                				   if ($loc_no_rural->count() > 1) {
-		               			   Log::warning('TODO: Implementar radio multilocalidades'.$this->localidades()->get()->toJson(
+                   	       Log::debug('Radio multilocalidades'.$this->localidades()->get()->toJson(
 					                              JSON_PRETTY_PRINT));
                            foreach($loc_no_rural as $localidad){
                                  Log::info('Posible esquema: e'.($localidad->codigo));
