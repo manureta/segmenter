@@ -13,9 +13,9 @@ class EliminaRegistrosRepetidos extends Migration
      */
     public function up()
     {
+       DB::beginTransaction();
        $sql = file_get_contents(app_path() . '/developer_docs/segmentacion-core/elimina_registros_repetidos.sql');
        try{
-           DB::beginTransaction();
            DB::unprepared($sql);
            DB::unprepared('select indec.elimina_registros_repetidos()');
            DB::commit();
