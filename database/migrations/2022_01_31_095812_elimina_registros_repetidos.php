@@ -15,8 +15,10 @@ class EliminaRegistrosRepetidos extends Migration
     {
        $sql = file_get_contents(app_path() . '/developer_docs/segmentacion-core/elimina_registros_repetidos.sql');
        try{
+           DB::BeginTransaction();
            DB::unprepared($sql);
-           DB::unprepared('select indec.elimina_registros_repetidos()')
+           DB::unprepared('select indec.elimina_registros_repetidos()');
+           DB::Commit();
        }catch(Illuminate\Database\QueryException $e){
           DB::Rollback();
           echo _('Error borrando los registros repetidos de todos los listados...');
