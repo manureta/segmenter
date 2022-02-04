@@ -17,7 +17,9 @@ class EliminaRegistrosRepetidos extends Migration
        $sql = file_get_contents(app_path() . '/developer_docs/segmentacion-core/elimina_registros_repetidos.sql');
        try{
            DB::unprepared($sql);
-           DB::unprepared('select indec.elimina_registros_repetidos()');
+//           DB::unprepared('select indec.elimina_registros_repetidos()');
+// no la ejecuta xq no anda en php artisan migrate:refresh 
+// necesita que se haga seed de subtipos de viviendas colectivas
            DB::commit();
        }catch(Illuminate\Database\QueryException $e){
           DB::Rollback();
