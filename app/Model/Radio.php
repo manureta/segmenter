@@ -371,6 +371,7 @@ WITH shapes (geom, attribute, tipo) AS (
             attribute*10 || '88\"'
          END,
           ' segmento=\"',attribute,'\"',
+          ' id=\"','".$this->codigo."-'||attribute,'\"',
           ' title=\"Segmento ',attribute,'\"',
           ' />') as svg,
           CASE WHEN tipo='mza' then 0
@@ -381,7 +382,7 @@ WITH shapes (geom, attribute, tipo) AS (
      ".$mzas_labels." ) foo order by orden asc
  )
  SELECT concat(
-         '<svg id=\"radio_".$this->codigo."_botonera\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0
+         '<svg id=\"radio_".$this->codigo."_botonera\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0
 	 \" height=\"80\" width=\"".$width."\">',
 	 '<circle style=\"opacity: 10%;\" class=\"compass\" cx=\"".(+30)."\" cy=\"".(30)."\" r=\"28\"></circle>
          <circle style=\"opacity: 20%;\" class=\"button\" cx=\"".(+30)."\" cy=\"".(36)."\"
@@ -396,7 +397,7 @@ WITH shapes (geom, attribute, tipo) AS (
 	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(-25, 0)\" d=\"M".(+55)." ".(+30)." l-10 -6 a35 20 0 0 1 0 12z\" />
 	',
 	 '</svg>',
-         '<svg id=\"radio_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
+         '<svg id=\"radio_".$this->codigo."\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
 	 "\" height=\"".$height."\" width=\"".$width."\">',
 	 ' <g id=\"matrix-group\" transform=\"matrix(1 0 0 1 0 0)\">',
 	 array_to_string(array_agg(svg),''),
