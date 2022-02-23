@@ -148,7 +148,7 @@ class Radio extends Model
      * Segmentar radio con metodo magico.
      *
      */
-    public function segmentarLucky($esquema,$deseadas,$max,$min,$indivisible)
+    public function segmentarLucky($esquema,$deseadas,$max,$min,$indivisible,$force=false)
     {
       if (Auth::check()) {
         $AppUser= Auth::user();
@@ -164,9 +164,15 @@ class Radio extends Model
         $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
 
         // Calculo de umbral ...
-	// Según primer aproximación charlada con -h ...
-	// Valor mayor entre el máximo y el doble del mínimo.
-	$umbral=max($min*2,$max);
+      	// Según nuevo abordaje para forzar partir excedidos -h ...
+      	// Valor por encima del 5% del máximo.
+        // Prpongo sin holgura (=1) y revisar deseado según número de viviendas
+        // ya que el umbral sólo selecciona el segmento a partir y luego
+        // se usa el desaeado. 2022-01-19 M.
+        // Numeros enteros es lo que recibe al funcion uso piso (floor)
+
+        $holgura = 1.05;
+        $umbral = floor($holgura*$max);
 
         $segmenta->segmentar_excedidos_ffrr($esquema,$frac,$radio,$umbral,$deseadas);
         $this->resultado = $segmenta->ver_segmentacion().'
@@ -221,13 +227,21 @@ class Radio extends Model
     }
 
     public function getEsquemaAttribute($value){
-      if ($this->_esquema){
+      if (isset($this->_esquema)){
 	      return $this->_esquema;
      	}else{
 	     $this->_esquema='cualca';
 	     $posibles_esquemas=$this->esquemas;
+       Log::warning('Tomando primer esquema xq no está especificado');
 	    return $this->_esquema=$posibles_esquemas[0];
 	    }
+    }
+ 
+   public function setEsquemaAttribute($value){
+      if (isset($this->_esquema) and $this->_esquema!='e' and $this->_esquema!='' ){
+          Log::debug('Esquema seteado anterior:'.$this->_esquema.' - nuevo: '.$value);
+	    }
+          $this->_esquema=$value;
     }
 
     public function getEsquemasAttribute($value){
@@ -243,19 +257,20 @@ class Radio extends Model
                                               $q->where('codigo', 'not like', '%0000%');
                                                })->get();
                				   if ($loc_no_rural->count() > 1) {
-		               			   Log::warning('TODO: Implementar radio multilocalidades'.$this->localidades()->get()->toJson(
+                   	       Log::debug('Radio multilocalidades'.$this->localidades()->get()->toJson(
 					                              JSON_PRETTY_PRINT));
                            foreach($loc_no_rural as $localidad){
                                  Log::info('Posible esquema: e'.($localidad->codigo));
                                  $esquemas[]='e'.$localidad->codigo;
                            }
               				      $esquemas[]='e'.$this->fraccion->departamento->codigo;
-				                }else{
-					                    Log::info('Buscando parte Urbana del Radio en el esquema de la única localidad:'.
-                         						    ($loc_no_rural->first()->codigo));
+				                  }elseif ( $loc_no_rural->count()==1  ) {
+                              Log::info('Buscando parte Urbana del Radio en el esquema de la única localidad:'.
+                         		            ($loc_no_rural->first()->codigo));
                               $esquemas[]='e'.$loc_no_rural->first()->codigo;
-				                }
-			              }elseif($this->localidades()->count()==1){
+				                    }else{ Log::info('Varias localidades sin parte rural ? '.$loc_no_rural);
+                          }
+                        }elseif($this->localidades()->count()==1){
                        $esquemas[]='e'.$this->localidades()->first()->codigo;
                       }else{
                        $esquemas[]='e'.$this->codigo;
@@ -279,11 +294,12 @@ class Radio extends Model
     public function getSVG()
     {
         // return SVG Radio? Listado? Segmentación?
+        //  Utiliza tablas listado_geo, r3 junto a segmentacion y manzanas.
         if (Schema::hasTable($this->esquema.'.listado_geo')){
             $height=600;
             $width=600;
             $escalar=false;
-            $extent=DB::select("SELECT box2d(st_collect(wkb_geometry)) box FROM
+            $extent=DB::select("SELECT box2d(st_collect(wkb_geometry_lado)) box FROM
             ".$this->esquema.".listado_geo
             WHERE  substr(mzae,1,5)||substr(mzae,9,4)='".$this->codigo."' ");
             $extent=$extent[0]->box;
@@ -312,17 +328,32 @@ class Radio extends Model
                 as svg ,20 as orden
                 FROM ".$this->esquema.".manzanas
                     WHERE  prov||dpto||frac||radio='".$this->codigo."' )";
-            }else{Log::debug('No se encontro grafica de manzanas. ');$mzas='';$mzas_labels='';}
+        }else{Log::debug('No se encontro grafica de manzanas. ');$mzas='';$mzas_labels='';} 
+        if (Schema::hasTable($this->esquema.'.r3')){
+          $r3_seg='r3.seg::integer';
+          $r3_join="LEFT JOIN ".$this->esquema.".r3 ON s.segmento_id=r3.segmento_id";
+        }else{Log::debug('No se encontro R3. ');
+          $r3_seg="'99'";
+          $r3_join='';
+        } 
 
             //dd($viewBox.'/n'.$this->viewBox($extent,$epsilon,$height,$width).'/n'.$x0." -".$y0." ".$x1." -".$y1);
+            // Consulta que arma SVG de Radio, con lo que encuentra en esquema viendo tablas: listado_geo, manzanas, r3
+            /* Colores según javascript en grafo
+               let clusterColors = ['#FF0', '#0FF', '#F0F', '#4139dd', '#d57dba', '#8dcaa4'
+                        ,'#555','#CCC','#A00','#0A0','#00A','#F00','#0F0','#00F','#008','#800','#080'];
+            */
             $svg=DB::select("
 WITH shapes (geom, attribute, tipo) AS (
-    ( SELECT st_buffer(CASE WHEN trim(lg.tipoviv) in ('','LSV') then lg.wkb_geometry_lado
-    else lg.wkb_geometry END,1) wkb_geometry, 
-    rank() over (order by segmento_id::integer) as attribute,
+    ( SELECT 
+          CASE WHEN trim(lg.tipoviv) in ('','LSV') then 
+            st_buffer(st_LineSubstring(st_offsetcurve(lg.wkb_geometry_lado,-5),0.05,0.95),1,'endcap=flat join=round')
+          ELSE st_buffer(lg.wkb_geometry,2) END  wkb_geometry, 
+       ".$r3_seg." as attribute,
     lg.tipoviv tipo
     FROM ".$this->esquema.".listado_geo lg JOIN ".$this->esquema.".segmentacion
-    s ON s.listado_id=id_list
+    s ON s.listado_id=id_list 
+      ".$r3_join."
     WHERE  substr(mzae,1,5)||substr(mzae,9,4)='".$this->codigo."'
     ) ".$mzas."
   ),
@@ -341,10 +372,16 @@ WITH shapes (geom, attribute, tipo) AS (
          stroke-width=\"".$stroke."\" fill=\"#00' || (attribute-5)*20 || '00\"'
               WHEN attribute < 15 THEN 'stroke=\"none\"
          stroke-width=\"".$stroke."\" fill=\"#AA' || (attribute-10)*20 || '00\"'
+              WHEN attribute = 80 THEN 'stroke=\"none\"
+         stroke-width=\"".$stroke."\" fill=\"#00BB00\"'
+              WHEN attribute = 81 THEN 'stroke=\"none\"
+         stroke-width=\"".$stroke."\" fill=\"#0BA\"'
          ELSE
             'stroke=\"black\" stroke-width=\"".$stroke."\" fill=\"#22' ||
             attribute*10 || '88\"'
          END,
+          ' segmento=\"',attribute,'\"',
+          ' title=\"Segmento ',attribute,'\"',
           ' />') as svg,
           CASE WHEN tipo='mza' then 0
                WHEN tipo='LSV' then 1

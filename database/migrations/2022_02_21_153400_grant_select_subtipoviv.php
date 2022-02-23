@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class GrantSelectCorrida extends Migration
+class GrantSelectSubtipoviv extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,13 @@ class GrantSelectCorrida extends Migration
      */
     public function up()
     {
-       try{
-            DB::statement("grant select on table public.corrida to geoestadistica_admin;");
-            echo _('Se dieron permisos de lectura a tabla corrida a geoestadistica_admin
+       try{ 
+            echo DB::statement("grant select on table public.subtipo_vivienda to geoestadistica;");
+            echo _('Se dieron permisos de lectura a tabla Subtipo de vivienda a geoestadistica
 ');
         }catch(Illuminate\Database\QueryException $e){
-            echo _('No se pudo dar permisos de lectura a tabla corrida a geoestadistica_admin
-');
+            echo _('No se pudo dar permisos de lectura a tablas Subtipo de vivienda a geoestadistica
+'.$e->getMessage());
         }
     }
 

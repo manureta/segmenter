@@ -53,6 +53,10 @@ Route::get('/serverinfo', function()
     return View::make('pages.serverinfo');
 });
 
+Route::get('/guia', function()
+{
+    return View::make('segmentacion.guia');
+});
 Route::get('/sala', 'SalaController@index')->name('sala');
 
 Route::get('/setup', 'SetupController@index')->name('setup');
@@ -84,6 +88,8 @@ Route::get('/setup/grupogeoestadistica/{usuario}',
 'SetupController@grupoGeoestadistica')->name('setup.grupogeo');
 Route::get('/setup/grupogeoestadistica/tabla/{tabla}',
 'SetupController@grupoGeoestadisticaTabla')->name('setup.grupogeo.tabla');
+Route::get('/setup/duplicadosLSV/{esquema}',
+'SetupController@limpiaListado')->name('setup.limpialistado');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
@@ -138,7 +144,7 @@ Route::get('localidad/{localidad}/pxseg','LocalidadController@ver_pxseg')->name(
 Route::get('localidad/{localidad}/segmentacion','LocalidadController@ver_segmentacion')->name('localidad-ver-segmentacion');
 Route::get('localidad/{localidad}/segmentacion-lados','LocalidadController@ver_segmentacion_lados')->name('localidad-ver-segmentacion-lados');
 Route::get('localidad/{localidad}/grafico','LocalidadController@ver_segmentacion_grafico')->name('localidad-ver-segmentacion-grafico');
-Route::post('localidad/{localidad}/grafico','LocalidadController@ver_segmentacion_grafico')->name('localidad-ver-segmentacion-grafico');
+Route::post('localidad/{localidad}/grafico','LocalidadController@ver_segmentacion_grafico_resumen')->name('localidad-ver-segmentacion-grafico');
 
 // ---------- AGLOMERADOS --------
 Route::get('aglos-list', 'AglomeradoController@aglosList');
@@ -170,7 +176,8 @@ Route::get('radio/{radio}','RadioController@show');
 
 // ---------- GRAFOS AGLOMERADOS --------
 Route::get('grafo/{aglomerado}','SegmentacionController@index')->name('index');
-Route::get('grafo/{aglomerado}/{radio}/','SegmentacionController@ver_grafo')->name('ver-grafo');
+Route::get('grafo/{aglomerado}/{radio}/','SegmentacionController@ver_grafo_legacy')->name('ver-grafo-redirect');
+Route::get('radio/{localidad}/{radio}/','SegmentacionController@ver_grafo')->name('ver-grafo');
 
 // ---------- ARCHIVOS --------
 Route::post('archivos','ArchivoController@index');
@@ -178,6 +185,16 @@ Route::get('archivos','ArchivoController@index');
 Route::get('archivo/{archivo}','ArchivoController@show');
 Route::delete('archivo/{archivo}','ArchivoController@destroy');
 Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
+
+
+// ---------- TABLERO ---------
+
+Route::get('informe/prov','TableroController@GraficoProvincias');
+Route::post('informe/prov','TableroController@GraficoProvincias');
+Route::get('informe/avances','TableroController@GraficoAvances');
+Route::post('informe/avances','TableroController@GraficoAvances');
+Route::get('informe/avance','TableroController@GraficoAvance');
+Route::post('informe/avance','TableroController@GraficoAvance');
 
 //Route::get('mail', 'MailCsvController@index');
 

@@ -4,11 +4,11 @@
 <h4><a href="{{ url("/aglo/{$aglomerado->id}") }}" > ({{ $aglomerado->codigo}}) {{ $aglomerado->nombre}}</a></h4>
 <h5>
 @foreach($radio->localidades as $localidad)
-@if($localidad)
+@if($localidad and substr($localidad->codigo,5,3)!='000')
 <a href="{{ url("/localidad/{$localidad->id}") }}" > ({{
 $localidad->codigo}}) {{ $localidad->nombre}}</a>
 @else
- Rural? 
+<i>(parte urbana)</i>
 @endif
 @endforeach
 </h5>
@@ -23,13 +23,13 @@ $localidad->codigo}}) {{ $localidad->nombre}}</a>
 @section('content')
 @endsection
 @section('header_scripts')
-<script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
+<!-- script src="https://unpkg.com/numeric/numeric-1.2.6.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.0/cytoscape.min.js"></script>
 <script src="https://unpkg.com/layout-base/layout-base.js"></script>
 <script src="https://unpkg.com/cose-base/cose-base.js"></script>
 <script src="/js/cytoscape-fcose.js"></script>
 <script src="/js/cytoscape-cola.js"></script>
-<script src="/js/cola.min.js"></script>
+<script src="/js/cola.min.js"></script -->
 <style>
 #grafo_cy {
   width: 480px;
@@ -164,10 +164,13 @@ function zoom(scale) {
         'background-color': function (ele) {
           let n=1;
 					for (let i = 0; i < arrayOfClusterArrays.length; i++)
-						if (arrayOfClusterArrays[i].includes(ele.data('id')))
+						if (arrayOfClusterArrays[i].includes(ele.data('id'))){
+                           //Seteo id de segmentacino en node
+                           ele.seg=i; 
                            if (i>clusterColors.length) {n=i-clusterColors.length;
                                                         if (n<0) n=-n;}
                             else n=i;
+            }
 						if (clusterColors[n]!=null) return clusterColors[n];
 					return '#000000';
 				},
@@ -197,6 +200,15 @@ function zoom(scale) {
     cy.on('click', 'node', function(evt){
       var node = evt.target;
       alert( 'Lado: ' + node.id() );
+    });
+    cy.on('mouseover', 'node', function(evt){
+      var node = evt.target;
+      console.log( 'Viviendas: ' + node.style('label') + ' Mza:lado: ' + node.data('label' ) + ' Segmento: '+node.seg);
+          let n=1;
+					for (let i = 0; i < arrayOfClusterArrays.length; i++)
+						if (arrayOfClusterArrays[i].includes(node.data('id'))){
+              console.log(i);
+          }
     });
 //    var layout = cy.layout({ name: 'cose'});
 //    layout.run();
