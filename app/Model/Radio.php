@@ -294,6 +294,7 @@ class Radio extends Model
     public function getSVG()
     {
         // return SVG Radio? Listado? Segmentación?
+        //  Utiliza tablas listado_geo, r3 junto a segmentacion y manzanas.
         if (Schema::hasTable($this->esquema.'.listado_geo')){
             $height=600;
             $width=600;
@@ -337,6 +338,11 @@ class Radio extends Model
         } 
 
             //dd($viewBox.'/n'.$this->viewBox($extent,$epsilon,$height,$width).'/n'.$x0." -".$y0." ".$x1." -".$y1);
+            // Consulta que arma SVG de Radio, con lo que encuentra en esquema viendo tablas: listado_geo, manzanas, r3
+            /* Colores según javascript en grafo
+               let clusterColors = ['#FF0', '#0FF', '#F0F', '#4139dd', '#d57dba', '#8dcaa4'
+                        ,'#555','#CCC','#A00','#0A0','#00A','#F00','#0F0','#00F','#008','#800','#080'];
+            */
             $svg=DB::select("
 WITH shapes (geom, attribute, tipo) AS (
     ( SELECT 
@@ -366,11 +372,16 @@ WITH shapes (geom, attribute, tipo) AS (
          stroke-width=\"".$stroke."\" fill=\"#00' || (attribute-5)*20 || '00\"'
               WHEN attribute < 15 THEN 'stroke=\"none\"
          stroke-width=\"".$stroke."\" fill=\"#AA' || (attribute-10)*20 || '00\"'
+              WHEN attribute = 80 THEN 'stroke=\"none\"
+         stroke-width=\"".$stroke."\" fill=\"#00BB00\"'
+              WHEN attribute = 81 THEN 'stroke=\"none\"
+         stroke-width=\"".$stroke."\" fill=\"#0BA\"'
          ELSE
             'stroke=\"black\" stroke-width=\"".$stroke."\" fill=\"#22' ||
             attribute*10 || '88\"'
          END,
           ' segmento=\"',attribute,'\"',
+          ' id=\"','".$this->codigo."-'||attribute,'\"',
           ' title=\"Segmento ',attribute,'\"',
           ' />') as svg,
           CASE WHEN tipo='mza' then 0
@@ -381,7 +392,7 @@ WITH shapes (geom, attribute, tipo) AS (
      ".$mzas_labels." ) foo order by orden asc
  )
  SELECT concat(
-         '<svg id=\"radio_".$this->codigo."_botonera\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0
+         '<svg id=\"radio_".$this->codigo."_botonera\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0
 	 \" height=\"80\" width=\"".$width."\">',
 	 '<circle style=\"opacity: 10%;\" class=\"compass\" cx=\"".(+30)."\" cy=\"".(30)."\" r=\"28\"></circle>
          <circle style=\"opacity: 20%;\" class=\"button\" cx=\"".(+30)."\" cy=\"".(36)."\"
@@ -396,7 +407,7 @@ WITH shapes (geom, attribute, tipo) AS (
 	<path style=\"opacity: 10%;\" class=\"button\" onclick=\"pan(-25, 0)\" d=\"M".(+55)." ".(+30)." l-10 -6 a35 20 0 0 1 0 12z\" />
 	',
 	 '</svg>',
-         '<svg id=\"radio_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
+         '<svg id=\"radio_".$this->codigo."\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
 	 "\" height=\"".$height."\" width=\"".$width."\">',
 	 ' <g id=\"matrix-group\" transform=\"matrix(1 0 0 1 0 0)\">',
 	 array_to_string(array_agg(svg),''),
