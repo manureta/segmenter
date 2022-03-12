@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class BugfixSegmentarListadoEquilibrado extends Migration
+class CargarControlLadosFunction extends Migration
 {
     /**
      * Run the migrations.
@@ -14,8 +14,9 @@ class BugfixSegmentarListadoEquilibrado extends Migration
     public function up()
     {
         //
-        $path = 'app/developer_docs/segmentacion-core/manzanas_independientes/segmentar_listado_equilibrado.sql';
+        $path = 'app/developer_docs/function.indec.informe_angulos.sql';
         DB::unprepared(file_get_contents($path));
+
     }
 
     /**
@@ -26,5 +27,8 @@ class BugfixSegmentarListadoEquilibrado extends Migration
     public function down()
     {
         //
+        $query="DROP FUNCTION IF EXISTS indec.informe_angulos(character varying,character varying);";
+        Eloquent::unguard();
+        DB::statement($query);
     }
 }
