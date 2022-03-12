@@ -838,6 +838,11 @@ FROM
                                       where listado_id not in 
                                       (select id from '.$esquema.'.listado
                                       );');
+                  // Borra las segmentaciones de la r3 que no están más en segmentacion
+                  DB::delete('delete from '.$esquema.'.r3 
+                                      where segmento_id not in 
+                                      (select segmento_id from '.$esquema.'.segmentacion
+                                      );');
                   // Agrega los id de lisado nuevos en el listado. 
                   DB::statement('insert into '.$esquema.'.segmentacion  
                     select id as listado_id, Null::integer as segmento_id
@@ -1735,6 +1740,27 @@ order by 1,2
             Log::error('Error al consultar avances en radios segmentados acumulados x provincia'.$filtro.$e);
             return 'Sin resultados de avances';
        }
+    }
+
+    // Junta r3 de todos los esquemas.
+    public static function juntaR3($filtro=null)
+    {
+        try{
+            DB::beginTransaction();
+            if (Schema::hasTable('r3')) {
+              DB::statement("DROP TABLE r3;");
+            }
+            DB::statement("CREATE TABLE r3 AS SELECT * FROM indec.segmentos();");
+            $result = DB::select("SELECT Count(*) from r3;")[0]->count;
+            self::darPermisosTabla('r3');
+            DB::commit();
+        }catch(QueryException $e){
+            DB::Rollback();
+            $result=null;
+            Log::error('Error no se pudo actualizar las r3 '.$filtro.$e);
+            return 'R3 sin actualizar';
+       }
+       return 'Se actualizo r3 con '.$result.' registros';
     }
 
 }
