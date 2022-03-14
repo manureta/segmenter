@@ -54,7 +54,7 @@ class Segmentador extends Model
                                 flash('No se pudo correr la segmentación! ')->error()->important();
                                 return $this->resultado='No se pudo correr
                                 segmentación. '
-                                .'deseada:'.$vivs_deseada.' max:'$vivs_max.' min:'.$vivs_min.' indivisible: '.$mza_indivisible;
+                                .'deseada:'.$vivs_deseada.' max:'.$vivs_max.' min:'.$vivs_min.' indivisible: '.$mza_indivisible;
                         }else{  
                             MyDB::lados_completos_a_tabla_segmentacion_ffrr($aglo,$frac,$radio);
                             return $this->resultado=$process->getOutput();
