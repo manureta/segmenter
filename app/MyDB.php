@@ -1103,7 +1103,10 @@ FROM
             count(*) over w_lado as cant_en_lado,
             count(*) over w as conteo,
             conteo as conteo_vivs,
-            row_number() over w_nrocatastr as nro_en_numero
+            row_number() over w_nrocatastr as nro_en_numero,
+            btrim(to_char(l.frac::integer, '09'::text))::character varying(3)
+              ||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)
+              ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3) mza_txt
             FROM
             ".$esquema.".listado l
             LEFT JOIN ".$esquema.".conteos c ON
@@ -1137,56 +1140,98 @@ FROM
         HAVING
         st_geometrytype(st_LineMerge(st_union(wkb_geometry)))='ST_LineString'
         and mza!=''
-    )
-    SELECT nro_en_lado, nro_en_numero, conteo,1.0*nro_en_lado/(conteo+1) interpolacion, l.orden_reco,
-    case when 1.0*nro_en_lado/(conteo+1)>1 then
-        ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-nro_en_lado)),0.5)
-    else
-    CASE WHEN (
-            e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+    ),
+      line_arcos_m AS (
+      SELECT nro_en_lado, nro_en_numero, conteo,1.0*nro_en_lado/(conteo+1) interpolacion, l.orden_reco,
+        case when 1.0*nro_en_lado/(conteo+1)>1 then
+            0.5
+        else
+          CASE
+           WHEN (
+            e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado and (l.tipoviv='LSV' or
                     l.tipoviv='')
-                    THEN
-                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),0.5)
-            WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),0.5)
+            WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
                     and l.lado::integer=e.lado
-                    THEN
-                    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),1.0*(nro_en_lado)/(conteo+1))
-                end
-                END as wkb_geometry, e.ogc_fid||'-'||l.id id ,e.ogc_fid id_lin,l.id id_list, wkb_geometry wkb_geometry_lado,
-    CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN
-    row_number() OVER (PARTITION BY prov,dpto,codloc,frac,radio,l.mza,l.lado
-    ORDER BY l.nrocatastr,l.piso)
-    END orden_segun_numero,
-    row_number() OVER (PARTITION BY prov,dpto,codloc,frac,radio,l.mza,l.lado, l.nrocatastr ORDER BY l.piso)
-    orden_en_numero,
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero)))
+                                ,1.0*(nro_en_lado)/(conteo+1))
+               END
+            END as wkb_geometry,
 
-    CASE WHEN nro_final::integer-nro_inicia::integer>0 and (nrocatastr)>0 THEN
-        CASE
-        WHEN (((nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)<0
-                or (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer)>1 )) THEN
-            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),0.5)
-            ELSE
-            ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),1-
-                                    (nrocatastr::integer-nro_inicia::integer)::numeric/(nro_final::integer-nro_inicia::integer))
-        END
-    ELSE
-    ST_LineInterpolatePoint(st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp.")),
-        0.5 --deberia usarse la posicion del anterior.. tiro null quizas ?
-        )
-        END geom_segun_nro_catastral,
+        AS interpolacion_seleccionada,
+        case when 1.0*nro_en_lado/(conteo+1)>1 then
+          st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-nro_en_lado))
+        else
+          CASE
+           WHEN (
+            e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+                    and l.lado::integer=e.lado and (l.tipoviv='LSV' or
+                    l.tipoviv='')
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),0.5)
+            WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+                    and l.lado::integer=e.lado
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero)))
+                                ,1.0*(nro_en_lado)/(conteo+1))
+               END
+          END as wkb_geometry,
+        
 
+        case when 1.0*nro_en_lado/(conteo+1)>1 then
+          ".$desp."-nro_en_lado
+        else
+          CASE
+           WHEN (
+            e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                          ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+                    and l.lado::integer=e.lado and (l.tipoviv='LSV' or
+                    l.tipoviv='')
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero))),0.5)
+            WHEN ( e.mza like '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.radio::integer, '09'::text))::character varying(2)
+                                 ||btrim(to_char(l.mza::integer, '099'::text))::character varying(3))
+                    and l.lado::integer=e.lado
+               THEN
+                    ST_LineInterpolatePoint(
+                      st_reverse(st_offsetcurve(ST_LineSubstring(st_LineMerge(wkb_geometry),0.07,0.93),".$desp."-(0.5*nro_en_numero)))
+                                ,1.0*(nro_en_lado)/(conteo+1))
+               END
+         end
+        AS desplazamiento,
+
+    )
+    SELECT nro_en_lado, nro_en_numero, interpolacion, l.orden_reco, desplazamiento,
+        ST_LineInterpolatePoint(wkb_geometry,interpolacion_seleccionada)
+          AS wkb_geometry, 
+          e.ogc_fid||'-'||l.id id ,e.ogc_fid id_lin,l.id id_list, wkb_geometry wkb_geometry_lado,
                     codigo10, nomencla, codigo20,
                     tipo, nombre, e.lado ladoe, desde, hasta,e.mza mzae,
                     frac, radio, l.mza, l.lado, ccalle, ncalle, l.nrocatastr, piso,casa,dpto_habit,sector,edificio,entrada,tipoviv,
                     descripcio,descripci2,
                     cant_en_lado
         INTO ".$esquema.".listado_geo
-        FROM arcos e JOIN listado l ON
-        --l.ccalle::integer=e.codigo20 and
+        FROM line_arcos_simples e JOIN listado l ON
             (l.lado::integer=e.lado and
-                e.mza like
-                '%'||btrim(to_char(l.frac::integer, '09'::text))::character varying(3)||btrim(to_char(l.radio::integer, '09'::text))::character varying(3)||btrim(to_char(l.mza::integer, '099'::text))::character varying(3)
+                e.mza like '%'||l.mza_txt
             );";
             $resultado= DB::select($query);
             DB::commit();
