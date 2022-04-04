@@ -43,7 +43,8 @@ class ProvinciaController extends Controller
                 ->with('fracciones.radios')
                 ->with('fracciones.radios.tipo')
                 ->with('departamentos.localidades')
-                ->get('codigo','nombre');
+                ->get('codigo','nombre')
+                ->sort();
 //        dd($provs->get());
         foreach ($provs as $prov){
           $prov->localidades_count=0;
@@ -59,7 +60,9 @@ class ProvinciaController extends Controller
               $prov->radios_count_u_m += $fraccion->radios->whereIn('tipo_de_radio_id',[1,3])->count();
           }
           foreach( $prov->departamentos as $depto){
-              $prov->localidades_count += count($depto->localidades);
+              $prov->localidades_count += $depto->localidades->filter(function ($localidad){
+                        return substr($localidad->codigo,5,3) != '000';
+                   })->count();
           }
           $aProvs[$prov->codigo]=['id'=>$prov->id,'codigo'=>$prov->codigo,'nombre'=>$prov->nombre,
                                   'localidades_count'=> $prov->localidades_count ,
