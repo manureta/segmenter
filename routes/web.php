@@ -27,6 +27,10 @@ Route::get('/testeando', function () {
     return view('test');
 });
 
+Route::get('/gracias', function () {
+    return view('goodbye');
+});
+
 Auth::routes();
 
 /**
@@ -86,6 +90,8 @@ Route::get('/setup/muestrea/{esquema}',
 'SetupController@muestreaEsquema')->name('setup.muestrea');
 Route::get('/setup/junta/{esquema}',
 'SetupController@juntarSegmentos')->name('setup.junta');
+Route::get('/setup/junta/{esquema}/{frac}/{radio}',
+'SetupController@juntarSegmentos')->name('setup.junta.frac.radio');
 Route::get('/setup/index/{esquema}/{tabla}/{cols}',
 'SetupController@createIndex')->name('setup.create.index');
 Route::get('/setup/grupogeoestadistica/{usuario}',
@@ -96,6 +102,8 @@ Route::get('/setup/duplicadosLSV/{esquema}',
 'SetupController@limpiaListado')->name('setup.limpialistado');
 Route::get('/setup/updateTipoViv/{esquema}',
 'SetupController@tipoVivdeDescripcion')->name('setup.tipovivdescripcion');
+Route::get('/setup/update/LS',
+'SetupController@juntaListadosSegmentados')->name('setup.junta.listados');
 Route::get('/setup/update/R3',
 'SetupController@juntaR3')->name('setup.juntaR3');
 Route::get('/setup/adyacencias/{esquema}',
