@@ -152,7 +152,7 @@ class LocalidadController extends Controller
     public function segmenta_post(Localidad $localidad)
     {
             // Se cierra periodo de segmentación
-            if ( $AppUser->name != 'Bicha' ) { return view('goodbye'); }
+            if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
 
             //
             $carto=$localidad->Carto;
@@ -164,7 +164,7 @@ class LocalidadController extends Controller
     public function run_segmentar(Request $request, Localidad $localidad)
     {
             // Se cierra periodo de segmentación
-            if ( $AppUser->name != 'Bicha' ) { return view('goodbye'); }
+            if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
 
             if($request->optalgoritmo=='listado'){
                 // Segmentacion x listado
@@ -201,10 +201,10 @@ class LocalidadController extends Controller
 
     public function run_segmentar_equilibrado(Request $request, Localidad $localidad)
     {
-            // Se cierra periodo de segmentación
-            if ( $AppUser->name != 'Bicha' ) { return view('goodbye'); }
 
       if (Auth::check()) {
+     // Se cierra periodo de segmentación
+     if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
         $AppUser= Auth::user();
         if($request->radios){
            $radio= Radio::where('codigo',$request->radios)->first();
@@ -284,8 +284,8 @@ class LocalidadController extends Controller
     public function run_segmentar_x_lado(Request $request, Localidad
     $localidad,Radio &$radio=null,$lucky=null)
     {
-            // Se cierra periodo de segmentación
-            if ( $AppUser->name != 'Bicha' ) { return view('goodbye'); }
+     // Se cierra periodo de segmentación
+     if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
 
       if($request->checkallradios){
         Log::debug('Se van a segmentar todos los radios de la

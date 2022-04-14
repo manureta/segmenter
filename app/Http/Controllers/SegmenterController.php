@@ -44,7 +44,7 @@ class SegmenterController extends Controller
     public function index()
     {
       $data=null;
-      if ( $AppUser->name != 'Bicha' ) { return view('goodbye'); }
+      if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
         return view('segmenter/index',['data' => $data,'epsgs'=> $this->epsgs]);
     }
 
