@@ -27,6 +27,10 @@ Route::get('/testeando', function () {
     return view('test');
 });
 
+Route::get('/gracias', function () {
+    return view('goodbye');
+});
+
 Auth::routes();
 
 /**
@@ -72,6 +76,10 @@ Route::get('/setup/index/id/{tabla}',
 'SetupController@addIndexId')->name('setup.indexId');
 Route::get('/setup/geo/{esquema}',
 'SetupController@georeferenciarEsquema')->name('setup.geo');
+Route::get('/setup/geo/{esquema}/{n}',
+'SetupController@georeferenciarEsquema')->name('setup.geo.force');
+Route::get('/setup/geo/{esquema}/{n}/{frac}',
+'SetupController@georeferenciarEsquema')->name('setup.geo.force.frac');
 Route::get('/setup/geoseg/{esquema}',
 'SetupController@georeferenciarSegmentacionEsquema')->name('setup.geoseg');
 Route::get('/setup/segmenta/{esquema}',
@@ -82,6 +90,8 @@ Route::get('/setup/muestrea/{esquema}',
 'SetupController@muestreaEsquema')->name('setup.muestrea');
 Route::get('/setup/junta/{esquema}',
 'SetupController@juntarSegmentos')->name('setup.junta');
+Route::get('/setup/junta/{esquema}/{frac}/{radio}',
+'SetupController@juntarSegmentos')->name('setup.junta.frac.radio');
 Route::get('/setup/index/{esquema}/{tabla}/{cols}',
 'SetupController@createIndex')->name('setup.create.index');
 Route::get('/setup/grupogeoestadistica/{usuario}',
@@ -90,9 +100,24 @@ Route::get('/setup/grupogeoestadistica/tabla/{tabla}',
 'SetupController@grupoGeoestadisticaTabla')->name('setup.grupogeo.tabla');
 Route::get('/setup/duplicadosLSV/{esquema}',
 'SetupController@limpiaListado')->name('setup.limpialistado');
+Route::get('/setup/updateTipoViv/{esquema}',
+'SetupController@tipoVivdeDescripcion')->name('setup.tipovivdescripcion');
+Route::get('/setup/update/R3',
+'SetupController@juntaR3')->name('setup.juntaR3');
+Route::get('/setup/adyacencias/{esquema}',
+'SetupController@generarAdyacenciasEsquema')->name('setup.adyacencias');
+Route::get('/setup/juntaMenores/{esquema}/{frac}/{radio}/{n}',
+'SetupController@juntarSegmentosMenores')->name('setup.junta_menores');
 
 Route::get('/inicio', 'HomeController@index')->name('inicio');
 Route::resource('/listado', 'ListadoController',['only' => [
+   'index', 'show', 'save'
+]]);
+
+/**
+ * Segmentos
+ */
+Route::resource('/segmentos', 'SegmentoController',['only' => [
    'index', 'show', 'save'
 ]]);
 Route::post('/domicilio/guardar/','DomicilioController@save');
@@ -133,8 +158,12 @@ Route::get('depto/{departamento}','DepartamentoController@show');
 Route::post('depto/{departamento}','DepartamentoController@show_post');
 
 // ---------- LOCALIDADES --------
-Route::get('localidades','LocalidadController@index');
+Route::get('locas-list', 'LocalidadController@locasList');
+Route::post('locas-list', 'LocalidadController@locasList');
+Route::get('localidades','LocalidadController@list');
+Route::get('localidades_json','LocalidadController@index');
 Route::get('localidad/{localidad}','LocalidadController@show');
+Route::post('localidad/{localidad}','LocalidadController@segmenta_post');
 Route::post('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
 Route::get('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
 Route::post('localidad-segmenta-run/{localidad}','LocalidadController@run_segmentar');
@@ -185,6 +214,7 @@ Route::get('archivos','ArchivoController@index');
 Route::get('archivo/{archivo}','ArchivoController@show');
 Route::delete('archivo/{archivo}','ArchivoController@destroy');
 Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
+Route::get('archivo/{archivo}/procesar','ArchivoController@procesar');
 
 
 // ---------- TABLERO ---------
