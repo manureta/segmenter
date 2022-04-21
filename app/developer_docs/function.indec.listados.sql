@@ -9,12 +9,14 @@ create or replace function indec.listados()
  returns table (
   prov text,
   provincia text, 
-  coddepto text, 
+  dpto text, 
   departamento text, 
-  codloc  text,
+  codloc text,
   localidad text,
   frac text, 
   radio text, 
+  mza text, 
+  lado text, 
   seg text, 
   ncalle text,
   nrocatastr text, 
@@ -25,6 +27,7 @@ create or replace function indec.listados()
   edificio text,
   entrada text,
   orden_reco text, 
+  tipoviv text,
   created_at timestamp with time zone
 )
 language plpgsql volatile
@@ -43,14 +46,16 @@ RAISE NOTICE 'Buscando listados de todas las localidades...';
  LOOP
      strSQL := CONCAT_WS(' union ',strSQL,'
 select 
-  l.prov::text codprov, 
+  l.prov::text, 
   p.nombre::text provincia, 
-  l.dpto::text coddept, 
+  l.dpto::text, 
   d.nombre::text departamento, 
   l.codloc::text ,
   loc.nombre::text localidad,
   l.frac::text, 
   l.radio::text, 
+  l.mza::text, 
+  l.lado::text, 
   seg::text, 
   ncalle::text,
   nrocatastr::text, 
@@ -60,7 +65,8 @@ select
   sector::text,
   edificio::text,
   entrada::text,
-  orden_reco::text, 
+  orden_reco::text,
+  tipoviv::text,
   now() created_at 
 from ' || rec.table_schema || '.listado l join provincia p on p.codigo = prov 
 join departamentos d on d.codigo = prov || dpto 
