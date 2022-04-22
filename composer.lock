@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ed7b8a5cc256cb8e8b82625ef7c6e303",
+    "content-hash": "84d450120b3039bfa006d6fc955cdc19",
     "packages": [
         {
             "name": "brackets/admin-auth",
@@ -2918,6 +2918,10 @@
                 "logging",
                 "psr-3"
             ],
+            "support": {
+                "issues": "https://github.com/Seldaek/monolog/issues",
+                "source": "https://github.com/Seldaek/monolog/tree/2.5.0"
+            },
             "funding": [
                 {
                     "url": "https://github.com/Seldaek",
@@ -9352,5 +9356,5 @@
         "php": "^7.2"
     },
     "platform-dev": [],
-    "plugin-api-version": "1.1.0"
+    "plugin-api-version": "2.3.0"
 }
