@@ -24,7 +24,6 @@ class Localidad extends Model
     public $segmentadoListado;
     public $segmentadoLados;
 
-
     /**
      * Relación con Departamento, una localidad puede estar en muchos departamentos (caso CABA).
      */
