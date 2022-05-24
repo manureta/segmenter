@@ -153,7 +153,6 @@ class LocalidadController extends Controller
     {
             // Se cierra periodo de segmentación
             if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
-
             //
             $carto=$localidad->Carto;
             $listado=$localidad->Listado;
@@ -165,7 +164,6 @@ class LocalidadController extends Controller
     {
             // Se cierra periodo de segmentación
             if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
-
             if($request->optalgoritmo=='listado'){
                 // Segmentacion x listado
                 return $this->run_segmentar_equilibrado($request,$localidad);
@@ -201,7 +199,6 @@ class LocalidadController extends Controller
 
     public function run_segmentar_equilibrado(Request $request, Localidad $localidad)
     {
-
       if (Auth::check()) {
      // Se cierra periodo de segmentación
      if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
@@ -286,7 +283,6 @@ class LocalidadController extends Controller
     {
      // Se cierra periodo de segmentación
      if ( Auth::user()->name != 'Bicha' ) { return view('goodbye'); }
-
       if($request->checkallradios){
         Log::debug('Se van a segmentar todos los radios de la
         localidad: ('.$localidad->codigo.') '.$localidad->nombre );
