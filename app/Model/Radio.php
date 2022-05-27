@@ -101,7 +101,7 @@ class Radio extends Model
   * Segmentar radio a lados completos
   *
   */
-  public function segmentar($esquema,$deseadas,$max,$min,$indivisible) {
+  public function segmentar($esquema, $deseadas, $max, $min, $indivisible) {
     if (Auth::check()) {
       $AppUser= Auth::user();
       $prov= substr(trim($this->codigo), 0, 2);
@@ -109,9 +109,9 @@ class Radio extends Model
       $frac= substr(trim($this->codigo), 5, 2);
       $radio= substr(trim($this->codigo), 7, 2);
       $segmenta = new Segmentador();
-      $segmenta->segmentar_a_lado_completo($esquema,$prov,$dpto,$frac,$radio,$deseadas,$max,$min,$indivisible);
+      $segmenta->segmentar_a_lado_completo($esquema, $prov, $dpto, $frac, $radio, $deseadas, $max, $min, $indivisible);
       $segmenta->vista_segmentos_lados_completos($esquema);
-      $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema,$frac,$radio);
+      $segmenta->lados_completos_a_tabla_segmentacion_ffrr($esquema, $frac, $radio);
       $this->resultado = 'Segmentado x método LADOS COMPLETOS: '.$segmenta->ver_segmentacion().'
       x '.$AppUser->name.' ('.$AppUser->email.') en '.date("Y-m-d H:i:s").
       '
@@ -130,7 +130,7 @@ class Radio extends Model
    * Segmentar radio con metodo magico.
    *
    */
-  public function segmentarLucky($esquema,$deseadas,$max,$min,$indivisible,$force=false) {
+  public function segmentarLucky($esquema, $deseadas, $max, $min, $indivisible, $force=false) {
     if (Auth::check()) {
       $AppUser = Auth::user();
       $prov = substr(trim($this->codigo), 0, 2);
