@@ -582,7 +582,7 @@ FROM
     {
         if (isset($localidad_codigo)) {
                   //JOIN CON TABLA LAB SEGUN FACE_ID =?
-                 $filtro=" WHERE substr(mzai,0,9)= '".$localidad_codigo."' or substr(mzad,0,9)= '".$localidad_codigo."' ";
+                 $filtro=" WHERE prov || depto || codloc= '".$localidad_codigo."' ";
                  $filtro_lab=" WHERE prov || depto || codloc = '".$localidad_codigo."'";
         } else { $filtro='';
                  $filtro_lab=''; }
@@ -1687,9 +1687,9 @@ FROM
         public static function cargarTopologia($esquema)
         {
             try{
+                DB::beginTransaction();
                 DB::statement(" SELECT indec.cargarTopologia(
                 '".$esquema."','arc');");
-                DB::beginTransaction();
                 DB::statement(" DROP TABLE if exists ".$esquema.".manzanas;");
                 DB::statement(" CREATE TABLE ".$esquema.".manzanas AS SELECT * FROM
                 ".$esquema.".v_manzanas;");
@@ -1706,7 +1706,44 @@ FROM
                 Log::error('No se pudo cargar la topologia...'.$e);
                 return false;
             }
-            Log::debug('Se generaron fracciones, radios y manzanas ');
+            Log::debug('Se generaron fracciones, radios y manzanas en '.$esquema);
+            return true;
+        }
+
+        // Carga geometria en topologia pais genera fracciones y radios.
+        // Carga geometria en topologia y genera fracciones y radios pais.
+        // Necesita arc y lab.
+        public static function cargarTopologiaPais($esquema)
+        {
+            try{
+                DB::beginTransaction();
+                DB::statement(" SELECT indec.cargar_topologia_pais(
+                '".$esquema."','arc');");
+                DB::statement(" ANALYZE pais_topo.edge;");
+                DB::statement(" ANALYZE pais_topo.edge_data;");
+                DB::statement(" ANALYZE pais_topo.node;");
+                DB::statement(" ANALYZE pais_topo.face");
+                DB::statement(" DROP TABLE if exists ".$esquema.".fracciones_pais;");
+                DB::statement(" CREATE TABLE ".$esquema.".fracciones_pais AS SELECT * FROM
+                ".$esquema.".v_fracciones_pais;");
+                DB::statement(" DROP TABLE if exists ".$esquema.".radios_pais;");
+                DB::statement(" CREATE TABLE ".$esquema.".radios_pais AS SELECT * FROM
+    ".$esquema.".v_radios_pais;");
+                DB::commit();
+
+            }
+            catch(QueryException $e){
+                DB::Rollback();
+                Log::error('No se pudo cargar la topologia pais...'.$e);
+                return false;
+            }
+            catch(Exception $e){
+                Log::error('No se pudo cargar la topologia pais...'.$e);
+                return false;
+            }
+            Log::debug('Se generaron fracciones, radios pais en '.$esquema);
+            flash('Se cargó topología pais. Se generaron fracciones, radios pais en '.$esquema)
+                  ->success()->important();
             return true;
         }
 
@@ -1878,7 +1915,8 @@ public static function getPxSeg($esquema)
         }catch(QueryException $e){
           dd($e);
         }
-        Log::error('Reintentar.', [$e]);
+        //Log::error('Reintentar.', [$e]);
+        self::setSRID($esquema,$srid_id);
         return;
       }
     }
@@ -2071,8 +2109,23 @@ order by 1,2
             self::createIndex('public','manzanas','prov,dpto,frac,radio,mza');
             self::createIndex('public','manzanas','wkb_geometry','gist');
             DB::commit();
-            // Tabla con geometría de localdiad y conteo de manzanas
+        }catch(QueryException $e){
+            DB::Rollback();
+            $result=null;
+            Log::error('Error no se pudo actualizar las Manzanas '.$filtro.$e);
+            return 'Manzanas sin actualizar';
+       }
+       return 'Se actualizo manzanas con '.$result.' registros';
+    }
+
+
+    // Junta Localidad a partir de radios :D.
+    public static function juntaLocalidades($filtro=null)
+    {
+        // Tabla con geometría de localdiad y conteo de manzanas
+        try{
             DB::beginTransaction();
+            $result = DB::select("SELECT Count(*) from indec.radios();")[0]->count;
             if (Schema::hasTable('public.localidad_geo')) {
               DB::statement("DROP TABLE public.localidad_geo;");
             }
@@ -2080,7 +2133,7 @@ order by 1,2
                 CREATE TABLE public.localidad_geo AS 
                 select st_union(wkb_geometry) wkb_geometry, prov, dpto, codloc, 
                 max(l.nombre) nombre,
-                sum(conteo) conteo, count(*) manzanas from public.manzanas 
+                sum(conteo) conteo, sum(cant_mzas) manzanas, sum(cant_lados) lados from indec.radios()
                 left join public.localidad l on l.codigo=prov||dpto||codloc
                 group by prov, dpto, codloc order by prov, dpto, codloc;"
             );
@@ -2091,10 +2144,10 @@ order by 1,2
         }catch(QueryException $e){
             DB::Rollback();
             $result=null;
-            Log::error('Error no se pudo actualizar las Manzanas '.$filtro.$e);
-            return 'Manzanas sin actualizar';
+            Log::error('Error no se pudo actualizar las localidades '.$filtro.$e);
+            return 'Localidades sin actualizar';
        }
-       return 'Se actualizo manzanas con '.$result.' registros';
+       return 'Se actualizo localidades_geo con '.$result.' registros';
     }
 
     // Junta Vias de todos los esquemas.
@@ -2178,6 +2231,92 @@ order by 1,2
             return 'Cuadras sin actualizar';
        }
        return 'Se actualizo cuadras con '.$result.' registros';
+    }
+
+    // Crea tabla con los srids elegidos de las localidades cargadas
+    public static function cargaSrids($filtro=null)
+    {
+        try{
+            DB::beginTransaction();
+            if (Schema::hasTable('public.localidad_srid')) {
+              DB::statement("DROP TABLE public.localidad_srid;");
+            }
+            DB::statement("CREATE TABLE public.localidad_srid AS SELECT distinct codloc20, srid FROM indec.cuadras();");
+            $result = DB::select("SELECT Count(*) from localidad_srid;")[0]->count;
+            self::darPermisosTabla('localidad_srid');
+            self::createIndex('public','localidad_srid','codloc20');
+            self::createIndex('public','localidad_srid','srid');
+            DB::commit();
+        }catch(QueryException $e){
+            DB::Rollback();
+            $result=null;
+            Log::error('Error no se pudo actualizar la relación localidad_srid '.$filtro.$e);
+            return 'localidad_srid sin actualizar';
+       }
+       return 'Se actualizo localidad_srid con '.$result.' registros';
+    }
+
+    public static function corrigeSrids($filtro=null)
+    {
+        try {
+            self::cargaSrids();
+            $result = DB::select("select 'e' || codloc20 as esquema, provincia.srid as srid_id
+                                    from localidad_srid
+                                    join provincia
+                                    on codigo = substr(codloc20,1,2)
+                                    where localidad_srid.srid != provincia.srid;
+                                ");
+            $result = array_map(function ($value) {
+                return (array)$value;
+                }, $result);
+            foreach ($result as $registro) {
+                    self::setSRID($registro['esquema'], $registro['srid_id']);
+                    self::cargarTopologia($registro['esquema']);
+                    self::georeferenciar_listado($registro['esquema']); 
+            }
+        } catch (QueryException $e) {
+            Log::error('Error no se pudo corregir localidades con localidad_srid '.$filtro.$e);
+            return 'no se pudo corregir localidades con localidad_srid';   
+        }
+        return 'Se corrigieron '.count($result).' localidades';
+    }
+
+    public static function cargarToposPais($filtro=null)
+    {
+        try {
+            $result = DB::select("select 'e' || codloc20 as esquema, provincia.srid as srid_id
+                                    from localidad_srid
+                                    join provincia
+                                    on codigo = substr(codloc20,1,2)
+                                    ;
+                                ");
+            $result = array_map(function ($value) {
+                return (array)$value;
+                }, $result);
+        } catch (QueryException $e) {
+            Log::error('Error no se pudo revisar las localidades a cargar en topo_pais '.$filtro.$e);
+            return 'No se pudo cargar nueva topo_pais';   
+        }
+            $se_encontro = 0; $nuevo = 0;
+            foreach ($result as $registro) {
+                  try {
+                    $radios_pais = DB::select("select count(*),sum(st_area(st_transform(wkb_geometry,22184))) area_m2 from ".
+                        $registro['esquema'].".v_radios_pais;");
+                    $se_encontro = $se_encontro + 1 ;
+                    flash($se_encontro.'. Se encontró cargado '.$registro['esquema'].' con '.$radios_pais[0]->count.
+                          ' radios en '.round($radios_pais[0]->area_m2/10000,2).' ha sup.')->info()->important();
+                    
+                  } catch (QueryException $e) {
+                    $nuevo = $nuevo + 1;
+                    flash($nuevo.'. Cargando... '.$registro['esquema'])->warning()->important();
+                    self::cargarTopologiaPais($registro['esquema']);
+                    $por_hacer = (int) count($result) - (int) $se_encontro; 
+                    Log::debug('Se cargó la localidad '.$registro['esquema'].' ('.$nuevo.'/ '.$por_hacer.') ');
+                  }
+            }
+        Log::debug('Se cargaron localidades: '.count($result));
+        return 'Se procesaron '.count($result).' localidades '.
+               'Se encontraron '.$se_encontro.' cargadas y '.$nuevo.' nuevas';
     }
 
     public static function radiosDeListados()

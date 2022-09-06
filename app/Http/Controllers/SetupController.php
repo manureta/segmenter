@@ -71,7 +71,9 @@ class SetupController extends Controller
     public function setSRIDSchema($schema,$srid)
     {
         MyDB::setSRID($schema,$srid);
-        return self::cargarTopologia($schema);
+        self::cargarTopologia($schema);
+        self::georeferenciarEsquema($schema);
+        return view('home');
     }
 
     public function grupoGeoestadistica($usuario)
@@ -244,6 +246,32 @@ class SetupController extends Controller
     public function juntaCuadras()
     {
         flash('Resultado: '.MyDB::juntaCuadras());
+        return view('home');
+    }
+
+    public function juntaLocalidades()
+    {
+        flash('Resultado: '.MyDB::juntaLocalidades());
+        return view('home');
+    }
+
+    // Carga todos los esquemas en topo_pais
+    // function   indec.cargarTopologiaPais
+    public function cargarTopologiasPais()
+    {
+        flash('Resultado: '.MyDB::cargarToposPais());
+        return view('home');
+    }
+
+    public function cargaSrids()
+    {
+        flash('Resultado: '.MyDB::cargaSrids());
+        return view('home');
+    }
+
+    public function corrigeSrids()
+    {
+        flash('Resultado: '.MyDB::corrigeSrids());
         return view('home');
     }
 
