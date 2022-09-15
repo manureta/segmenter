@@ -173,7 +173,8 @@ class Archivo extends Model
     }
 
     public function procesarGeomSHP($capa = 'arc') {
-        flash('Procesando Geom . TODO: No implementado!')->warning();
+        MyDB::createSchema('_'.$this->tabla);
+        flash('Procesando Geom desde Shape en reestructuración, disculpe las molestias, estamos trabajando!')->warning();
         $mensajes = '';
         $processOGR2OGR = Process::fromShellCommandline(
             '(/usr/bin/ogr2ogr -f \
@@ -204,26 +205,24 @@ class Archivo extends Model
                 'port'=>Config::get('database.connections.pgsql.port')
             ]);
             $mensajes.='<br />'.$processOGR2OGR->getErrorOutput().'<br />'.$processOGR2OGR->getOutput();
-            flash($mensajes)->warning();
+            flash($mensajes)->error();
 
             $this->procesado=true;
         } catch (ProcessFailedException $exception) {
             Log::error($processOGR2OGR->getErrorOutput());
             flash('Error Importando Shape '.$this->nombre_original)->info();
             $this->procesado=false;
-            return false;
         } catch (RuntimeException $exception) {
             Log::error($processOGR2OGR-->getErrorOutput().$exception);
             flash('Error Importando Runtime Shape '.$this->nombre_original)->info();
             $this->procesado=false;
-            return false;
         } catch(ProcessTimedOutException $exception){
             Log::error($processOGR2OGR->getErrorOutput().$exception);
             flash('Se agotó el tiempo Importando Shape de... etiquetas '.$this->nombre_original)->info();
-            return false;
         }
         $this->procesado=false;
         $this->save();
+        return $this->procesado;
     }
 
     public function procesarGeomE00() {
@@ -336,6 +335,7 @@ class Archivo extends Model
         // Leo dentro de la tabla de etiquetas la/s localidades
         $ppdddllls=MyDB::getLocs('lab','e_'.$this->tabla);
         $count=0;
+        // Si no encuentro localidades en lab.
         if ($ppdddllls==[]) {
             // Intento cargar pais x depto :D
             $coddeptos = MyDB::getDptos('lab', 'e_'.$this->tabla);
@@ -349,6 +349,8 @@ class Archivo extends Model
             MyDB::limpiar_esquema('e_'.$this->tabla);
             return $coddeptos;
         } else {
+            // Para cada localidad encontrada
+            // creo esquema y copio datos a esquema según codigo.
             foreach ($ppdddllls as $ppdddlll) {
                 flash('Se encontró loc Etiquetas: '.$ppdddlll->link);
                 MyDB::createSchema($ppdddlll->link);
@@ -380,7 +382,7 @@ class Archivo extends Model
     }
 
     public function procesarPxRad() {
-        flash('TODO: Procesar PxRad en archivo');
+        flash('TODO: Procesar PxRad en archivo')->warning();
         $dbf = $this->procesarDBF();
         try {
             return $procesar_result = MyDB::procesarPxRad(strtolower($this->tabla),'public');
