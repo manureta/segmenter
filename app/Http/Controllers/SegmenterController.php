@@ -140,7 +140,7 @@ class SegmenterController extends Controller
      }
     }
     if (!Str::contains($mensajes,['ERROR'])){
-       flash('Se cargaron las Etiquetas y Arcos con éxito. ')->important()->success();
+       flash('No se encontraron problemas. ')->success();
     }else{
        flash($mensajes)->important()->error();
     }
@@ -164,7 +164,7 @@ class SegmenterController extends Controller
         $procesar_result = $pxrad_file->procesar();
      } else {
          $procesar_result = false;
-         flash("Error en el modelo cargar archivo")->error();
+         flash("Error en el modelo archivo al cargar PxRad")->error();
      }
       if ($procesar_result) 
       {
