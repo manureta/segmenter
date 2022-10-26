@@ -46,10 +46,12 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url('/home') }}"> Inicio </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
                         }}"> Descargar plugin </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/guia') }}"> Guia </a> </li>
                     @endauth
                     </ul>
 
@@ -66,6 +68,12 @@
                                 </li>
                             @endif
                         @else
+                            <li class="nav-item">
+                                    <a class="nav-link" alt="Ver/Ocultar mensajes"
+                                    title="Ver/Ocultar Menaajes flash"
+                                    onclick="$('div.alert').toggle();">
+                                    Mensajes</a>
+                            </li>
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdownLogin" class="nav-link
                                 dropdown-toggle" href="#logout" role="button"
@@ -98,8 +106,10 @@
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-            style="display:block"><hr />© Copyright 2021 INDEC - Geoestadística
+            style="display:block"><hr />© 2022 INDEC - Geoestadística
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
+            <div>{{ Git::submoduleStatus() }}</div>
+
             </div>
 <!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->
 <!--script src="//code.jquery.com/jquery.js"></script>

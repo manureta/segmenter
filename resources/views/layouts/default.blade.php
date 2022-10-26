@@ -44,9 +44,10 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav mr-auto btn">
                     @auth
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/home') }}"> Inicio </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
@@ -99,7 +100,7 @@
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-            style="display:block"><hr />© Copyright 2021 INDEC - Geoestadística
+            style="display:block"><hr />© 2022 INDEC - Geoestadística
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
             </div>
 <!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->

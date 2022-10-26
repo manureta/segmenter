@@ -19,6 +19,9 @@
       en el Departamento <a href="{{ url("/depto/{$oDepto->id}") }}" >
       ({{ $oDepto->codigo }}) 
       <b> {{ $oDepto->nombre }} </b></a><br />
+      <a href="{{ url("/prov/{$oDepto->provincia->id}") }}" >
+      ({{ $oDepto->provincia->codigo }}) 
+      <b> {{ $oDepto->provincia->nombre }} </b></a>
     @else
       NO está definido ningún departamento.
     @endif
@@ -39,7 +42,7 @@
      <div>
      @if ($carto && $listado)
        <button type="button" class="btn btn-primary" id="segmentar">Segmentar</button>
-     @endif
+     @endif     
     @endauth
     </div>
 </div>
@@ -67,20 +70,26 @@
    </div>
 
 <hr />
-<div class="form-horizontal">
-<form action="/grafo/{{ $localidad->id }}" method="GET" enctype="multipart/form-data">
+<div class="form-horizontal text-center">
+    |<a href="{{ url('/localidad/'.$localidad->id.'/grafico') }}">
+      Grafico de segmentación
+    </a>|
+    <!--a href="{{ url('/localidad/'.$localidad->id.'/pxseg') }}">
+      PxSeg
+    </a-->
+<form action="/localidad/{{ $localidad->id }}" method="GET" enctype="multipart/form-data">
                 @csrf
-  <div class="form-group">
+  <div class="form-groupi text-left">
     <label class="control-label" for="radio">Seleccione un Radio para ver:</label>
     <div class="">
-<ul class="nav">
+<ul class="nav nav-center list-inline mx-auto justify-content-center">
   @foreach ($radios as $radio)
        @if ($radio->isSegmentado) 
           <li class="btn border border-success "> 
         @else
           <li class="btn "> 
         @endif 
-    <a href="{{ url('/grafo/'.$aglomerado->id.'/'.$radio->id) }}">
+    <a href="{{ url('/radio/'.$localidad->id.'/'.$radio->id) }}">
         {{ trim($radio->codigo) }}: {{ trim($radio->nombre) }} <br />Mzas: {{ trim($radio->CantMzas) }} 
         @if ($radio->isSegmentado) Segmentos: {{ trim($radio->isSegmentado) }} @endif
     </a>
@@ -94,10 +103,12 @@
 
 
 </div>
+<div class='text-center'>
      @if($carto)
         {!! $svg !!}
      @endif
 @if($localidad->codigo =='0125')         
+</div>
 <div>
 
 <svg id="C30" class="mapa" xmlns="http://www.w3.org/2000/svg" height="500" width="450" viewBox="0 0 450 500">

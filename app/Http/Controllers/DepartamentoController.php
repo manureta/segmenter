@@ -17,7 +17,7 @@ class DepartamentoController extends Controller
     {
         //  
     if (is_null($provincia)) {$provincia=8;}
-	return view('deptos', ['provincia' => $provincia]);
+    	return view('deptos', ['provincia' => $provincia]);
     }
 
     /**
@@ -74,15 +74,23 @@ class DepartamentoController extends Controller
     public function destroy(Departamento $departamento)
     {
         //
+        //      dd($departamento->localidades) ;//->with('localidades')->get());
+        $departamento->delete();//->with('localidades')->get());
+        dd($departamento) ;//->with('localidades')->get());
     }
 
 
     public function list(Provincia $provincia)
     {   
 	    $deptos = $provincia->departamentos()
-			 ->withCount('localidades')->with('localidades')
-			 ->withCount('fracciones')
-			 ->withCount('radios')->get(); 
+            ->with('localidades')
+            ->withCount(['localidades' =>function ($query) {
+                $query->where('codigo','not like','%000');
+              }
+              ,'fracciones','radios',
+              'radios as segmentados' => function ($query) {
+                $query->whereNotNull('resultado');
+              }])->get(); 
 	    //Departamento::where('provincia_id',$provincia)->get(['codigo','nombre']);
         return datatables()->of($deptos)
             ->make(true);
@@ -97,7 +105,6 @@ class DepartamentoController extends Controller
    public function show(Departamento $departamento)
     {
         //
-//      dd($departamento->localidades) ;//->with('localidades')->get());
         return view('deptoview',['departamento' =>
         $departamento->loadCount('localidades')]);
     }
@@ -108,7 +115,5 @@ class DepartamentoController extends Controller
         //return view('provinfo',['provincia' => Provincia::withCount('departamentos')->findOrFail($provincia)]);
         return view('deptoinfo',['departamento' => $departamento->loadCount('localidades')]);
     }
-
-
 
 }

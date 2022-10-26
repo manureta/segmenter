@@ -7,6 +7,8 @@ use App\Model\Radio;
 use App\MyDB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Auth;
+use DataTables;
 
 class LocalidadController extends Controller
 {
@@ -20,6 +22,79 @@ class LocalidadController extends Controller
         //  
             $localidades=Localidad::all();
             return $localidades;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function list()
+    {
+        //  
+            return view('locas');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function locasList()
+    {
+           $model = Localidad::with(['aglomerado', 'departamentos.provincia' ,'departamentos'])
+               ->withCount(['radios'])
+               ->where('codigo', 'not like', '%000');
+           $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+        if ($codigo) {
+            $model->where('codigo', '=', $codigo);
+        }
+        return DataTables::eloquent($model)
+            ->addColumn( 
+                'departamento', function (Localidad $loc) {
+                    if ( $loc->departamentos->first() ) {
+                      return $loc->departamentos->first()->nombre;
+                    } else {
+                      Log::debug('Localidad sin depto '.$loc->codigo);
+                      return '(no definido)';
+                    }
+                }
+            )
+            ->addColumn(
+                'provincia', function (Localidad $loc) {
+                    if ( $loc->departamentos->first() ) {
+                      if ( $loc->departamentos->first()->provincia ) {
+                        return $loc->departamentos->first()->provincia->nombre;
+                      } else {
+                        Log::debug('Localidad sin provincia '.$loc->codigo);
+                        return '(no definido)';
+                      }
+                    }
+                }
+            )
+            ->addColumn(
+                'aglomerado', function (Localidad $loc) {
+                    if ( $loc->aglomerado ) {
+                      return '(' . $loc->aglomerado->codigo . ') ' . $loc->aglomerado->nombre;
+                    } else {
+                      Log::debug('Localidad sin aglo'.$loc->codigo);
+                      return '(no definido)';
+                    }
+                }
+            )
+            ->toJson();
+        /*            $locasQuery = Localidad::query();
+            $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+        if ($codigo) {
+             $locasQuery->where('codigo', '=', $codigo);
+        }
+            $locas = $locasQuery->select('*')
+                                ->with(['departamentos'])
+                                ->withCount(['radios'])
+                                ->where('codigo','not like','%000');
+            return datatables()->of($locas)
+                ->make(true);
+        */
     }
 
     /**
@@ -61,10 +136,13 @@ class LocalidadController extends Controller
                         ]);
 
             }
+            //radios_loc definido para localidades sin radios cargados
+            $radios_loc = array();
+            foreach($localidad->radios as $radio){$radio->esquema='e'.$localidad->codigo;$radios_loc[]=$radio;}
             return view('localidad.radios',[
                         'localidad'=>$localidad,
                         'aglomerado'=>$localidad->aglomerado,
-                        'radios'=>$localidad->radios,
+                        'radios'=>$radios_loc,
                         'carto'=>$localidad->Carto,
                         'listado'=>$localidad->Listado,
                         'svg'=>$localidad->getSVG()
@@ -107,6 +185,7 @@ class LocalidadController extends Controller
                         $radio->resultado.= '
     '.$mensajes_excedidos;
                         }
+                        $radio->esquema='e'.$localidad->codigo;
                         return app('App\Http\Controllers\SegmentacionController')->ver($localidad,$radio);
                     }
               return
@@ -116,11 +195,33 @@ class LocalidadController extends Controller
 
     public function run_segmentar_equilibrado(Request $request, Localidad $localidad)
     {
-        if(MyDB::segmentar_equilibrado($localidad->codigo,$request['vivs_deseadas'])) {
-           flash('Segmentado ('.$localidad->codigo.') '.$localidad->nombre.'!');
-           return redirect()->route('ver-segmentacion', [$localidad]); 
-        };
-
+      if (Auth::check()) {
+        $AppUser= Auth::user();
+        if($request->radios){
+           $radio= Radio::where('codigo',$request->radios)->first();
+            if ($radio==null){
+                $radio = new Radio(['id'=>null,'codigo'=>$request->radios,'nombre'=>'Nuevo al segmentar: '.$request->radios]);
+            }
+            if(MyDB::segmentar_equilibrado($localidad->codigo,$request['vivs_deseadas'],$radio)) {
+               flash('Segmentado el Radio '.$radio->codigo.' de ('.$localidad->codigo.') '.$localidad->nombre.
+                     ' a '.$request['vivs_deseadas'].' viviendas!');
+                $radio->resultado = 'Segmentado a manzana independiente a '.$request['vivs_deseadas'].' viviendas deseadas.
+        x '.$AppUser->name.' ('.$AppUser->email.') en '.date("Y-m-d H:i:s").
+  '
+  ----------------------- LOG ----------------------------
+  '.$radio->resultado;
+        $radio->save();
+             return app('App\Http\Controllers\SegmentacionController')->ver($localidad,$radio);
+            }
+        }else{
+          if(MyDB::segmentar_equilibrado($localidad->codigo,$request['vivs_deseadas'])) {
+             flash('Segmentada ('.$localidad->codigo.') '.$localidad->nombre.' completa!');
+             return redirect()->route('ver-segmentacion', [$localidad]); 
+          };
+        }
+      }else{
+        return 'No tiene permiso para segmentar';
+      }
     }
 
     public function ver_segmentacion(Localidad $localidad)
@@ -175,29 +276,29 @@ class LocalidadController extends Controller
     $localidad,Radio &$radio=null,$lucky=null)
     {
       if($request->checkallradios){
-        Log::debug('Se van a segmentar todos los radios del
+        Log::debug('Se van a segmentar todos los radios de la
         localidad: ('.$localidad->codigo.') '.$localidad->nombre );
       }
         elseif($request->radios){
            $radio= Radio::where('codigo',$request->radios)->first();
             if ($radio==null){
-                $radio = new Radio(['id'=>null,'codigo'=>$request->radios,'nombre'=>'Nuevo: '.$request->radios]);
+                $radio = new Radio(['id'=>null,'codigo'=>$request->radios,'nombre'=>'Nuevo al segmentar: '.$request->radios]);
                 Log::debug('No se encontró el radio: '.$request->radios.' Se
                 crea temporalmente.');
             }
-            if ($lucky!=true){
+          if ($lucky!=true){
            $resultado = $radio->segmentar($localidad->codigo,
                                           $request['vivs_deseadas'],
                                           $request['vivs_max'],
                                           $request['vivs_min'],
                                           $request['mzas_indivisibles']);
-                                          }else{
+          }else{
            $resultado = $radio->segmentarLucky($localidad->codigo,
                                           $request['vivs_deseadas'],
                                           $request['vivs_max'],
                                           $request['vivs_min'],
                                           $request['mzas_indivisibles']);
-                                          }
+          }
             return  app('App\Http\Controllers\SegmentacionController')->ver($localidad,$radio);
         }else{
            flash('No selecciono ningún radio valido!');
