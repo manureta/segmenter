@@ -17,21 +17,20 @@ class RoleSeeder extends Seeder
      */
     public function run()
     {   
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         $this->command->info('Creando permisos del Super Admin...');
         try{
-            $asignarRoles = Permission::create(['name' => 'Asignar Roles'],'asignador');
-            $quitarRoles = Permission::create(['name' => 'Quitar Roles'],'vetador');
+            $asignarRoles = Permission::firstOrcreate(['name' => 'Asignar Roles']);
+            $quitarRoles = Permission::firstOrcreate(['name' => 'Quitar Roles']);
 
             $this->command->info('Creando rol Super Admin y asignando permisos...');
-            $superAdmin = Role::create(['name' => 'Super Admin'])->syncPermissions([$asignarRoles, $quitarRoles]);
+            $superAdmin = Role::firstOrcreate(['name' => 'Super Admin'])->syncPermissions([$asignarRoles, $quitarRoles]);
             $this->command->info('Rol Super Admin creado.');
-        } catch ( Spatie\Permission\Exceptions\PermissionAlreadyExists $e) {
-            $this->command->error('Permisos del Super Admin existentes...');
-
-//            echo _($e->getMessage());
         } catch ( Spatie\Permission\Exceptions $e) {
-            $this->command->error('Permisos del Super Admin desconocido');
-//            echo _($e->getMessage());
+            $this->command->error('Error creando permisos del Super Admin...');
+            echo _($e->getMessage());
         }
     }
 }
