@@ -11,7 +11,8 @@
 |
 */
 Route::get('users', 'UserController@listarUsuarios')->name('admin.listarUsuarios');
-Route::get('users/{user}', 'UserController@editarRolUsuario')->name('admin.editarRolUsuario');
+Route::get('users/{user}/roles', 'UserController@editarRolUsuario')->name('admin.editarRolUsuario');
+Route::get('users/{user}/permission', 'UserController@editarPermisoUsuario')->name('admin.editarPermisoUsuario');
 
 Route::get('/', function () {
     return view('welcome');
@@ -77,6 +78,8 @@ Route::get('/setup/fixSRID/{esquema}/{srid}',
 Route::get('/setup/topo/pais',
 'SetupController@cargarTopologiasPais')->name('setup.topologia.pais');
 Route::get('/setup/topo/{esquema}',
+'SetupController@cargarTopologia')->name('setup.topologia');
+Route::get('/setup/topo/{esquema}/{tolerancia}',
 'SetupController@cargarTopologia')->name('setup.topologia');
 Route::get('/setup/topo_drop/{esquema}',
 'SetupController@dropTopologia')->name('setup.drop.topologia');
@@ -195,6 +198,7 @@ Route::post('locas-list', 'LocalidadController@locasList');
 Route::get('localidades','LocalidadController@list');
 Route::get('localidades_json','LocalidadController@index');
 Route::get('localidad/{localidad}','LocalidadController@show');
+Route::get('localidad/codigo/{codigo}','LocalidadController@show_codigo');
 Route::post('localidad/{localidad}','LocalidadController@segmenta_post');
 Route::post('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
 Route::get('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
@@ -245,10 +249,12 @@ Route::get('radio/{localidad}/{radio}/','SegmentacionController@ver_grafo')->nam
 Route::post('archivos','ArchivoController@index');
 Route::get('archivos','ArchivoController@index');
 Route::get('archivo/{archivo}','ArchivoController@show');
+Route::post('archivo/{archivo}','ArchivoController@show');
 Route::delete('archivo/{archivo}','ArchivoController@destroy');
+Route::put('archivo/{archivo}/detach','ArchivoController@detach');
 Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
 Route::get('archivo/{archivo}/procesar','ArchivoController@procesar');
-
+Route::get('archivos/limpiar','ArchivoController@eliminar_repetidos')->name('limpiar_archivos');
 
 // ---------- TABLERO ---------
 

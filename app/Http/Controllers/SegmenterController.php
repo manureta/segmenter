@@ -134,10 +134,10 @@ class SegmenterController extends Controller
       if( $mensajes=$shp_file->procesar() ) {
         flash('Procesó '.$shp_file->tipo)->important()->success();
         if (isset($shp_lab_file)){
-          flash('2. '.$shp_file->tabla.' == '.$shp_lab_file->tabla);
+          flash('Al mismo esquema temporal lab y arc '.$shp_file->tabla.' == '.$shp_lab_file->tabla);
         }
         $ppdddllls=$shp_file->pasarData();
-        flash('333');
+        flash('3. Se pasó Data de '.count($ppdddllls));
       }else{flash('No se pudo procesar la cartografía')->error()->important();
         $mensajes.=' ERROR ';
       }

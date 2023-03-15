@@ -16,6 +16,7 @@ use App\MyDB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Exceptions\GeoestadisticaException;
+use App\User;
 
 class Archivo extends Model
 {
@@ -33,11 +34,28 @@ class Archivo extends Model
         return $this->belongsTo('App\User');
     }
 
+
+    // Funciona para recalcular checksum shape (varios files)
+    private static function checksumCalculate($request_file, $shape_files = []){
+        // Recalcular checksum de grupo de archivos ?
+        // O generar archivo comprimido de una vez :/
+        // DO IT
+        $checksum = md5_file($request_file->getRealPath());
+        if ($shape_files != null){
+            $checksums[] = $checksum;
+            foreach ($shape_files as $shape_file) {
+                $checksums[] =  md5_file($shape_file->getRealPath());
+            }
+            $checksum = md5(implode('',$checksums));
+        } 
+        return $checksum;
+    }
+
     // Funcion para cargar información de archivo en la base de datos.
     public static function cargar($request_file, $user, $tipo=null, $shape_files = []) {
         $original_extension = strtolower($request_file->getClientOriginalExtension());
         
-        $file = self::where('checksum', '=', md5_file(($request_file)->getRealPath()))->first();
+        $file = self::where('checksum', '=', self::checksumCalculate($request_file, $shape_files))->first();
         if (!$file) {
             flash("Nuevo archivo ".$original_extension);
             $guess_extension = strtolower($request_file->guessClientExtension());
@@ -45,8 +63,10 @@ class Archivo extends Model
             $random_name= 't_'.$request_file->hashName();
             $random_name = substr($random_name,0,strpos($random_name,'.'));
             $file_storage = $request_file->storeAs('segmentador', $random_name.'.'.$request_file->getClientOriginalExtension());
+            $checksum = self::checksumCalculate($request_file, $shape_files);
             if ($tipo == 'shape'){
                 if ($shape_files != null){
+                    $data_files[] = null;
                     foreach ($shape_files as $shape_file) {
                         //Almacenar archivos asociados a shapefile con igual nombre
                         //según extensión.
@@ -57,14 +77,14 @@ class Archivo extends Model
                     }
                 }
             }
-            $file_storage = $request_file->storeAs('segmentador', $random_name.'.'.$request_file->getClientOriginalExtension());
+
             $file = self::create([
                 'user_id' => $user->id,
                 'nombre_original' => $original_name,
                 'nombre' => $file_storage,
                 'tabla' => $random_name,
                 'tipo' => ($guess_extension!='bin' and $guess_extension!='')?$guess_extension:$original_extension,
-                'checksum'=> md5_file($request_file->getRealPath()),
+                'checksum'=> $checksum,
                 'size' => $request_file->getSize(),
                 'mime' => $request_file->getClientMimeType()
             ]);
@@ -109,6 +129,9 @@ class Archivo extends Model
             } elseif ($this->tipo == 'pxrad/dbf') {
                 return $this->procesarPxRad();
             } elseif ($this->tipo == 'shp') {
+                if ( strtolower(substr($this->nombre_original, 0, 11)) == 'Localidades') {
+                  return $this->procesarGeomSHP('localidades');
+                }
                 return $this->procesarGeomSHP();
             } elseif ($this->tipo == 'shp/arc') {
                 return $this->procesarGeomSHP();
@@ -356,13 +379,21 @@ class Archivo extends Model
         if ($ppdddllls==[]) {
             // Intento cargar pais x depto :D
             $coddeptos = MyDB::getDptos('lab', 'e_'.$this->tabla);
-            flash('Puede ser una pais con deptos: '.count($coddeptos));
+            $coddeptos_pol = MyDB::getDptos('arc', 'e_'.$this->tabla);
+            flash('Puede ser una pais con deptos: '.count($coddeptos).' o '.count($coddeptos_pol));
             foreach ($coddeptos as $coddepto){
                 flash('Se encontró Departamento : '.$coddepto->link);
                 MyDB::createSchema($coddepto->link);
                 MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
                 $count++;
             }
+            foreach ($coddeptos_pol as $coddepto){
+                flash('Se encontró Departamentos en arc/pol : '.$coddepto->link);
+                MyDB::createSchema($coddepto->link);
+                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
+                $count++;
+            }
+            
             MyDB::limpiar_esquema('e_'.$this->tabla);
             return $coddeptos;
         } else {
@@ -429,6 +460,24 @@ class Archivo extends Model
         $this->save();
         flash($mensaje.$import->getRowCount());
         return true;
+    }
+
+    public function limpiar_copia($id_original){
+        $original = self::find($id_original);
+        $owner = User::find($this->user_id);
+        error_log("Soy " . $this->id . " y pertenezco al user " . $owner->id);
+        error_log("Mi original es " . $id_original . " y pertenece al user " . $original->user_id);
+        if (($original->user_id != $owner->id) and (!$owner->visible_files()->get()->contains($original))){
+            $owner->visible_files()->attach($id_original);
+            error_log("Agregado a file_viewer");
+        }
+        if(Storage::delete($this->nombre)){
+            Log::info('Se borró el archivo: '.$this->nombre_original);
+        }else{
+            Log::error('NO se borró el archivo: '.$this->nombre);
+        }
+        $this->delete();
+        error_log("Se eliminó el registro");
     }
 
 }

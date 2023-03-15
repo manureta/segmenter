@@ -607,16 +607,25 @@ FROM
          try {
              DB::beginTransaction();
              DB::unprepared('DROP TABLE IF EXISTS '.$a_esquema.'.arc CASCADE');
-             DB::unprepared('DROP TABLE IF EXISTS '.$a_esquema.'.lab CASCADE');
              DB::unprepared('CREATE TABLE "'.$a_esquema.'".arc AS SELECT * FROM "'.$de_esquema.'".arc '.$filtro);
-             DB::unprepared('CREATE TABLE "'.$a_esquema.'".lab AS SELECT * FROM "'.$de_esquema.'".lab '.$filtro_lab);
              DB::commit();
-          
          }catch (QueryException $exception) {
              DB::Rollback();
              Log::error('Error: '.$exception);
-             return false;
-        }
+             flash('Error procesando arc '.$exception->getMessage())->error()->important();
+             $error = true;
+         }
+         try {
+             DB::beginTransaction();
+             DB::unprepared('DROP TABLE IF EXISTS '.$a_esquema.'.lab CASCADE');
+             DB::unprepared('CREATE TABLE "'.$a_esquema.'".lab AS SELECT * FROM "'.$de_esquema.'".lab '.$filtro_lab);
+             DB::commit();
+         }catch (QueryException $exception) {
+             DB::Rollback();
+             Log::error('Error: '.$exception);
+             flash('Error procesando lab '.$exception->getMessage())->error()->important();
+             $error = true;
+         }
         return true;
     }
 
@@ -936,7 +945,7 @@ FROM
             if (self::cargarTopologia($schema)) {
                 flash('Se creo la topología para '.$schema)->success()->important();
             }else{
-                flash('No se pudo validar la topología para '.$schema)->error()->important();
+                flash('No se pudo validar la topología para '.$schema)->warning()->important();
             }
 
             self::georeferenciar_listado($schema);
@@ -971,17 +980,17 @@ FROM
 
         public static function limpiar_esquema($esquema)
         {
-        // Comienzan limíeza de esquema
+        // Comienzan limpieza de esquema
         try {
                DB::beginTransaction();
-              DB::statement('DROP SCHEMA "'.$esquema.'" CASCADE;');
+               DB::statement('ALTER SCHEMA "'.$esquema.'" RENAME TO "h_'.$esquema.'";');
               DB::commit();
-               Log::info('Se eliminó el esquema '.$esquema);
+               Log::info('Se renombró el esquema '.$esquema);
               return true;
                 }catch (\Illuminate\Database\QueryException $exception) {
                     Log::error('No se pudo limpiar el esquema: '.$exception);
                     DB::Rollback();
-              return false;
+                    return false;
                 }
         }
 
@@ -1710,12 +1719,17 @@ FROM
 
         // Carga geometria en topologia y genera manzanas, fracciones y radios.
         // Necesita arc y lab.
-        public static function cargarTopologia($esquema)
-        {
+   public static function cargarTopologia($esquema, $tolerancia = null)
+     {
             try{
                 DB::beginTransaction();
-                DB::statement(" SELECT indec.cargarTopologia(
-                '".$esquema."','arc');");
+                if (is_numeric($tolerancia)) {
+                  DB::statement(" SELECT indec.cargarTopologia(
+                  '".$esquema."','arc',$tolerancia);");
+                } else {
+                  DB::statement(" SELECT indec.cargarTopologia(
+                  '".$esquema."','arc');");
+                }
                 DB::statement(" DROP TABLE if exists ".$esquema.".manzanas;");
                 DB::statement(" CREATE TABLE ".$esquema.".manzanas AS SELECT * FROM
                 ".$esquema.".v_manzanas;");
@@ -1727,18 +1741,33 @@ FROM
     ".$esquema.".v_radios;");
                 DB::commit();
 
-      }catch(QueryException $e){
-                DB::Rollback();
-                if ($e->getCode()=='P0001'){
-                    self::setLabfromPol($esquema);
-                    self::cargarTopologia($esquema);
-                }
-                Log::error('No se pudo cargar la topologia...'.$e);
-                return false;
-            }
-            Log::debug('Se generaron fracciones, radios y manzanas en '.$esquema);
-            return true;
-        }
+      } catch(QueryException $e) {
+          DB::Rollback();
+          if ($e->getCode()=='P0001'){
+              self::setLabfromPol($esquema);
+              self::cargarTopologia($esquema);
+              Log::warning('Se pudo cargar la topologia creando etiquetas desde los poligonos para '.$esquema .' -> '.$e);
+              return true;
+          }
+          if ($e->getCode()=='XX000'){
+              if (is_null($tolerancia)) {
+                 if (self::cargarTopologia($esquema,1)) {
+                     Log::warning('Se pudo cargar la topologia utilizando tolerancia de 1 '.$esquema .' -> '.$e);
+                     return true;
+                  }
+               } else {
+                  Log::error('No se pudo cargar la topologia ni utilizando tolerancia de '.$tolerancia.' para '.$esquema .' -> '.$e);
+                  $result = DB::select("SELECT * from indec.crossTopologia('".$esquema."','arc') arc_cross join ".$esquema.".arc a using (ogc_fid)");
+                  $cross_result = collect($result)->toJson(JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                  flash('Arco con problemas: '.$cross_result)->error()->important();
+               }
+          }
+          Log::error('No se pudo cargar la topologia para '.$esquema.' ! '.$e);
+          return false;
+     }
+     Log::info('Se generaron fracciones, radios y manzanas en '.$esquema);
+     return true;
+   }
 
         // Carga geometria en topologia pais genera fracciones y radios.
         // Carga geometria en topologia y genera fracciones y radios pais.
