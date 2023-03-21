@@ -10,13 +10,15 @@
 <p>
     con {{ $provincia->departamentos_count }} divisiones de segundo orden (comunas/partidos/departamentos)
 </p>
-            	@foreach($provincia->departamentos as $departamento)
+            	@foreach($provincia->departamentos->sort() as $departamento)
     		<li class="btn  btn-outline-secondary" style="margin-bottom: 1px" >
 		 <a href="{{ url('/depto/'.$departamento->id) }}">
 ({{ $departamento->codigo }}) {{ $departamento->nombre }} </a>
                </li>
 		@endforeach
     @endif
+    {{!! $provincia->svg() !!}}
+    {{ $provincia->geojson() }}
 <div/>
 @if($provincia->codigo =='30')         
 <div>

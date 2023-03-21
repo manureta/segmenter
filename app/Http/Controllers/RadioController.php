@@ -56,7 +56,7 @@ class RadioController extends Controller
     public function show(Radio $radio)
     {
         //
-        return $radio->load(['fraccion','localidades']);
+        return $radio->load(['fraccion','localidades','fraccion.departamento','fraccion.departamento.provincia','tipo']);
           flash(
                 ($radio
                     ->load(['fraccion','localidades'])
@@ -68,6 +68,19 @@ class RadioController extends Controller
 
     }
 
+    public function show_codigo(string $codigo)
+    {
+        if (strlen($codigo)==9)
+        {
+            return Radio::where('codigo',$codigo)->get()
+                ->load(['fraccion','localidades','tipo','fraccion.departamento','fraccion.departamento.provincia']);
+        } else {
+            Log::error('Código mal formado para radio',[$codigo]);
+            return response()->json([
+                'message' => 'Código mal formado.'
+            ], 404);
+        }
+    }
     /**
      * Show the form for editing the specified resource.
      *
@@ -112,6 +125,19 @@ class RadioController extends Controller
         $aglo=$radio->aglomerado->codigo();
         $segmenta = new Segmentador();
         $segmenta->segmentar_a_lado_completo($radio,$deseadas,$max,$min,$indivisible);
+        return $segmenta->ver_segmentacion($radio);
+    }
+
+    /**
+     * Juntar segmentos con menos de n viviendas 
+     * 
+     */
+    public function juntarSegmentos(Radio $radio,$menos_n_viviendas)
+    {
+        //
+        $aglo=$radio->aglomerado->codigo();
+        $segmenta = new Segmentador();
+        $segmenta->juntarSegmentos($radio,$menos_n_viviendas);
         return $segmenta->ver_segmentacion($radio);
     }
 

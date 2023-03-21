@@ -12,10 +12,6 @@
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
 
-    <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
-
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
@@ -28,7 +24,6 @@
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
-		@include('flash::message')
                 <div class="m-0 p-0 text-center" >
                 <a class="navbar-brand text-uppercase" href="{{ url('/') }}">
 		<img src="/images/mandarina.svg" width="30" height="30" class="d-inline-block align-top" alt="">
@@ -44,9 +39,10 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav mr-auto btn">
                     @auth
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/home') }}"> Inicio </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
@@ -94,22 +90,20 @@
         </nav>
 
         <main class="py-4">
+		        @include('flash::message')
             @yield('content')
         </main>
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-            style="display:block"><hr />© 2022 INDEC - Geoestadística
+            style="display:block"><hr />© 2023 INDEC - Geoestadística
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
             </div>
-<!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->
 <script>
    $(document).ready( function () {
-    $('#flash-overlay-modal').modal();
+   $('#flash-overlay-modal').modal();
+   $('div.alert').not('.alert-important').delay(5000).fadeOut(500);
 });
-</script>
-<script>
-$('div.alert').not('.alert-important').delay(3000).fadeOut(350);
 </script>
     @yield ('footer_scripts')
 </body>

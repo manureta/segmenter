@@ -22,7 +22,16 @@
    </div>
 
   <div class="container">
+    @if(Session::has('message'))
+      <div class="alert alert-danger alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        {{Session::get('message')}}
+      </div>
+    @endif
    <h2>Listado de Archivos</h2>
+   @can('Administrar Archivos')
+   <h4><a href="{{route('limpiar_archivos')}}" class="badge badge-pill badge-danger"> Eliminar repetidos</a></h4>
+   @endcan
    <br>
    <div class="row">
     <div class="form-group col-md-6">
@@ -51,6 +60,9 @@
              <th>Mime</th>
              <th>Checksum</th>
              <th>Tamaño</th>
+             <th>Creación</th>
+             <th>Cargador</th>
+             <th alt="Observadores" >(o)</th>
              <th> * </th>
           </tr>
        </thead>
@@ -104,7 +116,7 @@
           url: "{{ url('archivos') }}",
           type: 'GET',
           data: function (d) {
-          d.codigo = $('#codigo').val();
+          d.codigo = $('#nombre').val();
           }
          },
          columns: [
@@ -113,16 +125,13 @@
                   { visible: false, data: 'nombre', name: 'nombre' },
                   { visible: false, data: 'user_id', name: 'user_id' },
                   { data: 'tipo', name: 'tipo' },
-                  { data: 'mime', name: 'mime' },
-                  { data: 'checksum', name: 'checksum' },
-                  { data: 'size', name: 'size' },
-                  { orderable: false, searchable: false , data: function ( row, type, val, meta ) {
-                             var html =  '<button type="button" class="btn_descarga btn-sm btn-primary" > Descargar </button> ';
-                                 html +=  '<button type="button" class="btn_arch btn-sm btn-primary" > Ver </button>';
-                                 html +=  '<button type="button" class="btn_arch_delete btn-sm btn-delete " > Borrar </button>';
-                              return html;
-                            }
-                }
+                  { visible: false, data: 'mime', name: 'mime' },
+                  { visible: false, data: 'checksum', name: 'checksum' },
+                  { data: 'size_h', name: 'size'},
+                  { data: 'created_at_h', name: 'created_at'},
+                  { data: 'usuario', name: 'usuario' },
+                  { data: 'viewers_count', name: 'viewers_count' },
+                  { data: 'action', name: 'action', orderable: false}
         ]
       });
 
@@ -154,6 +163,17 @@
            };
     });
 
+// Función de botón Procesar.
+    table.on('click', '.btn_arch_procesar', function () {
+      var row = $(this).closest('tr');
+      var data = table.row( row ).data();
+      console.log('Procesar Archivo: '+data.codigo);
+        if (typeof data !== 'undefined') {
+            url= "{{ url('archivo') }}"+"/"+data.id+"/procesar";
+            $(location).attr('href',url);
+           };
+    });
+
 // Función de botón Descarga.
     table.on('click', '.btn_descarga', function () {
       var row = $(this).closest('tr');
@@ -178,17 +198,50 @@
                 _token:'{{ csrf_token() }}'},
          success: function(response){ 
 	     // Add response in Modal body
+       if(response=='ok'){
+        if(response.statusCode==200){
+	          row.fadeOut().remove();
+        }
+        if(response.statusCode==405){
+              alert("Error al intentar borrar");
+        }
+        if(response.statusCode==500){
+              alert("Error al intentar borrar. En el servidor");
+          }
+        alert("Se eliminó el registro del archivo");
+        row.fadeOut().remove();
+        $('.modal-body').html(response);
+       } else {
+        alert("El archivo es utilizado por " + response + " usuario(s). No se eliminará");
+       }
+           }
+      });
+      };
+    });
+
+  // Función de botón Dejar de ver.
+  table.on('click', '.btn_arch_detach', function () {
+      var $ele = $(this).parent().parent();
+      var row = $(this).closest('tr');
+      var data = table.row( row ).data();
+      if (typeof data !== 'undefined') {
+      $.ajax({
+         url: "{{ url('archivo') }}"+"\\"+data.id+"/detach",
+         type: "PUT",
+	 data: {id: data.id,
+                _token:'{{ csrf_token() }}'},
+         success: function(response){ 
+	     // Add response in Modal body
 	     if(response.statusCode==200){
 	          row.fadeOut().remove();
 	     }
 	     if(response.statusCode==405){
 	          alert("Error al intentar borrar");
 	     }
-            if(response.statusCode==500){
-                  alert("Error al intentar borrar. En el servidor");
-             }
-
-	     alert("Se elimino el registro del archivo");
+      if(response.statusCode==500){
+            alert("Error al intentar borrar. En el servidor");
+        }
+      alert("Ya no se visualizará el archivo");
 	     row.fadeOut().remove();
 	     $('.modal-body').html(response);
 

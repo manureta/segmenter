@@ -63,6 +63,18 @@ class SetupController extends Controller
         return view('home');
     }
 
+    /**
+     * Setear SRID y regenerar topología para el esquema.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function setSRIDSchema($schema,$srid)
+    {
+        MyDB::setSRID($schema,$srid);
+        self::cargarTopologia($schema);
+        self::georeferenciarEsquema($schema);
+        return view('home');
+    }
 
     public function grupoGeoestadistica($usuario)
     {
@@ -77,9 +89,13 @@ class SetupController extends Controller
         return view('home');
     }
 
-    public function cargarTopologia($schema)
+    public function cargarTopologia($schema, $tolerancia = null)
     {
-        MyDB::cargarTopologia($schema);
+        if (is_numeric($tolerancia)) {
+          MyDB::cargarTopologia($schema, $tolerancia);
+        } else {
+          MyDB::cargarTopologia($schema);
+        }
         flash('Se creo la topología para '.$schema);
         return view('home');
     }
@@ -115,10 +131,15 @@ class SetupController extends Controller
         return view('home');
     }
 
-    public function georeferenciarEsquema($schema)
+    public function georeferenciarEsquema($schema, $n=8, $frac=null, $radio=null)
     {
-        MyDB::georeferenciar_listado($schema);
-        flash('Se georeferencio el listado del esquema '.$schema);
+        flash('Georeferenciando listado del esquema '.$schema.' Fracción:'.$frac.' Radio: '.$radio.' N:'.$n)->info()->important();
+        if (is_numeric($n)) {
+            $desp = $n;
+            MyDB::georeferenciar_listado($schema, $desp, $frac, $radio);
+        } else {
+            MyDB::georeferenciar_listado($schema, 7, $frac, $radio);
+        }
         return view('home');
     }
 
@@ -137,6 +158,13 @@ class SetupController extends Controller
         return view('home');
     }
 
+    public function generarAdyacenciasEsquema($schema)
+    {
+        $cant = MyDB::generarAdyacencias($schema);
+        flash('Se generaron '.$cant.' adyacencias para el esquema '.$schema);
+        return view('home');
+    }
+
     public function limpiarEsquema($schema)
     {
         MyDB::limpiar_esquema($schema);
@@ -149,6 +177,26 @@ class SetupController extends Controller
         flash('Resultado: '.MyDB::juntar_segmentos($schema));
         flash('Se juntaron los segmentos con 0 viviendas del esquema '.$schema);
         flash('Sincro R3: '.MyDB::grabarSegmentacion(substr($schema,1,strlen($schema)-1)));
+        return view('home');
+    }
+
+    /**
+     * Show the index application dashboard.
+     * Junta Segmentos con menos de $n cantidad de viviendas
+     * en el $schema, para el $frac, $radio
+     *
+     * @schema text
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function juntarSegmentosMenores($schema, $frac, $radio, $n)
+    {
+      
+        for ($m=$n;$n>0;$n--) {
+            $result = MyDB::juntar_segmentos_con_menos_de($schema, $frac, $radio, $m-$n);
+            flash('Juntado para '.($m-$n).': '.$result);
+        }
+        flash('Sincro R3: '.MyDB::grabarSegmentacion(substr($schema,1,strlen($schema)-1),$frac,$radio));
         return view('home');
     }
 
@@ -184,6 +232,68 @@ class SetupController extends Controller
     public function juntaR3()
     {
         flash('Resultado: '.MyDB::juntaR3());
+        return view('home');
+    }
+
+    public function juntaManzanas()
+    {
+        flash('Resultado: '.MyDB::juntaManzanas());
+        return view('home');
+    }
+
+    public function juntaVias()
+    {
+        flash('Resultado: '.MyDB::juntaVias());
+        return view('home');
+    }
+    
+    public function juntaCuadras()
+    {
+        flash('Resultado: '.MyDB::juntaCuadras());
+        return view('home');
+    }
+
+    public function juntaLocalidades()
+    {
+        flash('Resultado: '.MyDB::juntaLocalidades());
+        return view('home');
+    }
+
+    // Carga todos los esquemas en topo_pais
+    // function   indec.cargarTopologiaPais
+    public function cargarTopologiasPais()
+    {
+        flash('Resultado: '.MyDB::cargarToposPais());
+        return view('home');
+    }
+
+    public function cargaSrids()
+    {
+        flash('Resultado: '.MyDB::cargaSrids());
+        return view('home');
+    }
+
+    public function corrigeSrids()
+    {
+        flash('Resultado: '.MyDB::corrigeSrids());
+        return view('home');
+    }
+
+    public function radiosDeListados()
+    {
+        flash('Resultado: '.MyDB::radiosDeListados());
+        return view('home');
+    }
+
+    public function radiosDeArcs()
+    {
+        flash('Resultado: '.MyDB::radiosDeArcs());
+        return view('home');
+    }
+
+    public function juntaListadosSegmentados()
+    {
+        flash('Resultado: '.MyDB::juntaListadossegmentados());
         return view('home');
     }
 

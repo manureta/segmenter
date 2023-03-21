@@ -8,6 +8,7 @@ use App\MyDB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Auth;
+use DataTables;
 
 class LocalidadController extends Controller
 {
@@ -24,8 +25,105 @@ class LocalidadController extends Controller
     }
 
     /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function list()
+    {
+        //  
+            return view('locas');
+    }
+
+    /**
      * Show the form for creating a new resource.
      *
+     * @return \Illuminate\Http\Response
+     */
+    public function locasList()
+    {
+           $model = Localidad::with(['aglomerado', 'departamentos.provincia' ,'departamentos'])
+               ->withCount(['radios'])
+               ->where('codigo', 'not like', '%000');
+           $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+        if ($codigo) {
+            $model->where('codigo', '=', $codigo);
+        }
+        return DataTables::eloquent($model)
+            ->addColumn( 
+                'departamento', function (Localidad $loc) {
+                    if ( $loc->departamentos->first() ) {
+                      return $loc->departamentos->first()->nombre;
+                    } else {
+                      Log::debug('Localidad sin depto '.$loc->codigo);
+                      return '(no definido)';
+                    }
+                }
+            )
+            ->addColumn(
+                'provincia', function (Localidad $loc) {
+                    if ( $loc->departamentos->first() ) {
+                      if ( $loc->departamentos->first()->provincia ) {
+                        return $loc->departamentos->first()->provincia->nombre;
+                      } else {
+                        Log::debug('Localidad sin provincia '.$loc->codigo);
+                        return '(no definido)';
+                      }
+                    }
+                }
+            )
+            ->addColumn(
+                'aglomerado', function (Localidad $loc) {
+                    if ( $loc->aglomerado ) {
+                      return '(' . $loc->aglomerado->codigo . ') ' . $loc->aglomerado->nombre;
+                    } else {
+                      Log::debug('Localidad sin aglo'.$loc->codigo);
+                      return '(no definido)';
+                    }
+                }
+            )
+            ->toJson();
+        /*            $locasQuery = Localidad::query();
+            $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+        if ($codigo) {
+             $locasQuery->where('codigo', '=', $codigo);
+        }
+            $locas = $locasQuery->select('*')
+                                ->with(['departamentos'])
+                                ->withCount(['radios'])
+                                ->where('codigo','not like','%000');
+            return datatables()->of($locas)
+                ->make(true);
+        */
+    }
+
+
+    public function show_codigo(Request $request, string $codigo)
+    {
+        if (strlen($codigo)==8)
+        {
+            $model = Localidad::where('codigo',$codigo) 
+                ->with(['aglomerado','departamentos','departamentos.provincia'])
+                ->withCount(['radios'])
+                ->get();
+            if ( $request->isMethod('get') ){
+              // Redirige al primer registro encontrado con ese código.
+              return redirect()->action([LocalidadController::class,'show'], [$model->first()] );
+            } else {
+              return $model;
+            }
+
+        } else {
+            Log::error('Código mal formado para localidad',[$codigo]);
+            return response()->json([
+                'message' => 'Código mal formado.'
+            ], 404);
+        }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     
      * @return \Illuminate\Http\Response
      */
     public function create()
@@ -131,7 +229,7 @@ class LocalidadController extends Controller
             if(MyDB::segmentar_equilibrado($localidad->codigo,$request['vivs_deseadas'],$radio)) {
                flash('Segmentado el Radio '.$radio->codigo.' de ('.$localidad->codigo.') '.$localidad->nombre.
                      ' a '.$request['vivs_deseadas'].' viviendas!');
-                $radio->resultado = 'Segmentado a manzana independiente.
+                $radio->resultado = 'Segmentado a manzana independiente a '.$request['vivs_deseadas'].' viviendas deseadas.
         x '.$AppUser->name.' ('.$AppUser->email.') en '.date("Y-m-d H:i:s").
   '
   ----------------------- LOG ----------------------------
