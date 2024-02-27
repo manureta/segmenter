@@ -19,7 +19,7 @@ class LocalidadController extends Controller
      */
     public function index()
     {
-        //  
+        //
             $localidades=Localidad::all();
             return $localidades;
     }
@@ -31,7 +31,7 @@ class LocalidadController extends Controller
      */
     public function list()
     {
-        //  
+        //
             return view('locas');
     }
 
@@ -50,7 +50,7 @@ class LocalidadController extends Controller
             $model->where('codigo', '=', $codigo);
         }
         return DataTables::eloquent($model)
-            ->addColumn( 
+            ->addColumn(
                 'departamento', function (Localidad $loc) {
                     if ( $loc->departamentos->first() ) {
                       return $loc->departamentos->first()->nombre;
@@ -102,13 +102,17 @@ class LocalidadController extends Controller
     {
         if (strlen($codigo)==8)
         {
-            $model = Localidad::where('codigo',$codigo) 
+            $model = Localidad::where('codigo',$codigo)
                 ->with(['aglomerado','departamentos','departamentos.provincia'])
                 ->withCount(['radios'])
                 ->get();
             if ( $request->isMethod('get') ){
               // Redirige al primer registro encontrado con ese código.
-              return redirect()->action([LocalidadController::class,'show'], [$model->first()] );
+              if($localidad=$model->first()) {
+                    return $this->show($localidad);//redirect()->action([LocalidadController::class,'show'], [$model->first()] );
+              } else {
+                return redirect("/home")->withFail('Error','No se encontró la localidad');
+                    }
             } else {
               return $model;
             }
@@ -123,7 +127,7 @@ class LocalidadController extends Controller
 
     /**
      * Show the form for creating a new resource.
-     
+
      * @return \Illuminate\Http\Response
      */
     public function create()
@@ -240,7 +244,7 @@ class LocalidadController extends Controller
         }else{
           if(MyDB::segmentar_equilibrado($localidad->codigo,$request['vivs_deseadas'])) {
              flash('Segmentada ('.$localidad->codigo.') '.$localidad->nombre.' completa!');
-             return redirect()->route('ver-segmentacion', [$localidad]); 
+             return redirect()->route('ver-segmentacion', [$localidad]);
           };
         }
       }else{
