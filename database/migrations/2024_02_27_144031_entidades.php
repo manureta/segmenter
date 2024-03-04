@@ -30,7 +30,7 @@ return new class extends Migration
               $table->timestamps();
           });
       } else {
-          echo _('Ya existe la tabla permissions');
+          echo __('Ya existe la tabla permissions');
       }
     }
 
