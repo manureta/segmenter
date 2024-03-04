@@ -51,6 +51,15 @@ class Localidad extends Model
         return $this->belongsToMany('App\Model\Radio', 'radio_localidad');
     }
 
+    /**
+     * Relación con Entidad, una localidad pude tener 2 o más entidades.
+     */
+
+     public function entidades()
+     {
+         return $this->belongsTo('App\Model\Entidades');
+     }
+
     //
     public function getCodigoLocAttribute($value){
         return $codloc= substr(trim($this->codigo), 5, 3);
@@ -67,7 +76,7 @@ class Localidad extends Model
         }
         return $this->_carto;
     }
-    
+
 
     public function getListadoAttribute($value)
     {
@@ -241,7 +250,7 @@ class Localidad extends Model
             //dd($viewBox.'/n'.$this->viewBox($extent,$epsilon,$height,$width).'/n'.$x0." -".$y0." ".$x1." -".$y1);
             $svg=DB::select("
 WITH shapes (geom, attribute,bgcolor) AS (
-    ( SELECT wkb_geometry, gid,'none' 
+    ( SELECT wkb_geometry, gid,'none'
     FROM e".$this->codigo.".radios)
   ),
   paths (svg) as (
@@ -260,14 +269,14 @@ WITH shapes (geom, attribute,bgcolor) AS (
             'stroke=\"black\" stroke-width=\"".$stroke."\" fill=\"#22' ||
             attribute*10 || '88\"'
          END,
-          ' />') 
+          ' />')
      FROM shapes GROUP BY attribute
  )
  SELECT concat(
          '<svg id=\"localidad_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
          "\" height=\"".$height."\" width=\"".$width."\">',
          array_to_string(array_agg(svg),''),
-         '</svg>') 
+         '</svg>')
  FROM paths;
 ");
         if ($svg[0]->concat) {
@@ -333,14 +342,14 @@ WITH shapes (geom, attribute) AS (
             'stroke=\"black\" stroke-width=\"".$stroke."\" fill=\"#22' ||
             attribute*10 || '88\"'
          END,
-          ' />') 
+          ' />')
      FROM shapes GROUP BY attribute
  )
  SELECT concat(
          '<svg id=\"localidad_".$this->codigo."\"xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"".$viewBox.
          "\" height=\"".$height."\" width=\"".$width."\">',
          array_to_string(array_agg(svg),''),
-         '</svg>') 
+         '</svg>')
  FROM paths;
 ");
         if ($svg[0]->concat) {

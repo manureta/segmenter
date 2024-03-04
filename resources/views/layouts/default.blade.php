@@ -17,7 +17,7 @@
 
     <!-- More Scripts -->
     @yield ('header_scripts')
-    
+
 </head>
 <body>
     @yield('divs4content')
@@ -43,6 +43,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/entidades') }}"> Entidades </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
