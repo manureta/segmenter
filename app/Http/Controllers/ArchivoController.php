@@ -25,15 +25,15 @@ class ArchivoController extends Controller
 	    //
       if (Auth::check()) {
         $AppUser = Auth::user();
-        $archivos = $AppUser->visible_files()->withCount('viewers')->get();
-        $archivos = $archivos->merge($AppUser->mis_files()->withCount('viewers')->get());
+        $archivos = $AppUser->visible_files()->withCount('viewers')->with('user')->get();
+        $archivos = $archivos->merge($AppUser->mis_files()->withCount('viewers')->with('user')->get());
         try {
             if ($AppUser->hasPermissionTo('Ver Archivos')) {
                 $archivos->merge(Archivo::withCount('viewers')->get());
             }
         } catch (PermissionDoesNotExist $e) {
             Session::flash('message', 'No existe el permiso "Ver Archivos"');
-        }  
+        }
         $count_archivos = $archivos->count();
         if ($request->ajax()) {
             return Datatables::of($archivos)
@@ -71,7 +71,7 @@ class ArchivoController extends Controller
                         } catch (PermissionDoesNotExist $e) {
                             Log::error('No existe el permiso "Administrar Archivos"');
                         }
-                    } 
+                    }
                     */
                     return $button;
                 })
@@ -121,9 +121,9 @@ class ArchivoController extends Controller
       $result = $archivo->load('user');
       if ($request->format == 'html') {
         $result = $result->toJson(JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-      } 
+      }
      	return $result;
-          
+
     }
 
     /**
@@ -165,7 +165,7 @@ class ArchivoController extends Controller
 
 
         $this->middleware('auth');
-        $this->middleware('can:run-setup');      
+        $this->middleware('can:run-setup');
 	    // Borro el archivo del storage
 	    //
         $vistas = DB::table('file_viewer')->where('archivo_id', $archivo->id)->count();
@@ -181,7 +181,7 @@ class ArchivoController extends Controller
         } else {
             return $vistas;
         }
-        
+
     }
 
     public function detach(Archivo $archivo)
@@ -247,7 +247,7 @@ class ArchivoController extends Controller
                               $mensaje = "Es el archivo original.";
                           }
                         } else {
-                          $mensaje = "Archivo no repetido.";  
+                          $mensaje = "Archivo no repetido.";
                         }
                         error_log("Archivo " . $archivo->id . ". Checksum: " . $archivo->checksum.". ".$mensaje );
                         $archivo->checkChecksum();
@@ -262,6 +262,6 @@ class ArchivoController extends Controller
             return view('archivo.list');
         } else {
             return redirect()->route('login');
-        }        
+        }
     }
 }
