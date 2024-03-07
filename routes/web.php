@@ -245,6 +245,14 @@ Route::post('aglo-segmenta/{aglomerado}','AglomeradoController@segmenta_post');
 Route::get('aglo-segmenta/{aglomerado}','AglomeradoController@segmenta_post');
 Route::post('aglo-segmenta-run/{aglomerado}','AglomeradoController@run_segmentar');
 
+// ---------- ENTIDADES ----------
+Route::get('entidades', 'EntidadController@index')->name('entidades');
+Route::middleware(['auth'])->group(function () {
+  Route::get('entidades/cargar', 'EntidadController@cargar')->name('entidades.cargar');
+  Route::post('entidades/cargar', 'EntidadController@store');
+});
+
+
 // --------- SEGMENTACION X AGLOMERADO ---------
 Route::get('aglo/{aglomerado}/pxseg','AglomeradoController@ver_pxseg')->name('ver-segmentacion-pxseg');
 Route::get('ver-segmentacion/{aglomerado}','AglomeradoController@ver_segmentacion')->name('ver-segmentacion');

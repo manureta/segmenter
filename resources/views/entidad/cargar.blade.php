@@ -25,7 +25,7 @@
                     </ul>
                 </div>
             @endisset
-            <form action="/entidades/guardar" method="POST" enctype="multipart/form-data" class="form-horizontal ">
+            <form action="/entidades/cargar" method="POST" enctype="multipart/form-data" class="form-horizontal ">
                 @csrf
 		  @if (isset($epsgs))
                    <div class="form-group row bg-info" >
