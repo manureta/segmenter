@@ -250,6 +250,8 @@ Route::get('entidades', 'EntidadController@index')->name('entidades');
 Route::middleware(['auth'])->group(function () {
   Route::get('entidades/cargar', 'EntidadController@cargar')->name('entidades.cargar');
   Route::post('entidades/cargar', 'EntidadController@store');
+  Route::get('ents-list', 'EntidadController@entsList');
+  Route::get('ents','EntidadController@index');
 });
 
 
