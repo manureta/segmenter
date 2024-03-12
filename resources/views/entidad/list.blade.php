@@ -22,6 +22,11 @@
     </div>
 
     <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <a href="{{ url('/entidades/cargar') }}">Ir a Cargar Entidades</a>
+        </div>
+      </div>
         <h4>Listado de Entidades</h4>
         <div class="row">
             <div class="col-lg-12">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Model\Entidad;
+use App\Model\Archivo;
 use Auth;
 
 class EntidadController extends Controller
@@ -33,7 +34,19 @@ class EntidadController extends Controller
       }
 
       $AppUser = Auth::user();
-      flash('TODO: Funcion a desarrollar')->warning()->important();
+      flash('TODO: Funcion en desarrollar')->warning()->important();
+
+      // Carga de arcos o e00
+    if ($request->hasFile('shp')) {
+      if($shp_file = Archivo::cargar($request->shp, Auth::user(),
+        'shape', [$request->shx, $request->dbf, $request->prj])) {
+        flash("Archivo de geodatos SHP/E00. Identificado: ".$shp_file->tipo)->info();
+      } else {
+        flash("Error en el modelo cargar archivo al registrar SHP/E00")->error();
+      }
+      //$shp_file->epsg_def = $epsg_id;
+      $shp_file->save();
+    }
       return view('entidad.cargar');
     }
     public function cargar(Request $request)

@@ -44,6 +44,9 @@
    <h2>Listado de Entidades</h2>
    <br>
    <div class="row">
+    <a href="{{ url('/entidad/cargar') }}">Ir a Cargar Entidades</a>
+  </div>
+  <div class="row">
     <div class="form-group col-md-6">
     <h5>Código<span class="text-danger"></span></h5>
      <div class="controls">
