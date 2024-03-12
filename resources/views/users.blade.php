@@ -234,6 +234,14 @@
                                         {{$rol->name}}
                                       </label>
                                     @endif
+                                    @if ($rol->guard_name == "web")
+                                      <span class="badge badge-pill badge-warning">Permisos</span>
+                                    @else
+                                      <span class="badge badge-pill badge-info">Filtros</span>
+                                    @endif
+                                    @if ($rol->permissions->isEmpty() and $rol->name != 'Super Admin') 
+                                      <span class="badge badge-pill badge-danger">Vacío</span>
+                                    @endif 
                                     <button type="button" class="btn-sm btn-primary float-right btn-detalles" data-toggle="modal" data-dismiss="modal" data-role-id="{{ $rol->id }}" data-user-id="{{ $usuario->id }}" data-target="#detailsModal">
                                       Detalles
                                     </button>
@@ -316,7 +324,7 @@
                         console.log("Super Admin");
                         // Muestro unicamente el mensaje para Super Admin
                         $('#detailsModal .authorization-label').hide();
-                        $('#detailsModal .modal-authorization-table-body').html('Este rol tiene todas las autorizaciones.');
+                        $('#detailsModal .modal-authorization-table-body').html('Este rol tiene todos los permisos.');
                       } else {
                         // Vacío el contenido de la tabla autorizaciones antes de mostrar las nuevas
                         $('#detailsModal .modal-authorization-table-body').empty();
@@ -336,6 +344,28 @@
                           $.each(response.autorizaciones, function(index, autorizacion) {
                             $('#detailsModal .modal-authorization-table-body').append('<tr><td class="col align-self-center">'+autorizacion+'</td></tr>');
                           });
+                        } else {
+                          console.log(response.autorizaciones_usuario);
+                          if(response.rol.guard_name === 'web'){
+                            if(response.autorizaciones_usuario.includes('Administrar Roles')) {
+                              $('#detailsModal .modal-authorization-table-body').append('<tr class=detail_info_row><td class="col align-self-center">Los permisos pertenecientes a este rol no se encuentran cargados en el sistema.</td></tr>');
+                              $('#detailsModal .detail_info_row').append('<td><a href="{{route('admin.listarRoles')}}"">Administrar Roles</a></td>');
+                            } else {
+                              $('#detailsModal .modal-authorization-table-body').append('<tr><td class="col align-self-center">Los permisos pertenecientes a este rol no se encuentran cargados en el sistema. Comunicarse con un administrador.</td></tr>');
+                            }
+                          } else if(response.rol.guard_name === 'filters'){
+                            if(response.autorizaciones_usuario.includes('Administrar Roles') || response.autorizaciones_usuario.includes('Administrar Filtros')) {
+                              $('#detailsModal .modal-authorization-table-body').append('<tr class=detail_info_row><td class="col align-self-center">Los filtros pertenecientes a este rol no se encuentran cargados en el sistema.</td></tr>');
+                              if(response.autorizaciones_usuario.includes('Administrar Roles')) {
+                                $('#detailsModal .detail_info_row').append('<td><a href="{{route('admin.listarRoles')}}"">Administrar Roles</a></td>');
+                              }
+                              if(response.autorizaciones_usuario.includes('Administrar Filtros')) {
+                                $('#detailsModal .detail_info_row').append('<td><a href="{{route('admin.listarFiltros')}}"">Administrar Filtros</a></td>');
+                              }
+                            } else {
+                              $('#detailsModal .modal-authorization-table-body').append('<tr><td class="col align-self-center">Los filtros pertenecientes a este rol no se encuentran cargados en el sistema. Comunicarse con un administrador.</td></tr>');
+                            }
+                          }
                         };
                       }
                   } else {
@@ -357,8 +387,6 @@
 
 
 <!-- datatables -->
-<script>src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"</script>
-<script>src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap4.min.js"</script>
 <script>
   $('#tabla-usuarios').DataTable({
     language: {
@@ -388,7 +416,10 @@
           "copy": "Copiar",
           "colvis": "Visibilidad"
       }
-    }
+    },
+    columnDefs: [
+      { "orderable": false, "targets": [2,3,4] }
+    ]
   });
 </script>
 @endsection
