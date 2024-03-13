@@ -15,9 +15,9 @@ class Entidad extends Model
     //
     protected $table = 'entidades';
     protected $primaryKey = 'id';
-    protected $fillable = ['codigo', 'nombre','localidad_id','fecha_desde','fecha_hasta'];
+    protected $fillable = ['codigo', 'nombre','fecha_desde','fecha_hasta'];
 
-    public static function getEntidadData() {
+    public static function getEntidadData($table) {
         // devuelve todos los registros las entidades de la tabla entidades
         $value=DB::table($table)->orderBy('id', 'asc')->get();
         Log::notice('Se ejecuta getEntidadData() y devuelve '.count($value).' registros');
@@ -70,5 +70,14 @@ class Entidad extends Model
         $cant_mzas = MyDB::getCantMzas($this);
         return $cant_mzas;
     }
+
+
+    /**
+     * Relación con geometrias, una entidad puede tener una geometria.
+     *
+     */
+    public function geometria() {
+      return $this->hasOne('App\Model\Geometria', 'id', 'geometria_id');
+  }
 
 }
