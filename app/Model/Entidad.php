@@ -85,18 +85,18 @@ class Entidad extends Model
      * Relación con geometrias, una entidad puede tener una geometria.
      *
      */
-    public function setgeometriaAttribute($value) {
-        $geometria_id = MyDB::insertarGeometrias($value);
-        return $geometria_id;
+    public function setgeometriaidAttribute($poligono = null, $punto = null) {
+      return $this->geometria_id = MyDB::insertarGeometrias($poligono, $punto);
     }
-  
+
     /**
      * Get geometrias, una entidad puede tener una geometria.
      *
      */
     public function getGeometriaAttribute($value) {
-        $geometria_id = MyDB::getGeometriasId($value);
-        return $geometria_id;
+        // TODO
+        //$geometria_id = MyDB::getGeometriasId($value);
+        return $this->geometria_id;
     }
-  
+
   }

@@ -583,10 +583,10 @@ class Archivo extends Model
                     $data_entidad = MyDB::getDataEntidad('arc', 'e_'.$this->tabla,$ppdddlllee->link);
                     $codigo = $data_entidad[0]->codigo;
                     $nombre = $data_entidad[0]->nombre;
-                    $oEntidad = $oLocalidad->entidades()->firstOrCreate(['codigo' => $codigo], 
-                                ['codigo' => $codigo, 'nombre'=> $nombre]);
-                    $oGeometria = $oEntidad->geometria()->firstOrCreate(['poligono'=> $data_entidad[0]->wkb_geometry],
-                                ['poligono'=> $data_entidad[0]->wkb_geometry]);
+                    $oEntidad = $oLocalidad->entidades()->firstOrCreate(['codigo' => $codigo],
+                                ['codigo' => $codigo, 'nombre'=> $nombre, 'geometriaid'=> ($data_entidad[0]->wkb_geometry)]);
+                   // $oGeometria = $oEntidad->geometria()->firstOrCreate(['poligono'=> $data_entidad[0]->wkb_geometry],
+                   //             ['poligono'=> $data_entidad[0]->wkb_geometry]);
                     $estado = $oEntidad->wasRecentlyCreated ? ' (nueva) ' : ' (guardada) ';
                     $oEntidad->save();
                     $oLocalidad->save();

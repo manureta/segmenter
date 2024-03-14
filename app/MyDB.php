@@ -557,7 +557,7 @@ FROM
       } else { $filtro='';
       }
         try {
-            return (DB::select('SELECT prov||depto||codloc||codent as codigo, noment as nombre, st_asText(wkb_geometry) wkb_geometry FROM
+            return (DB::select('SELECT prov||depto||codloc||codent as codigo, noment as nombre, wkb_geometry FROM
             "'.$esquema.'"."'.$tabla.'" '.$filtro.' group by 1,2,3 order by prov||depto||codloc||codent asc, count(*) desc ;'));
         }catch (\Illuminate\Database\QueryException $exception) {
             Log::warning('Ojo! : '.$exception);
@@ -566,7 +566,7 @@ FROM
                     $filtro=" WHERE prov||coddpto||codloc||codent = '".$codigo_ent."'";
                   } else { $filtro='';
                   }
-                            return (DB::select('SELECT prov||coddpto||codloc||codent as codigo, noment as nombre, st_asText(wkb_geometry) wkb_geometry FROM
+                            return (DB::select('SELECT prov||coddpto||codloc||codent as codigo, noment as nombre, wkb_geometry FROM
                 "'.$esquema.'"."'.$tabla.'" '.$filtro.' group by 1,2 order by codprov||coddpto||codloc||codent asc, count(*) desc ;'));
             }catch (\Illuminate\Database\QueryException $exception) {
                 Log::error('Error: '.$exception);
