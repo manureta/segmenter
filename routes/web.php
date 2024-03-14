@@ -288,9 +288,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('archivo/{archivo}','ArchivoController@show');
     Route::post('archivo/{archivo}','ArchivoController@show');
     Route::delete('archivo/{archivo}','ArchivoController@destroy');
+    Route::get('archivo/{archivo}/eliminar','ArchivoController@destroy');
     Route::put('archivo/{archivo}/detach','ArchivoController@detach');
     Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
     Route::get('archivo/{archivo}/procesar','ArchivoController@procesar');
+    Route::get('archivo/{archivo}/pasar_data','ArchivoController@pasarData');
     Route::get('archivos/limpiar','ArchivoController@eliminar_repetidos')->name('limpiar_archivos');
     Route::get('archivos/repetidos','ArchivoController@listar_repetidos')->name('archivos_repetidos');
     Route::get('archivos/recalcular_cs','ArchivoController@reclacular_checksums_obsoletos')->name('recalcular_checksums');

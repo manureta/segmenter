@@ -15,7 +15,7 @@ class Entidad extends Model
     //
     protected $table = 'entidades';
     protected $primaryKey = 'id';
-    protected $fillable = ['codigo', 'nombre','fecha_desde','fecha_hasta'];
+    protected $fillable = ['codigo', 'nombre', 'localidad_id'];//,'fecha_desde','fecha_hasta'];
 
     public static function getEntidadData($table) {
         // devuelve todos los registros las entidades de la tabla entidades
@@ -37,7 +37,7 @@ class Entidad extends Model
      *
      */
     public function localidad() {
-        return $this->hasOne('App\Model\Localidad');
+        return $this->belongsTo('App\Model\Localidad','localidad_id','id');
     }
 
     /**
@@ -77,7 +77,26 @@ class Entidad extends Model
      *
      */
     public function geometria() {
-      return $this->hasOne('App\Model\Geometria', 'id', 'geometria_id');
+      return $this->belongsTo('App\Model\Geometria', 'geometria_id', 'id');
   }
 
-}
+
+    /**
+     * Relación con geometrias, una entidad puede tener una geometria.
+     *
+     */
+    public function setgeometriaAttribute($value) {
+        $geometria_id = MyDB::insertarGeometrias($value);
+        return $geometria_id;
+    }
+  
+    /**
+     * Get geometrias, una entidad puede tener una geometria.
+     *
+     */
+    public function getGeometriaAttribute($value) {
+        $geometria_id = MyDB::getGeometriasId($value);
+        return $geometria_id;
+    }
+  
+  }

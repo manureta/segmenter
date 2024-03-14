@@ -20,13 +20,13 @@ return new class extends Migration
               $table->string('codigo')->index();
               $table->string('nombre')->index();
               $table->integer('localidad_id')->index()->references('id')->on('localidad');
-              $table->timestamp('fecha_desde');
-              $table->timestamp('fecha_hasta');
-              $table->integer('observacion_id')->references('id')->on('observaciones');
-              $table->integer('cap_de_pcia');
-              $table->integer('cab_de_depto');
-              $table->integer('sede_gob_loc');
-              $table->integer('geometria_id');
+              $table->timestamp('fecha_desde')->nullable();
+              $table->timestamp('fecha_hasta')->nullable();
+              $table->integer('observacion_id')->references('id')->on('observaciones')->nullable();
+              $table->integer('cap_de_pcia')->nullable();
+              $table->integer('cab_de_depto')->nullable();
+              $table->integer('sede_gob_loc')->nullable();
+              $table->integer('geometria_id')->nullable();
               $table->timestamps();
           });
       } else {
@@ -42,5 +42,7 @@ return new class extends Migration
     public function down()
     {
         //
+        Schema::dropIfExists('entidades');
+
     }
 };

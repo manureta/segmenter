@@ -474,11 +474,10 @@ FROM
             return (DB::select('SELECT codprov||coddepto||codloc as codigo,nomloc as nombre FROM
             '.$esquema.'.'.$tabla.' '.$filtro.' group by 1,2 order by codprov||coddepto||codloc asc, count(*) desc ;'));
         }catch (\Illuminate\Database\QueryException $exception) {
-          Log::error('Error: '.$exception);
-      //Sin data de localidad
-      //
-      return null;;
-  }
+            Log::error('Error: '.$exception);
+            //Sin data de localidad
+            return null;;
+        }
     }
 
     // Devuelve el link de localidad de mayor ocurrencia
@@ -532,6 +531,51 @@ FROM
          }
     }
 
+    // Devuelve link de entidades o pastores de árboles y cantidad de ocurrencias
+    public static function getEnts($tabla,$esquema)
+    {
+        try {
+            return (DB::select('SELECT prov||dpto||codloc||codent as link,count(*) FROM
+                    "'.$esquema.'".'.$tabla.' group by prov||dpto||codloc||codent order by count(*);'));
+        }catch (QueryException $exception) {
+           try {
+               return (DB::select('SELECT prov||depto||codloc||codent as link,count(*) FROM
+                       "'.$esquema.'".'.$tabla.' group by prov||depto||codloc||codent order by count(*);'));
+           }catch (QueryException $exception) {
+               Log::error('No se pudo encontrar entidades: '.$exception);
+               return [];
+           }
+         }
+    }
+
+
+    public static function getDataEntidad($tabla,$esquema,$codigo_ent=null)
+    {
+      log::debug(' Entidad: '.$codigo_ent);
+      if (isset($codigo_ent)) {
+        $filtro=" WHERE prov||depto||codloc||codent = '".$codigo_ent."'";
+      } else { $filtro='';
+      }
+        try {
+            return (DB::select('SELECT prov||depto||codloc||codent as codigo, noment as nombre, st_asText(wkb_geometry) wkb_geometry FROM
+            "'.$esquema.'"."'.$tabla.'" '.$filtro.' group by 1,2,3 order by prov||depto||codloc||codent asc, count(*) desc ;'));
+        }catch (\Illuminate\Database\QueryException $exception) {
+            Log::warning('Ojo! : '.$exception);
+            try {
+                if (isset($codigo_ent)) {
+                    $filtro=" WHERE prov||coddpto||codloc||codent = '".$codigo_ent."'";
+                  } else { $filtro='';
+                  }
+                            return (DB::select('SELECT prov||coddpto||codloc||codent as codigo, noment as nombre, st_asText(wkb_geometry) wkb_geometry FROM
+                "'.$esquema.'"."'.$tabla.'" '.$filtro.' group by 1,2 order by codprov||coddpto||codloc||codent asc, count(*) desc ;'));
+            }catch (\Illuminate\Database\QueryException $exception) {
+                Log::error('Error: '.$exception);
+                //Sin data de entidad
+                return null;;
+            }
+            return null;;
+        }
+    }
 
     // Mueve de esquema temporal a otro
     public static function moverEsquema($de_esquema,$a_esquema)
@@ -2531,6 +2575,25 @@ order by 1,2
             return 'Radios de ePPDDDLLL.arcs sin actualizar';
        }
        return 'Se actualizo radios_de_arcs con '.$result.' registros';
+    }
+
+    // Insertar geometria
+
+    public static function insertarGeometrias($poligono,$punto = null)
+    {
+        try{
+            DB::beginTransaction();
+            $result = DB::select('SELECT insertar_geometrias('.$poligono.','.$punto.') id')[0]->id;
+            DB::commit();
+        }catch(QueryException $e){
+            DB::Rollback();
+            $result=null;
+            Log::error('Error no se pudo insertar las geometrias '.$e);
+            return null;
+       }
+       return $result;
+
+
     }
 }
 

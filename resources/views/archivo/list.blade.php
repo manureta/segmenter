@@ -261,6 +261,17 @@
      $('#laravel_datatable').DataTable().draw(true);
   });
 
+  // Función de botón Procesar.
+  table.on('click', '.btn_arch_pasar', function () {
+      var row = $(this).closest('tr');
+      var data = table.row( row ).data();
+      console.log('Pasar Datos desde Archivo: '+data.codigo);
+        if (typeof data !== 'undefined') {
+            url= "{{ url('archivo') }}"+"/"+data.id+"/pasar_data";
+            $(location).attr('href',url);
+           };
+    });
+
 } );
 </script>
 @endsection

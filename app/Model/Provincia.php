@@ -113,4 +113,8 @@ class Provincia extends Model
         }
     }
 
+    // REtorna objeto provincia si existe según codigo.
+    static function getxCodigo(text $codigo) {
+      
+    }
 }

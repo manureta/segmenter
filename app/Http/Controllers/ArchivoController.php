@@ -89,6 +89,7 @@ class ArchivoController extends Controller
                     $button = '<button type="button" class="btn_descarga btn-sm btn-primary" > Descargar </button> ';
                     $button .= '<button type="button" class="btn_arch btn-sm btn-primary" > Ver </button>';
                     $button .= '<button type="button" class="btn_arch_procesar btn-sm btn-secondary" > ReProcesar </button>';
+                    $button .= '<button type="button" class="btn_arch_pasar btn-sm btn-secondary" > Pasar Data </button>';
 
                     /*
                     Sin botón de eliminar archivo por el momento
@@ -204,7 +205,7 @@ class ArchivoController extends Controller
 
 
         flash('Función no implementada x seguridad...')->warning()->important();
-        return view('archivo.list');
+        //return view('archivo.list');
         //Aún falta testeo
 
         $this->middleware('can:run-setup');
@@ -259,6 +260,19 @@ class ArchivoController extends Controller
       return view('archivo.list');
     }
 
+    /**
+     * Pasar Data de archivo resource.
+     *
+     * @param  \App\Model\Archivo  $archivo
+     * @return \Illuminate\Http\Response
+     */
+    public function pasarData(Archivo $archivo)
+    {
+	    // Mensaje extraño
+	    $mensaje = $archivo->pasarData()?'ik0':'m4l';
+      return view('archivo.list');
+    }
+    
     //no envio los repetidos directamente desde la vista para permitir acceder a la función directamente por URL sin pasar por el listado
     public function eliminar_repetidos() {
 

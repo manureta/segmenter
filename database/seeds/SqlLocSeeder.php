@@ -1,6 +1,9 @@
 <?php
+namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 
 class SqlLocSeeder extends Seeder
 {
@@ -11,7 +14,6 @@ class SqlLocSeeder extends Seeder
      */
     public function run()
     {
-        Eloquent::unguard();
         $this->command->info('Sembrando localidades...');
         $path = 'app/developer_docs/localidad.sql';
         DB::unprepared(file_get_contents($path));

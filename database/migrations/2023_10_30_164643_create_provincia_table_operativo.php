@@ -52,5 +52,10 @@ class CreateProvinciaTableOperativo extends Migration
     public function down()
     {
         Schema::dropIfExists('operativo_provincia');
+        If (Schema::hasTable('operativo')){
+            Schema::table('operativo', function (Blueprint $table) {
+                $table->integer('id')->change();
+            });
+        }
     }
 }

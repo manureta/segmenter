@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Model\Entidad;
 use App\Model\Archivo;
 use Auth;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 
 class EntidadController extends Controller
 {
@@ -34,7 +36,7 @@ class EntidadController extends Controller
       }
 
       $AppUser = Auth::user();
-      flash('TODO: Funcion en desarrollar')->warning()->important();
+      flash('TODO: Funcion en desarrollo')->warning()->important();
 
       // Carga de arcos o e00
     if ($request->hasFile('shp')) {
@@ -46,6 +48,9 @@ class EntidadController extends Controller
       }
       //$shp_file->epsg_def = $epsg_id;
       $shp_file->save();
+      $shp_file->procesar();
+      $shp_file->pasarData();
+
     }
       return view('entidad.cargar');
     }

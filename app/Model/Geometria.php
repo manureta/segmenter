@@ -11,9 +11,6 @@ class Geometria extends Model
     protected $primaryKey = 'id';
     protected $fillable = ['poligono', 'punto', 'topogeometria'];
 
-    // Sin fecha de creación o modificación
-    //
-    public $timestamps = false;
 
     /**
      * Relación con Entidad.
@@ -22,7 +19,7 @@ class Geometria extends Model
 
     public function entidad()
     {
-        return $this->hasMany('App\Model\Entidad','geometria_id', 'id');
+        return $this->hasMany('App\Model\Entidad');
     }
 
 }

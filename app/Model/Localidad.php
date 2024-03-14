@@ -57,7 +57,7 @@ class Localidad extends Model
 
      public function entidades()
      {
-         return $this->belongsTo('App\Model\Entidades');
+         return $this->hasMany('App\Model\Entidad');
      }
 
     //

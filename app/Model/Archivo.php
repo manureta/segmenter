@@ -535,31 +535,76 @@ class Archivo extends Model
         // Si no encuentro localidades en lab.
         if ($ppdddllls==[]) {
             // Intento cargar pais x depto :D
+            $codents = MyDB::getEnts('lab', 'e_'.$this->tabla);
+            $codents_pol = MyDB::getEnts('arc', 'e_'.$this->tabla);
             $coddeptos = MyDB::getDptos('lab', 'e_'.$this->tabla);
             $coddeptos_pol = MyDB::getDptos('arc', 'e_'.$this->tabla);
             $codprov = MyDB::getProv('lab', 'e_'.$this->tabla);
             $codprov_pol = MyDB::getProv('arc', 'e_'.$this->tabla);
 
-            flash('Puede ser una "pais" x prov con deptos: '.count($coddeptos).' o '.count($coddeptos_pol));
+            flash('Puede ser una "pais" x prov con deptos: '.count($coddeptos).' o '.count($coddeptos_pol).
+                  ' o entidades: '.count($codents_pol).' o '.count($codents));
+            if ($codents != []){
+                flash('Se encontraton Entidades : '.count($codents));
+                // Para cada entidad encontrada
+                // creo entidad.
+                foreach ($codents as $ppdddlllee) {
+                    flash('Se encontró Entidad en lab: '.$ppdddlllee->link);
 
-            if ($codprov != null){
-                flash('Se encontró Provincia : '.$codprov);
-//                MyDB::createSchema($coddepto->link);
-//                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
-                MyDB::createSchema($codprov);
-                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov,'lab',null,$codprov);
-                $count++;
+                    $oProvincia = Provincia::where('codigo', substr($ppdddlllee->link,0,2))->firstOrFail();
+                    $oDepto = Departamento::firstOrFail(['codigo'=>substr($ppdddlllee->link,0,5)]);
+                    $oLocalidad = Localidad::firstOrFail(['codigo'=>substr($ppdddlllee->link,0,8)]);
+                    $oEntidad = Entidad::firstOrCreate(['codigo'=>$ppdddlllee
+                                        ],collect($data_entidad->toArray()),false);
+                    $estado = $oEntidad->wasRecentlyCreated ? ' (nueva) ' : ' (guardada) ';
+                    Log::debug($estado.': '.$pdddlllee.' => '.$oEntidad->toJson());
+                    $count++;
+                }
+            }else{
+                if ($codprov != null){
+                    flash('Se encontró Provincia : '.$codprov);
+                    MyDB::createSchema($codprov);
+                    MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov,'lab',null,$codprov);
+                    $count++;
+                }
             }
 
-            if ($codprov_pol != null){
-                flash('Se encontró Departamentos en arc/pol : '.$codprov_pol);
-//                MyDB::createSchema($coddepto->link);
-//                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
-                MyDB::createSchema($codprov_pol);
-                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov_pol,'arc',null,$codprov_pol);
-                $count++;
-                $codprov=$codprov_pol;
-            }
+            if ($codents_pol != []){
+                flash('Se encontraton en arc/pol Entidades : '.count($codents_pol));
+                // Para cada entidad encontrada
+                // creo entidad.
+                foreach ($codents_pol as $ppdddlllee) {
+                    flash('Se encontró Entidad en Arc/pol: '.$ppdddlllee->link);
+
+                    $oProvincia = Provincia::where('codigo', substr($ppdddlllee->link,0,2))->first();
+                    $oDepto = Departamento::where('codigo', substr($ppdddlllee->link,0,5))->first();
+                    $oLocalidad = Localidad::where('codigo', substr($ppdddlllee->link,0,8))->first();
+                    Log::info('Objetos encontrados: ',[$oProvincia,$oDepto,$oLocalidad]);
+                    $data_entidad = MyDB::getDataEntidad('arc', 'e_'.$this->tabla,$ppdddlllee->link);
+                    $codigo = $data_entidad[0]->codigo;
+                    $nombre = $data_entidad[0]->nombre;
+                    $oEntidad = $oLocalidad->entidades()->firstOrCreate(['codigo' => $codigo], 
+                                ['codigo' => $codigo, 'nombre'=> $nombre]);
+                    $oGeometria = $oEntidad->geometria()->firstOrCreate(['poligono'=> $data_entidad[0]->wkb_geometry],
+                                ['poligono'=> $data_entidad[0]->wkb_geometry]);
+                    $estado = $oEntidad->wasRecentlyCreated ? ' (nueva) ' : ' (guardada) ';
+                    $oEntidad->save();
+                    $oLocalidad->save();
+                    $oGeometria->save();
+                    Log::debug($estado.': '.$ppdddlllee->link.' => ',[$oEntidad]);
+                    $count++;
+                }
+            }else{
+                if ($codprov_pol != null){
+                    flash('Se encontró Provincia en arc/pol : '.$codprov_pol);
+    //                MyDB::createSchema($coddepto->link);
+    //                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
+                    MyDB::createSchema($codprov_pol);
+                    MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov_pol,'arc',null,$codprov_pol);
+                    $count++;
+                    $codprov=$codprov_pol;
+                }
+                }
 
             MyDB::limpiar_esquema('e_'.$this->tabla);
             $prov=array('link'=>$codprov);
