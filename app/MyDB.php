@@ -2582,12 +2582,12 @@ order by 1,2
     public static function insertarGeometrias($poligono,$punto = null)
     {
         if ($poligono) {
-            $poligono = "'".$poligono."::geometry'";
+            $poligono = "'".$poligono."'::geometry";
         } else {
             $poligono = "null::geometry";
         }
         if ($punto) {
-            $opcional = ",'".$punto."::geometry'";
+            $opcional = ",'".$punto."'::geometry";
         } else {
             $opcional = ", null::geometry";
         }
