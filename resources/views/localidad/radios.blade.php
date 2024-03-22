@@ -25,6 +25,20 @@
     @else
       NO está definido ningún departamento.
     @endif
+    @if (count($entidades)>0)
+      @foreach ($entidades as $oEntidad)
+        @if ($loop->first)
+        Entidades: 
+        @endif
+        <a href="{{ url("/entidad/{$oEntidad->id}") }}" >
+        <b> {{ $oEntidad->nombre }} </b></a>
+        @if (! $loop->last)
+            ,
+        @endif
+      @endforeach
+    @else
+      NO está definida ningúna entidad.
+    @endif
    </div>
    <div class="col-md-6 text-center">
     @auth

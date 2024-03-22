@@ -173,7 +173,8 @@ class LocalidadController extends Controller
                         'radios'=>$radios_loc,
                         'carto'=>$localidad->Carto,
                         'listado'=>$localidad->Listado,
-                        'svg'=>$localidad->getSVG()
+                        'svg'=>$localidad->getSVG(),
+                        'entidades'=>$localidad->entidades
                         ]);
     }
 
