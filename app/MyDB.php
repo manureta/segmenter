@@ -2581,9 +2581,19 @@ order by 1,2
 
     public static function insertarGeometrias($poligono,$punto = null)
     {
+        if ($poligono) {
+            $poligono = "'".$poligono."::geometry'";
+        } else {
+            $poligono = "null::geometry";
+        }
+        if ($punto) {
+            $opcional = ",'".$punto."::geometry'";
+        } else {
+            $opcional = ", null::geometry";
+        }
         try{
             DB::beginTransaction();
-            $result = DB::select('SELECT insertar_geometrias('.$poligono.','.$punto.') id')[0]->id;
+            $result = DB::select("SELECT indec.insertar_geometrias(".$poligono.$opcional.") id")[0]->id;
             DB::commit();
         }catch(QueryException $e){
             DB::Rollback();

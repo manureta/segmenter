@@ -584,13 +584,12 @@ class Archivo extends Model
                     $codigo = $data_entidad[0]->codigo;
                     $nombre = $data_entidad[0]->nombre;
                     $oEntidad = $oLocalidad->entidades()->firstOrCreate(['codigo' => $codigo],
-                                ['codigo' => $codigo, 'nombre'=> $nombre, 'geometriaid'=> ($data_entidad[0]->wkb_geometry)]);
+                                ['codigo' => $codigo, 'nombre'=> $nombre, 'geometria'=> ($data_entidad[0]->wkb_geometry)]);
                    // $oGeometria = $oEntidad->geometria()->firstOrCreate(['poligono'=> $data_entidad[0]->wkb_geometry],
                    //             ['poligono'=> $data_entidad[0]->wkb_geometry]);
                     $estado = $oEntidad->wasRecentlyCreated ? ' (nueva) ' : ' (guardada) ';
                     $oEntidad->save();
                     $oLocalidad->save();
-                    $oGeometria->save();
                     Log::debug($estado.': '.$ppdddlllee->link.' => ',[$oEntidad]);
                     $count++;
                 }

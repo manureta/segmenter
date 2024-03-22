@@ -15,7 +15,7 @@ class Entidad extends Model
     //
     protected $table = 'entidades';
     protected $primaryKey = 'id';
-    protected $fillable = ['codigo', 'nombre', 'localidad_id'];//,'fecha_desde','fecha_hasta'];
+    protected $fillable = ['codigo', 'nombre', 'localidad_id','geometria'];//,'fecha_desde','fecha_hasta'];
 
     public static function getEntidadData($table) {
         // devuelve todos los registros las entidades de la tabla entidades
@@ -85,7 +85,8 @@ class Entidad extends Model
      * Relación con geometrias, una entidad puede tener una geometria.
      *
      */
-    public function setgeometriaidAttribute($poligono = null, $punto = null) {
+    public function setGeometriaAttribute($poligono = null, $punto = null) {
+      Log::debug('SET geometría');
       return $this->geometria_id = MyDB::insertarGeometrias($poligono, $punto);
     }
 
