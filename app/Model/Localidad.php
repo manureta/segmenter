@@ -366,5 +366,94 @@ WITH shapes (geom, attribute) AS (
         return $viewBox;
     }
 
+    // API Helper Methods
+    
+    /**
+     * Get processing statistics for this localidad
+     */
+    public function getProcessingStats()
+    {
+        return [
+            'codigo' => $this->codigo,
+            'nombre' => $this->nombre,
+            'has_carto' => $this->carto,
+            'has_listado' => $this->listado,
+            'has_segmentation' => $this->segmentadolistado,
+            'has_segmentation_sides' => $this->segmentadolados,
+            'radios_count' => $this->radios->count() ?? 0
+        ];
+    }
+
+    /**
+     * Get radios with statistics
+     */
+    public function getRadiosWithStatistics()
+    {
+        return $this->radios;
+    }
+
+    /**
+     * Generate SVG representation
+     */
+    public function generateSvg()
+    {
+        return $this->getSVG();
+    }
+
+    /**
+     * Clear cache for this localidad
+     */
+    public function invalidateCache()
+    {
+        // Reset cached properties
+        $this->_carto = null;
+        $this->_listado = null;
+        $this->segmentadoListado = null;
+        $this->segmentadoLados = null;
+        
+        return true;
+    }
+
+    // Query Scopes for API filtering
+    
+    /**
+     * Scope for localidades with carto data
+     */
+    public function scopeWithCarto($query)
+    {
+        return $query->whereExists(function ($subQuery) {
+            $subQuery->selectRaw('1')
+                ->fromRaw("information_schema.tables")
+                ->whereRaw("table_schema = 'e' || localidad.codigo")
+                ->whereRaw("table_name = 'arc'");
+        });
+    }
+
+    /**
+     * Scope for localidades with listado data
+     */
+    public function scopeWithListado($query)
+    {
+        return $query->whereExists(function ($subQuery) {
+            $subQuery->selectRaw('1')
+                ->fromRaw("information_schema.tables")
+                ->whereRaw("table_schema = 'e' || localidad.codigo")
+                ->whereRaw("table_name = 'listado'");
+        });
+    }
+
+    /**
+     * Scope for segmented localidades
+     */
+    public function scopeSegmented($query)
+    {
+        return $query->whereExists(function ($subQuery) {
+            $subQuery->selectRaw('1')
+                ->fromRaw("information_schema.tables")
+                ->whereRaw("table_schema = 'e' || localidad.codigo")
+                ->whereRaw("table_name = 'segmentacion'");
+        });
+    }
+
 
 }
