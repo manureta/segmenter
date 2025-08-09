@@ -32,7 +32,6 @@
         "yajra/laravel-datatables-oracle": "^9.4"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "^3.8",
         "fzaninotto/faker": "^1.4",
         "laravel-lang/common": "^1.0",
         "laravel/ui": "^3.0",
