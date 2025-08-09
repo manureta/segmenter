@@ -30,11 +30,11 @@ class ProvinciaController extends Controller
     }
 
 
-    public function provsList()
+    public function provsList(Request $request)
     {
            $aProvs=[];
            $provsQuery = Provincia::query();
-           $codigo = (!empty($_GET["codigo"])) ? ($_GET["codigo"]) : ('');
+           $codigo = $request->input('codigo', '');
            if ($codigo!='') {
               $provsQuery->where('codigo', '=', $codigo);
            }

@@ -20,10 +20,10 @@ use Illuminate\Support\Facades\Log;
             return view('aglos');
         }
 
-        public function aglosList()
+        public function aglosList(Request $request)
         {
             $aglosQuery = Aglomerado::query();
-            $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+            $codigo = $request->input('codigo', '');
             if($codigo){
             $aglosQuery->where('codigo','=',$codigo);
             }

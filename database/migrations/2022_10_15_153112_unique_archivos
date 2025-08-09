@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class UniqueArchivos extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        //
+        try{
+          Schema::table('archivos', function(Blueprint $table)
+          {
+              $table->unique('checksum');
+//Laravel 8              $table->comment('Archivos subidos al sistema.');
+          });
+        } catch(Illuminate\Database\QueryException $e){
+            if ($e->getCode()=='42P07'){
+                echo "Ya existe \n";
+            } else {
+              throw new error($e);
+            }
+        }
+
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        //
+    }
+}

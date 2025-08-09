@@ -40,12 +40,12 @@ class LocalidadController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function locasList()
+    public function locasList(Request $request)
     {
            $model = Localidad::with(['aglomerado', 'departamentos.provincia' ,'departamentos'])
                ->withCount(['radios'])
                ->where('codigo', 'not like', '%000');
-           $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+           $codigo = $request->input('codigo', '');
         if ($codigo) {
             $model->where('codigo', '=', $codigo);
         }
@@ -84,7 +84,7 @@ class LocalidadController extends Controller
             )
             ->toJson();
         /*            $locasQuery = Localidad::query();
-            $codigo = (!empty($_REQUEST["codigo"])) ? ($_REQUEST["codigo"]) : ('');
+            $codigo = $request->input('codigo', '');
         if ($codigo) {
              $locasQuery->where('codigo', '=', $codigo);
         }

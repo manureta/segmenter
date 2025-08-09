@@ -1,0 +1,1 @@
+- Ordenar libs para manejar con webapck, utiliza npm y herramientas de laravel
