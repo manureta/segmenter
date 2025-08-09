@@ -55,7 +55,7 @@ class SegmenterController extends Controller
         flash($mensaje)->error()->important();
         return $mensaje;
     }
-    
+
     $AppUser = Auth::user();
     $data = [];
     $segmenta_auto = false;
@@ -97,12 +97,12 @@ class SegmenterController extends Controller
     $temp[0] = (object) $algo;
     $codaglo = isset($codaglo) ? $codaglo : $temp;
     $ppdddllls=[];
-   
+
    // Carga de arcos o e00
     if ($request->hasFile('shp')) {
       if($shp_file = Archivo::cargar($request->shp, Auth::user(),
         'shape', [$request->shx, $request->dbf, $request->prj])) {
-        flash("Archivo Shp ")->info();
+        flash("Archivo de geodatos SHP/E00. Identificado: ".$shp_file->tipo)->info();
       } else {
           flash("Error en el modelo cargar archivo al procesar SHP/E00")->error();
       }
@@ -114,13 +114,13 @@ class SegmenterController extends Controller
       if ($request->hasFile('shp_lab')) {
         if($shp_lab_file = Archivo::cargar($request->shp_lab, Auth::user(),
           'shape', [$request->shx_lab, $request->dbf_lab, $request->prj_lab])) {
-          flash("Archivo Shp Lab ")->info();
+          flash("Archivo de etiquetas Shp Lab o Pol ")->info();
         } else {
-        flash("Error en el modelo cargar archivo al procesar SHP")->error();
+        flash("Error en el modelo cargar archivo al procesar SHP lab/pol")->error();
         }
         $shp_lab_file->epsg_def = $epsg_id;
         $shp_lab_file->tipo = 'shp/lab';
-        //Que directamente suba las etuiquetas poligono junto donde subió los arcos
+        //Que directamente suba las etiquetas poligono junto donde subió los arcos
         $shp_lab_file->tabla = $shp_file->tabla;
         $shp_lab_file->save();
         if( $ppddllls=$shp_lab_file->procesar() ) {
@@ -134,10 +134,9 @@ class SegmenterController extends Controller
       if( $mensajes=$shp_file->procesar() ) {
         flash('Procesó '.$shp_file->tipo)->important()->success();
         if (isset($shp_lab_file)){
-          flash('2. '.$shp_file->tabla.' == '.$shp_lab_file->tabla);
+          flash('Al mismo esquema temporal lab y arc '.$shp_file->tabla.' == '.$shp_lab_file->tabla);
         }
         $ppdddllls=$shp_file->pasarData();
-        flash('333');
       }else{flash('No se pudo procesar la cartografía')->error()->important();
         $mensajes.=' ERROR ';
       }
@@ -147,9 +146,17 @@ class SegmenterController extends Controller
     }else{
        flash($mensajes)->important()->error();
     }
-    foreach($ppdddllls as $ppdddlll){
-       MyDB::agregarsegisegd($ppdddlll->link);
-       MyDB::juntaListadoGeom('e'.$ppdddlll->link);
+    foreach($ppdddllls as $ppdddlll)
+    {
+      if ($ppdddlll != null){
+        if (strlen($ppdddlll->link)==2) {
+          flash('Se cargo una provincia. La '.$ppdddlll->link)->info()->important();
+        } elseif ($ppdddlll->link != null){
+          flash('Preparando localidad '.$ppdddlll->link.'. Agrego segi, segd e Intenta juntar Geom y Listado')->info();
+          MyDB::agregarsegisegd($ppdddlll->link);
+          MyDB::juntaListadoGeom('e'.$ppdddlll->link);
+        }
+      }
     }
     if (isset($codaglo[0]->link)){
             if ($epsg_id=='sr-org:8333'){
@@ -169,7 +176,7 @@ class SegmenterController extends Controller
          $procesar_result = false;
          flash("Error en el modelo archivo al cargar PxRad")->error();
      }
-      if ($procesar_result) 
+      if ($procesar_result)
       {
           $tabla = $pxrad_file->tabla;
             // Busco provincia encontrada en pxrad:
@@ -278,6 +285,6 @@ class SegmenterController extends Controller
                            $oDepto->loadCount('localidades')]);
       }
     return view('segmenter/index', ['data' => $data,'epsgs'=> $this->epsgs]);
-      
+
   }
 }

@@ -12,16 +12,23 @@
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" ></script>
 
-    <!-- Fonts -->
-    <!-- link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet" -->
-
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
     <!-- More Scripts -->
     @yield ('header_scripts')
     
+    <!-- Switches (custom checkboxes) -->
+    <style>
+    .toggle.ios, .toggle-on.ios, .toggle-off.ios { border-radius: 20rem; }
+    .toggle.ios .toggle-handle { border-radius: 20rem; }
+    .toggle-handle{
+      margin-top: 4px !important;
+    }
+    .toggle-group{
+      margin-top: -8px !important;
+    }
+    </style>
 </head>
 <body>
     @yield('divs4content')
@@ -48,6 +55,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/archivos') }}"> Archivos </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{
                         url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
                         }}"> Descargar plugin </a> </li>
@@ -68,13 +76,14 @@
                                 </li>
                             @endif
                         @else
-                            <li class="nav-item">
+                            <li class="nav-item btn mr-4">
                                     <a class="nav-link" alt="Ver/Ocultar mensajes"
                                     title="Ver/Ocultar Menaajes flash"
                                     onclick="$('div.alert').toggle();">
                                     Mensajes</a>
                             </li>
-                            <li class="nav-item dropdown">
+                            <li class="nav-item dropdown" style="display: flex; align-items: center;">
+                                <img src="{{Auth::user()->getProfilePicURL()}}" style="border-radius: 50%;" width="30" height="30" class="d-inline-block align-top" alt="Foto de perfil">
                                 <a id="navbarDropdownLogin" class="nav-link
                                 dropdown-toggle" href="#logout" role="button"
                                 aria-controls=logout
@@ -83,6 +92,12 @@
 
                                 <div id=logout class="dropdown-menu dropdown-menu-right collapse"
                                 aria-labelledby="navbarDropdownLogin">
+                                <!-- DropDown Of Side Navbar -->
+                                <ul class="navbar-nav ml-auto">
+                                <li class="nav-item dropdown">
+                                  <a class="dropdown-item" href="{{ route('perfil') }}">{{ __('Perfil') }}</a>
+                                </li>
+                                <li class="nav-item dropdown">
                                     <a class="dropdown-item" href="{{ route('logout') }}"
                                        onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">
@@ -92,7 +107,18 @@
                                     <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                                         @csrf
                                     </form>
-                                </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                  <a class="dropdown-item" href="{{ route('archivos') }}">{{ __('Archivos') }}</a>
+                                </li>
+                                @if (Auth::user()->hasRole('Super Admin'))
+                                <li class="nav-item dropdown">
+                                  <a class="dropdown-item" href="{{ route('admin.listarUsuarios') }}">{{ __('Usuarios') }}</a>
+                                </li>
+                                @endif
+                              </ul>
+                             </div>
+
                             </li>
                         @endguest
                     </ul>
@@ -106,23 +132,17 @@
         </div>
             @yield('content_main')
         <div id="copyright" class="text-center justify-content-center"
-            style="display:block"><hr />© 2022 INDEC - Geoestadística
+            style="display:block"><hr />© 2023 INDEC - Geoestadística
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
             <div>{{ Git::submoduleStatus() }}</div>
 
             </div>
-<!-- If using flash()->important() or flash()->overlay(), you'll need to pull in the JS for Twitter Bootstrap. -->
-<!--script src="//code.jquery.com/jquery.js"></script>
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script -->
 <script>
    $(document).ready( function () {
     $('#flash-overlay-modal').modal();
-    $('div.alert').not('.alert-important').delay(5000).fadeOut(350);
+    $('div.alert').not('.alert-important').delay(6000).fadeOut(2000);
 });
 </script>
     @yield ('footer_scripts')
-<script>
-$('div.alert').not('.alert-important').delay(3000).fadeOut(350);
-</script>
 </body>
 </html>

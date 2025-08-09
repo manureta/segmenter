@@ -24,9 +24,9 @@ En este repositorio se encunetran 4 ramas principales.
 - prd     versión para producción
 
 ## Prerrequisitos (las instrucciones asumen que se está usando Ubuntu)
-* PHP 8.1 o superior: php-mbstring php-dom php-zip php-gd php-pdo-pgsql composer
+* PHP 8.1 o superior: php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl composer
 ```
-sudo apt install php-mbstring php-dom php-zip php-gd php-pdo-pgsql 
+sudo apt install php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl
 curl -sS https://getcomposer.org/installer | php
 ```
 * gdal (ogr2ogr)
@@ -141,11 +141,6 @@ y elegir un puerto libre para que la app laravel esté escuchando
 ```bash
 php artisan serve --host=<url_del_servidor_donde_corre_la_aplicacion_laravel> --port=<puerto_del_servicio_de_la_aplicación>
 ```
-
-Y hacer esto:
-```bash
-cp app/developer_docs/PostgresBuilder.php.example vendor/laravel/framework/src/Illuminate/Database/Schema/PostgresBuilder.php
- ```
 
 [1]: https://devmarketer.io/learn/setup-laravel-project-cloned-github-com/
 [logo]: https://www.indec.gob.ar/Images_WEBINDEC/Logo/Logo_Indec.png

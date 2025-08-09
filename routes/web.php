@@ -10,10 +10,6 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('users', 'UserController@listarUsuarios')->name('admin.listarUsuarios');
-Route::get('users/{user}/roles', 'UserController@editarRolUsuario')->name('admin.editarRolUsuario');
-Route::get('users/{user}/permission', 'UserController@editarPermisoUsuario')->name('admin.editarPermisoUsuario');
-
 Route::get('/', function () {
     return view('welcome');
 });
@@ -79,6 +75,8 @@ Route::get('/setup/topo/pais',
 'SetupController@cargarTopologiasPais')->name('setup.topologia.pais');
 Route::get('/setup/topo/{esquema}',
 'SetupController@cargarTopologia')->name('setup.topologia');
+Route::get('/setup/topo/{esquema}/{tolerancia}',
+'SetupController@cargarTopologia')->name('setup.topologia');
 Route::get('/setup/topo_drop/{esquema}',
 'SetupController@dropTopologia')->name('setup.drop.topologia');
 Route::get('/setup/index/{esquema}',
@@ -101,6 +99,8 @@ Route::get('/setup/limpia/{esquema}',
 'SetupController@limpiarEsquema')->name('setup.limpia');
 Route::get('/setup/muestrea/{esquema}',
 'SetupController@muestreaEsquema')->name('setup.muestrea');
+Route::get('/setup/limpiar/Temporales',
+'SetupController@limpiaEsquemasTemporales')->name('setup.limpia.temporales');
 Route::get('/setup/junta/{esquema}',
 'SetupController@juntarSegmentos')->name('setup.junta');
 Route::get('/setup/junta/{esquema}/{frac}/{radio}',
@@ -177,11 +177,48 @@ Route::get('search_provincia', 'AutoCompleteProvinciaController@index');
 Route::get('autocomplete_provincia', 'AutoCompleteProvinciaController@search');
 Route::get('provincia','ProvinciaController@index');
 
+// ---------- PERFIL ----------
+Route::middleware(['auth'])->group(function () {
+    Route::get('perfil', 'UserController@mostrarPerfil')->name('perfil');
+    Route::post('perfil/edit-username', 'UserController@editarUsername')->name('editarUsername');
+    Route::post('perfil/edit-email', 'UserController@editarEmail')->name('editarEmail');
+    Route::post('perfil/edit-password', 'UserController@editarContraseña')->name('editarContraseña');
+    Route::post('perfil/edit-profile-pic', 'UserController@editarFoto')->name('editarFoto');
+});
+
+// ---------- USUARIOS ----------
+Route::get('users', 'UserController@listarUsuarios')->name('admin.listarUsuarios');
+Route::middleware(['auth'])->group(function () {
+    Route::get('users/{user}/roles', 'UserController@editarRolUsuario')->name('admin.editarRolUsuario');
+    Route::get('users/{user}/permission', 'UserController@editarPermisoUsuario')->name('admin.editarPermisoUsuario');
+    Route::get('users/{user}/filter', 'UserController@editarFiltroUsuario')->name('admin.editarFiltroUsuario');
+});
+
+// ---------- FILTROS ----------
+Route::middleware(['auth'])->group(function () {
+    Route::get('filtros', 'FilterController@listarFiltros')->name('admin.listarFiltros');
+    Route::get('filtros/{filter}/rename', 'FilterController@renombrarFiltro')->name('admin.renombrarFiltro');
+    Route::get('filtros/new', 'FilterController@crearFiltro')->name('admin.crearFiltro');
+    Route::get('filtros/provs/edit', 'FilterController@editarFiltrosProvs')->name('admin.editarFiltrosProvs');
+    Route::get('filtros/provs', 'FilterController@listarFiltrosProvs')->name('admin.listarFiltrosProvs');
+    Route::delete('filtros/{filter}', 'FilterController@eliminarFiltro')->name('admin.eliminarFiltro');
+});
+
+// ---------- ROLES ----------
+Route::middleware(['auth'])->group(function () {
+    Route::get('roles', 'RoleController@listarRoles')->name('admin.listarRoles');
+    Route::get('roles/{role}/edit', 'RoleController@editarRol')->name('admin.editarRol');
+    Route::get('roles/new', 'RoleController@crearRol')->name('admin.crearRol');
+    Route::get('roles/{role}/detail', 'RoleController@detallesRol')->name('admin.detallesRol');
+    Route::delete('roles/{role}', 'RoleController@eliminarRol')->name('admin.eliminarRol');
+});
+
 // ---------- PROVINCIAS --------
 Route::get('provs-list', 'ProvinciaController@provsList'); 
 Route::get('provs','ProvinciaController@index');
 Route::get('prov/{provincia}','ProvinciaController@show');
 Route::post('prov/{provincia}','ProvinciaController@show_post');
+Route::delete('provincia/{provincia}','ProvinciaController@destroy')->name('provincia.delete');
 
 // ---------- DEPARTAMENTOS --------
 
@@ -196,6 +233,7 @@ Route::post('locas-list', 'LocalidadController@locasList');
 Route::get('localidades','LocalidadController@list');
 Route::get('localidades_json','LocalidadController@index');
 Route::get('localidad/{localidad}','LocalidadController@show');
+Route::get('localidad/codigo/{codigo}','LocalidadController@show_codigo');
 Route::post('localidad/{localidad}','LocalidadController@segmenta_post');
 Route::post('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
 Route::get('localidad-segmenta/{localidad}','LocalidadController@segmenta_post');
@@ -243,13 +281,21 @@ Route::get('grafo/{aglomerado}/{radio}/','SegmentacionController@ver_grafo_legac
 Route::get('radio/{localidad}/{radio}/','SegmentacionController@ver_grafo')->name('ver-grafo');
 
 // ---------- ARCHIVOS --------
-Route::post('archivos','ArchivoController@index');
-Route::get('archivos','ArchivoController@index');
-Route::get('archivo/{archivo}','ArchivoController@show');
-Route::delete('archivo/{archivo}','ArchivoController@destroy');
-Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
-Route::get('archivo/{archivo}/procesar','ArchivoController@procesar');
-
+Route::middleware(['auth'])->group(function () {
+    Route::post('archivos','ArchivoController@index');
+    Route::get('archivos','ArchivoController@index')->name('archivos');
+    Route::get('archivo/{archivo}','ArchivoController@show');
+    Route::post('archivo/{archivo}','ArchivoController@show');
+    Route::delete('archivo/{archivo}','ArchivoController@destroy');
+    Route::put('archivo/{archivo}/detach','ArchivoController@detach');
+    Route::get('archivo/{archivo}/descargar','ArchivoController@descargar');
+    Route::get('archivo/{archivo}/procesar','ArchivoController@procesar');
+    Route::get('archivos/limpiar','ArchivoController@eliminar_repetidos')->name('limpiar_archivos');
+    Route::get('archivos/repetidos','ArchivoController@listar_repetidos')->name('archivos_repetidos');
+    Route::get('archivos/recalcular_cs/{archivo_id?}','ArchivoController@recalcular_checksums')->name('recalcular_checksums'); //el parametro es opcional
+    Route::get('archivos/checksums_obsoletos','ArchivoController@listar_checksums_obsoletos')->name('checksums_obsoletos');
+    Route::get('archivos/checksums_no_calculados','ArchivoController@listar_checksums_no_calculados')->name('checksums_no_calculados');
+});
 
 // ---------- TABLERO ---------
 

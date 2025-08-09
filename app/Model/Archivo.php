@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Symfony\Component\Process\Exception\RuntimeException; 
+use Symfony\Component\Process\Exception\RuntimeException;
 use Illuminate\Support\Facades\Config;
 use App\Imports\SegmentosImport;
 use App\Imports\CsvImport;
@@ -16,6 +16,9 @@ use App\MyDB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Exceptions\GeoestadisticaException;
+use App\User;
+use Illuminate\Support\Facades\DB;
+use ZipArchive;
 
 class Archivo extends Model
 {
@@ -33,11 +36,121 @@ class Archivo extends Model
         return $this->belongsTo('App\User');
     }
 
+    public function viewers()
+    {
+       return $this->belongsToMany(User::class, 'file_viewer');
+    }
+
+    public function checksum_control()
+    {
+        return $this->hasOne(ChecksumControl::class);
+    }
+
+    // Funciona para checksum shape (varios files)
+    private static function checksumCalculate($request_file, $shape_files = []){
+        // O generar archivo comprimido de una vez :/
+        // DO IT
+        $checksum = md5_file($request_file); //->getRealPath());
+        if ($shape_files != null){
+            $checksums[] = $checksum;
+            foreach ($shape_files as $key => $shape_file) {
+                // Hay e00 con shapefiles con valor null
+                if ($shape_file != null and $shape_file != ''){
+                  $checksums[] =  md5_file($shape_file);//->getRealPath());
+                }
+            }
+            $checksum = md5(implode('',$checksums));
+        }
+        return $checksum;
+    }
+
+    //recalcula el checksum según corresponda para archivos con checksums obsoletos
+    public function checksumRecalculate(){
+        if ($this->isMultiArchivo()){
+            // si soy multiarchivo calculo el checksum en base a mis shapefiles
+            $shape_files = $this->getArchivosSHP();
+            $shp = array_shift($shape_files);
+            $checksum = $this->checksumCalculate($shp, $shape_files);
+        } else {
+            $checksum = md5(Storage::get($this->nombre));
+        }
+        // guardo el nuevo checksum en el archivo
+        $this->checksum = $checksum;
+        $this->save();
+
+        // guardo el checksum en su checksum_control
+        $control = $this->checksum_control;
+        if (!$control) {
+            // si no existe lo creo
+            $control = new ChecksumControl();
+            $control->checksum = $checksum;
+            $this->checksum_control()->save($control);
+        } else {
+            $control->checksum = $checksum;
+            $control->save();
+        }
+    }
+
+    // isMultiArchivo, si es del tipo que son muchos archivos.
+    public function ismultiArchivo() {
+      if ( in_array($this->tipo,['shp','shp/lab']) ) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    // Funciona para verificar que es checksum del archivo esté actualizado
+    public function getcheckChecksumAttribute(){
+        $result = true;
+        $control = $this->checksum_control;
+        if($control) {
+            if ($this->checksum != $control->checksum) {
+                $result = false;
+                Log::error($this->nombre_original.' checksum mal calculado!');
+            } else {
+                Log::info($this->nombre_original.' checksum ok!');
+            }
+        } else {
+            Log::warning($this->nombre_original.' no tiene el checksum calculado!');
+        }
+        return $result;
+    }
+
+    public function checkStorage(){
+        $result = true;
+        if ( $this->isMultiArchivo() ){
+            $nombre = explode(".",$this->nombre)[0];
+            $nombre_original = explode(".",$this->nombre_original)[0];
+            // busco para cada extension
+            $extensiones = [".dbf", ".shx", ".prj"];
+            foreach ($extensiones as $extension) {
+                $n = $nombre . $extension;
+                if(Storage::exists($n)) {
+                    Log::info($nombre_original.$extension.' Storage ok!');
+                } else {
+                    Log::error($nombre_original.$extension.' Storage missing! ('.$n.')');
+                    $result = false;
+                }
+            }
+        } else {
+            $n = $this->nombre;
+            if (Storage::exists($n)){
+                Log::info($this->nombre_original.' Storage ok!');
+            } else {
+                Log::error($this->nombre_original.' Storage missing!('.$n.')');
+                $result = false;
+            }
+        }
+       return $result;
+    }
+
     // Funcion para cargar información de archivo en la base de datos.
     public static function cargar($request_file, $user, $tipo=null, $shape_files = []) {
         $original_extension = strtolower($request_file->getClientOriginalExtension());
-        
-        $file = self::where('checksum', '=', md5_file(($request_file)->getRealPath()))->first();
+        $checksum = self::checksumCalculate($request_file, $shape_files);
+        # Ordeno por id para que, de ser necesario, el registro en file_viewer se cree sobre el archivo original y no una copia
+        $file = self::where('checksum', '=', $checksum)->orderBy('id', 'asc')->first();
         if (!$file) {
             flash("Nuevo archivo ".$original_extension);
             $guess_extension = strtolower($request_file->guessClientExtension());
@@ -45,35 +158,49 @@ class Archivo extends Model
             $random_name= 't_'.$request_file->hashName();
             $random_name = substr($random_name,0,strpos($random_name,'.'));
             $file_storage = $request_file->storeAs('segmentador', $random_name.'.'.$request_file->getClientOriginalExtension());
+            $size_total = $request_file->getSize();
             if ($tipo == 'shape'){
                 if ($shape_files != null){
+                    $data_files[] = null;
                     foreach ($shape_files as $shape_file) {
                         //Almacenar archivos asociados a shapefile con igual nombre
                         //según extensión.
-                        if ($shape_file != null){
+                        if ($shape_file != null and $shape_file != ''){
                             $extension = strtolower($shape_file->getClientOriginalExtension());
                             $data_files[] = $shape_file->storeAs('segmentador', $random_name.'.'.$extension);
+                            $size_total = $size_total + $shape_file->getSize();
                         };
                     }
                 }
             }
-            $file_storage = $request_file->storeAs('segmentador', $random_name.'.'.$request_file->getClientOriginalExtension());
+
             $file = self::create([
                 'user_id' => $user->id,
                 'nombre_original' => $original_name,
                 'nombre' => $file_storage,
                 'tabla' => $random_name,
                 'tipo' => ($guess_extension!='bin' and $guess_extension!='')?$guess_extension:$original_extension,
-                'checksum'=> md5_file($request_file->getRealPath()),
-                'size' => $request_file->getSize(),
+                'checksum'=> $checksum,
+                'size' => $size_total,
                 'mime' => $request_file->getClientMimeType()
             ]);
-            $user->visible_files()->attach($file->id);
+            // guardo el checksum en su checksum_control
+            $control = $file->checksum_control;
+            if (!$control) {
+                // si no existe lo creo
+                $control = new ChecksumControl();
+                $control->checksum = $checksum;
+                $file->checksum_control()->save($control);
+            } else {
+                $control->checksum = $checksum;
+                $control->save();
+            }
         } else {
-            if (!$user->visible_files()->get()->contains($file)){
+            # Si no es su archivo y no está en sus archivos visibles lo agrego
+            if (!$user->visible_files()->get()->contains($file) and !$user->mis_files()->get()->contains($file)){
                 $user->visible_files()->attach($file->id);
             }
-            flash("Archivo ".$original_extension." ya existente. No se cargará de nuevo ")->info();
+            flash("Archivo ".$original_extension." ya existe. Cargado el  ".$file->created_at->format('Y-m-d').' por '.$file->user->name)->info();
         }
         return $file;
     }
@@ -82,11 +209,56 @@ class Archivo extends Model
     // TODO: ver shape de descargar conjunto de archivos.
     public function descargar() {
         flash('Descargando... '.$this->nombre_original);
+
+        if ( $this->isMultiArchivo() ) {
+            return $this->downloadZip();
+        }
         $file = storage_path().'/app/'.$this->nombre;
         $name = 'mandarina_'.time().'_'.$this->nombre_original;
         $headers = ['Content-Type: '.$this->mime];
         return response()->download($file, $name, $headers);
     }
+
+    public function downloadZip()
+    {
+        $zip = new ZipArchive;
+
+        $fileName = 'mandarina_'.time().'_'.$this->nombre_original.'.zip';
+
+        if ($zip->open(storage_path().'/app/'.$fileName, ZipArchive::CREATE) === TRUE) {
+
+            $files = $this->getArchivosSHP();
+
+            foreach ($files as $key => $value) {
+                try {
+                  $relativeNameInZipFile = $key;
+                  $zip->addFile($value, $relativeNameInZipFile);
+                } catch (ErrorException $e) {
+                  Log::error('No se encontreo el archivo:'.$e->getMessage());
+                  dd($value);
+                }
+            }
+
+            $zip->close();
+        }
+
+        return response()->download(storage_path().'/app/'.$fileName);
+    }
+
+    public function getArchivosSHP() {
+        $nombre = substr($this->nombre,0,-4);
+        $nombre_original = substr($this->nombre_original,0,-4);
+
+        // genero nombre para cada extension
+        $extensiones = [".shp", ".shx", ".dbf", ".prj"];
+        foreach ($extensiones as $extension) {
+            $o = storage_path().'/app/'.$nombre . $extension;
+            $key = 'mandarina_'.$nombre_original . $extension;
+            $archivos[$key]= $o;
+        }
+        return $archivos;
+    }
+
 
     public function procesar(bool $force = true)
     {
@@ -109,6 +281,9 @@ class Archivo extends Model
             } elseif ($this->tipo == 'pxrad/dbf') {
                 return $this->procesarPxRad();
             } elseif ($this->tipo == 'shp') {
+                if ( strtolower(substr($this->nombre_original, 0, 11)) == 'Localidades') {
+                  return $this->procesarGeomSHP('localidades');
+                }
                 return $this->procesarGeomSHP();
             } elseif ($this->tipo == 'shp/arc') {
                 return $this->procesarGeomSHP();
@@ -190,10 +365,11 @@ class Archivo extends Model
 
     public function procesarGeomSHP($capa = 'arc') {
         MyDB::createSchema('_'.$this->tabla);
-        flash('Procesando Geom desde Shape en reestructuración, disculpe las molestias, estamos trabajando!')->warning();
+        flash('Procesando Geom desde Shape '.$capa.'...')->warning();
         $mensajes = '';
+        $path_ogr2ogr = "/usr/bin/ogr2ogr";
         $processOGR2OGR = Process::fromShellCommandline(
-            '(/usr/bin/ogr2ogr -f \
+            '( $ogr2ogr -f \
             "PostgreSQL" PG:"dbname=$db host=$host user=$user port=$port \
             active_schema=e$esquema password=$pass" --config PG_USE_COPY YES \
             -lco OVERWRITE=YES --config OGR_TRUNCATE YES -dsco \
@@ -205,7 +381,7 @@ class Archivo extends Model
             -overwrite $file )'
         );
         $processOGR2OGR->setTimeout(1800);
-        
+
         //Cargo etiquetas
         try{
             $processOGR2OGR->run(null,[
@@ -218,7 +394,8 @@ class Archivo extends Model
                 'host'=>Config::get('database.connections.pgsql.host'),
                 'user'=>Config::get('database.connections.pgsql.username'),
                 'pass'=>Config::get('database.connections.pgsql.password'),
-                'port'=>Config::get('database.connections.pgsql.port')
+                'port'=>Config::get('database.connections.pgsql.port'),
+                'ogr2ogr'=>$path_ogr2ogr
             ]);
             $mensajes.='<br />'.$processOGR2OGR->getErrorOutput().'<br />'.$processOGR2OGR->getOutput();
             flash($mensajes)->info();
@@ -348,6 +525,7 @@ class Archivo extends Model
 
     // Pasa data geo, arcos y labels al esquema de las localidades encontradas
     // Retorna Array $ppdddlls con codigos de localidades
+    // TODO: Separar o manejar arc or lab x separado
     public function pasarData(){
         // Leo dentro de la tabla de etiquetas la/s localidades
         $ppdddllls=MyDB::getLocs('lab','e_'.$this->tabla);
@@ -357,15 +535,34 @@ class Archivo extends Model
             // Intento cargar pais x depto :D
             $coddeptos = MyDB::getDptos('lab', 'e_'.$this->tabla);
             $coddeptos_pol = MyDB::getDptos('arc', 'e_'.$this->tabla);
-            flash('Puede ser una pais con deptos: '.count($coddeptos).' o '.count($coddeptos_pol));
-            foreach ($coddeptos as $coddepto){
-                flash('Se encontró Departamento : '.$coddepto->link);
-                MyDB::createSchema($coddepto->link);
-                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
+            $codprov = MyDB::getProv('lab', 'e_'.$this->tabla);
+            $codprov_pol = MyDB::getProv('arc', 'e_'.$this->tabla);
+
+            flash('Puede ser una "pais" x prov con deptos: '.count($coddeptos).' o '.count($coddeptos_pol));
+
+            if ($codprov != null){
+                flash('Se encontró Provincia : '.$codprov);
+//                MyDB::createSchema($coddepto->link);
+//                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
+                MyDB::createSchema($codprov);
+                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov,'lab',null,$codprov);
                 $count++;
             }
+
+            if ($codprov_pol != null){
+                flash('Se encontró Departamentos en arc/pol : '.$codprov_pol);
+//                MyDB::createSchema($coddepto->link);
+//                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$coddepto->link,$coddepto->link);
+                MyDB::createSchema($codprov_pol);
+                MyDB::copiaraEsquemaPais('e_'.$this->tabla,'e'.$codprov_pol,'arc',null,$codprov_pol);
+                $count++;
+                $codprov=$codprov_pol;
+            }
+
             MyDB::limpiar_esquema('e_'.$this->tabla);
-            return $coddeptos;
+            $prov=array('link'=>$codprov);
+            $resultado[0] = (object) $prov;
+            return $resultado;
         } else {
             // Para cada localidad encontrada
             // creo esquema y copio datos a esquema según codigo.
@@ -430,6 +627,102 @@ class Archivo extends Model
         $this->save();
         flash($mensaje.$import->getRowCount());
         return true;
+    }
+
+
+    // Busca los archivos asociados al .shp repetidos para elimiarlos/reutilizarlos
+    public function buscarYBorrarArchivosSHP(Archivo $original){
+        Log::info("Es archivo .shp");
+        // elimino la extension .shp
+        $nombre_original = explode(".",$original->nombre)[0];
+        $nombre_copia = explode(".",$this->nombre)[0];
+
+        // busco para cada extension
+        $extensiones = [".dbf", ".shx", ".prj"];
+        foreach ($extensiones as $extension) {
+            Log::info("Verificando archivos con extensión ".$extension." en el storage");
+            $o = $nombre_original . $extension;
+            $c = $nombre_copia . $extension;
+            if(Storage::exists($c)) {
+                if(Storage::exists($o)) {
+                    # si existe el archivo original entonces elimino la copia
+                    Log::info("Existe el archivo ".$extension." original en el storage. Se eliminará la copia");
+                    if(Storage::delete($c)){
+                        Log::info('Se borró el archivo: '.  $this->nombre_original . " extension " . $extension);
+                    }else{
+                        Log::error('NO se borró el archivo: '.$this->nombre_original . " extension " . $extension);
+                    }
+                } else {
+                    # si no existe entonces el archivo copia reemplaza al original en el storage (son el mismo por lo que no hay problema)
+                    Log::error("No existe el archivo ".$extension." original en el storage. Se reutiliza la copia");
+                    # renombro a la copia con el nombre del original inexistente
+                    Storage::move($c, $o);
+                }
+            }
+        }
+    }
+
+    public function chequearYBorrarStorage(Archivo $original){
+        Log::info("Verificando storage");
+        $copia = $this;
+        if(Storage::exists($original->nombre)) {
+            # si existe el archivo original entonces elimino la copia
+            Log::info("Existe el archivo original en el storage. Se eliminará la copia");
+            if(Storage::delete($copia->nombre)){
+                Log::info('Se borró el archivo: '.$copia->nombre. ' nombre original:'. $copia->nombre_original);
+            }else{
+                Log::error('NO se borró el archivo: '.$copia->nombre. ' nombre original:'.$copia->nombre_original);
+            }
+        } else {
+            # si no existe entonces el archivo copia reemplaza al original en el storage (son el mismo por lo que no hay problema)
+            Log::error("No existe el archivo original en el storage. Se reutiliza la copia");
+            $original->update(['nombre' => $copia->nombre]);
+        }
+    }
+
+    public function limpiar_copia(Archivo $original){
+        $owner = $this->user;
+        # En caso de ser necesario le permito al usuario ver el archivo original
+        if (($original->user_id != $owner->id) and (!$owner->visible_files()->get()->contains($original))){
+            $owner->visible_files()->attach($original->id);
+            Log::info("Archivo original (".$original->id.") agregado a file_viewer del owner de la copia (".$this->id.")");
+        }
+
+        # Verifico que existan los archivos originales en el storage
+        $this->chequearYBorrarStorage($original);
+        # si es multiarchivo elimino tambien las copias de los demas archivos
+        if ($this->ismultiArchivo()){
+            $this->buscarYBorrarArchivosSHP($original);
+        }
+
+        # Si la copia es vista por otros usuarios
+        $viewers = $this->viewers()->get();
+        if ($viewers != null){
+            foreach ($viewers as $viewer){
+                if (!$viewer->visible_files()->get()->contains($original)){
+                    # Si el viewer no es viewer del archivo original creo la relación
+                    $viewer->visible_files()->attach($original->id);
+
+                }
+            }
+            Log::info("Los viewers de la copia ". $this->id ." ahora son viewers del archivo original ".$original->id);
+            # Elimino la relación con todos los viewers
+            $this->viewers()->detach();
+            Log::info("Se eliminaron los viewers de la copia.");
+        }
+        $this->delete();
+        Log::info("Se eliminó el registro perteneciente a la copia");
+    }
+
+    public function getesCopiaAttribute(){
+        $original = Archivo::where('checksum',$this->checksum)->orderby('id','asc')->first();
+        $es_copia = $original->id != $this->id;
+        if ($es_copia) {
+            Log::warning($this->nombre_original." es copia!");
+        } else {
+            Log::info($this->nombre_original." es el archivo original!");
+        }
+        return $es_copia;
     }
 
 }
