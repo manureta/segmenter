@@ -429,3 +429,6 @@ Route::middleware(['auth:' . config('admin-auth.defaults.guard'), 'admin'])->gro
         });
     });
 });
+
+// Manual de uso de la API
+Route::get('/api-docs', 'ApiDocsController@index')->name('api.docs');
