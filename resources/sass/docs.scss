@@ -1,0 +1,208 @@
+// Estilos para el Portal de Documentación
+
+// Variables
+$primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+$card-hover-shadow: 0 4px 8px rgba(0,0,0,0.1);
+$transition-speed: 0.2s;
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+// Navbar personalizado
+.navbar-brand {
+    img {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+// Hero section
+.hero-section {
+    background: $primary-gradient;
+    color: white;
+    padding: 4rem 0;
+    
+    .display-4 {
+        font-weight: 700;
+    }
+    
+    .lead {
+        font-size: 1.25rem;
+        opacity: 0.9;
+    }
+    
+    h5 {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+}
+
+// Tarjetas de documentación
+.doc-card {
+    transition: transform $transition-speed, box-shadow $transition-speed;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: $card-hover-shadow;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-title {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .badge-size {
+        font-size: 0.8rem;
+    }
+    
+    ul {
+        font-size: 0.9rem;
+        color: #666;
+        
+        li {
+            margin-bottom: 0.25rem;
+        }
+    }
+}
+
+// Footer
+footer {
+    background-color: #343a40;
+    color: white;
+    padding: 2rem 0;
+    
+    h6 {
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+    
+    p.small {
+        margin-bottom: 0.25rem;
+        opacity: 0.8;
+    }
+}
+
+// Modal de documentos
+#docModal {
+    .modal-dialog {
+        max-width: 90vw;
+    }
+    
+    .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    #docContent {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        h4 { font-size: 1.25rem; }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        code {
+            background-color: #f8f9fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            
+            code {
+                background: none;
+                padding: 0;
+                color: inherit;
+            }
+        }
+        
+        table {
+            width: 100%;
+            margin-bottom: 1rem;
+            border-collapse: collapse;
+            
+            th, td {
+                padding: 0.75rem;
+                border: 1px solid #dee2e6;
+                text-align: left;
+            }
+            
+            th {
+                background-color: #f8f9fa;
+                font-weight: 600;
+            }
+            
+            tbody tr:nth-child(even) {
+                background-color: #f8f9fa;
+            }
+        }
+        
+        blockquote {
+            border-left: 4px solid #007bff;
+            padding-left: 1rem;
+            margin-left: 0;
+            color: #666;
+            font-style: italic;
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+        
+        .display-4 {
+            font-size: 2rem;
+        }
+        
+        .row > div {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    .doc-card {
+        margin-bottom: 1rem;
+    }
+    
+    #docModal .modal-dialog {
+        max-width: 95vw;
+        margin: 1rem;
+    }
+}

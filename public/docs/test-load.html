@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Carga de Documentos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test de Carga de Documentos</h1>
+    
+    <div class="test-section">
+        <h3>📋 Archivos a Probar</h3>
+        <button onclick="testFile('INFORME_TESTING_SEGMENTADOR.md')">Informe Principal</button>
+        <button onclick="testFile('ANALISIS_RUTAS_COMPLETO.md')">Análisis Rutas</button>
+        <button onclick="testFile('DOCUMENTACION_FUNCIONALIDADES.md')">Funcionalidades</button>
+        <button onclick="testFile('CODIFICACION_AGLOMERADOS_LOCALIDADES.md')">Códigos Geográficos</button>
+    </div>
+
+    <div class="test-section">
+        <h3>🔧 Verificar Dependencias</h3>
+        <button onclick="checkDependencies()">Verificar JavaScript</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+
+        function log(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = isError ? '❌ ERROR' : '✅ INFO';
+            resultDiv.innerHTML += `[${timestamp}] ${prefix}: ${message}\n`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        function testFile(filename) {
+            log(`Probando archivo: ${filename}`);
+            
+            fetch(filename)
+                .then(response => {
+                    log(`HTTP Status: ${response.status} ${response.statusText}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(content => {
+                    const size = (content.length / 1024).toFixed(2);
+                    const lines = content.split('\n').length;
+                    log(`✅ Archivo cargado exitosamente: ${size}KB, ${lines} líneas`);
+                    log(`Primeras líneas:\n${content.substring(0, 200)}...`);
+                })
+                .catch(error => {
+                    log(`❌ Error cargando ${filename}: ${error.message}`, true);
+                });
+        }
+
+        function checkDependencies() {
+            log('--- VERIFICACIÓN DE DEPENDENCIAS ---');
+            
+            // Verificar Bootstrap
+            if (typeof bootstrap !== 'undefined') {
+                log('✅ Bootstrap: Disponible');
+            } else {
+                log('❌ Bootstrap: No disponible', true);
+            }
+            
+            // Verificar Marked
+            if (typeof marked !== 'undefined') {
+                log('✅ Marked: Disponible');
+                log(`Marked version: ${typeof marked}`);
+            } else {
+                log('❌ Marked: No disponible', true);
+            }
+            
+            // Verificar Prism
+            if (typeof Prism !== 'undefined') {
+                log('✅ Prism: Disponible');
+                if (Prism.highlightAllUnder) {
+                    log('✅ Prism.highlightAllUnder: Disponible');
+                } else {
+                    log('❌ Prism.highlightAllUnder: No disponible', true);
+                }
+            } else {
+                log('❌ Prism: No disponible', true);
+            }
+        }
+
+        // Cargar dependencias automáticamente
+        window.addEventListener('load', function() {
+            log('🚀 Página cargada, verificando dependencias...');
+            setTimeout(checkDependencies, 500);
+        });
+    </script>
+</body>
+</html>

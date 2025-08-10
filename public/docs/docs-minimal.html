@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación - Segmentador INDEC</title>
+    <style>
+        /* CSS mínimo inline - Solo esenciales */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .row { display: flex; flex-wrap: wrap; gap: 20px; }
+        .col { flex: 1; min-width: 280px; }
+        .card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .card-body { padding: 20px; }
+        .card-footer { background: #f8f9fa; padding: 12px 20px; border-top: 1px solid #ddd; }
+        .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; text-align: center; }
+        .btn { display: inline-block; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; }
+        .btn:hover { background: #0056b3; }
+        .badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; }
+        .navbar { background: white; border-bottom: 1px solid #ddd; padding: 12px 0; }
+        .navbar a { color: #333; text-decoration: none; font-weight: 500; }
+        .text-center { text-align: center; }
+        .mb-3 { margin-bottom: 16px; }
+        .py-5 { padding: 40px 0; }
+        .bg-light { background: #f8f9fa; }
+        h1 { font-size: 2.5rem; margin-bottom: 16px; }
+        h3 { margin-bottom: 24px; }
+        h5 { margin-bottom: 12px; color: #333; }
+        .small { font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <!-- Navbar mínima -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="../">← Volver a Segmentador INDEC</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <h1>📚 Documentación Técnica</h1>
+            <p>Sistema de Segmentación Censal - Análisis Completo</p>
+            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+                <div><strong>📄 4</strong> Documentos</div>
+                <div><strong>🛣️ 252</strong> Rutas</div>
+                <div><strong>📊 55</strong> Archivos</div>
+                <div><strong>🗄️ 1,194</strong> Esquemas</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentos -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                <h5>📋 Informe Principal</h5>
+                                <span class="badge">6.4 KB</span>
+                            </div>
+                            <p>Resumen ejecutivo completo del análisis de testing y funcionalidades del sistema.</p>
+                            <ul style="list-style: none; padding: 0; font-size: 14px; color: #666;">
+                                <li>✅ 7 Tareas completadas</li>
+                                <li>🔍 Análisis exhaustivo</li>
+                                <li>📈 Recomendaciones</li>
+                            </ul>
+                            <div style="margin-top: 16px;">
+                                <a href="INFORME_TESTING_SEGMENTADOR.md" class="btn" target="_blank">Ver documento</a>
+                            </div>
+                        </div>
+                        <div class="card-footer small">
+                            173 líneas • Project Managers
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                <h5>🛣️ Análisis de Rutas</h5>
+                                <span class="badge" style="background: #28a745;">15.2 KB</span>
+                            </div>
+                            <p>Mapeo completo y categorizado de todas las 252 rutas del sistema.</p>
+                            <ul style="list-style: none; padding: 0; font-size: 14px; color: #666;">
+                                <li>🏠 Rutas principales</li>
+                                <li>👨‍💼 Panel administrativo</li>
+                                <li>🌐 API endpoints</li>
+                            </ul>
+                            <div style="margin-top: 16px;">
+                                <a href="ANALISIS_RUTAS_COMPLETO.md" class="btn" target="_blank">Ver documento</a>
+                            </div>
+                        </div>
+                        <div class="card-footer small">
+                            373 líneas • Desarrolladores
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                <h5>🔧 Funcionalidades</h5>
+                                <span class="badge" style="background: #17a2b8;">6.4 KB</span>
+                            </div>
+                            <p>Guía completa de uso y funcionalidades principales del segmentador.</p>
+                            <ul style="list-style: none; padding: 0; font-size: 14px; color: #666;">
+                                <li>🗺️ Carga de datos GIS</li>
+                                <li>📊 APIs disponibles</li>
+                                <li>🛠️ Flujos de procesamiento</li>
+                            </ul>
+                            <div style="margin-top: 16px;">
+                                <a href="DOCUMENTACION_FUNCIONALIDADES.md" class="btn" target="_blank">Ver documento</a>
+                            </div>
+                        </div>
+                        <div class="card-footer small">
+                            192 líneas • Usuarios
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                <h5>🗺️ Códigos Geográficos</h5>
+                                <span class="badge" style="background: #ffc107; color: #000;">3.5 KB</span>
+                            </div>
+                            <p>Sistema de codificación PPDDDLLL para aglomerados y localidades.</p>
+                            <ul style="list-style: none; padding: 0; font-size: 14px; color: #666;">
+                                <li>📍 Estructura PPDDDLLL</li>
+                                <li>📄 Archivos E00</li>
+                                <li>🏛️ Estructura provincial</li>
+                            </ul>
+                            <div style="margin-top: 16px;">
+                                <a href="CODIFICACION_AGLOMERADOS_LOCALIDADES.md" class="btn" target="_blank">Ver documento</a>
+                            </div>
+                        </div>
+                        <div class="card-footer small">
+                            109 líneas • Administradores
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Acceso rápido -->
+    <section class="bg-light py-5">
+        <div class="container">
+            <h3 class="text-center mb-3">🚀 Información Destacada</h3>
+            <div class="row">
+                <div class="col text-center">
+                    <h5>🔍 Testing Completo</h5>
+                    <p>Esquema e0125 (Chajarí) analizado con 41 segmentos creados</p>
+                </div>
+                <div class="col text-center">
+                    <h5>🚨 Seguridad</h5>
+                    <p>Vulnerabilidades identificadas y correcciones aplicadas</p>
+                </div>
+                <div class="col text-center">
+                    <h5>📊 APIs Funcionales</h5>
+                    <p>Endpoints probados en puerto 8090</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background: #343a40; color: white; padding: 30px 0; text-align: center;">
+        <div class="container">
+            <p><strong>📚 Documentación Generada</strong></p>
+            <p class="small">31.5 KB • 847 líneas • 100% cobertura</p>
+            <p class="small">🤖 Generado con Claude Code AI • 10 enero 2025</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript mínimo -->
+    <script>
+        // Performance: marcar carga completa
+        window.addEventListener('load', function() {
+            console.log('📚 Portal de documentación cargado (versión mínima)');
+        });
+        
+        // Mejorar accesibilidad con teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Cerrar cualquier modal si hubiera
+                console.log('ESC presionado');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación - Segmentador INDEC</title>
+    
+    <!-- CSS optimizado desde assets compilados -->
+    <link href="../css/app.css" rel="stylesheet">
+    <link href="../css/docs.css" rel="stylesheet">
+    
+    <style>
+        /* Estilos críticos inline para performance */
+        .doc-card { transition: transform 0.2s; cursor: pointer; }
+        .doc-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .hero-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4rem 0; }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="../">
+                <img src="../images/mandarina.svg" alt="Logo" width="30" height="30" class="me-2">
+                <span class="fw-bold">Segmentador INDEC</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="../">← Volver a la aplicación</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">📚 Documentación Técnica</h1>
+            <p class="lead">Sistema de Segmentación Censal - Análisis y Testing Completo</p>
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <h5>📄 4 Documentos</h5>
+                </div>
+                <div class="col-md-3">
+                    <h5>🛣️ 252 Rutas</h5>
+                </div>
+                <div class="col-md-3">
+                    <h5>📊 55 Archivos</h5>
+                </div>
+                <div class="col-md-3">
+                    <h5>🗄️ 1,194 Esquemas</h5>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Cards -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <!-- Informe Principal -->
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card doc-card h-100" onclick="openDoc('INFORME_TESTING_SEGMENTADOR.md')">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">📋 Informe Principal</h5>
+                                <span class="badge bg-primary">6.4 KB</span>
+                            </div>
+                            <p class="card-text">Resumen ejecutivo completo del análisis de testing y funcionalidades del sistema.</p>
+                            <ul class="list-unstyled small">
+                                <li>✅ 7 Tareas completadas</li>
+                                <li>🔍 Análisis exhaustivo</li>
+                                <li>📈 Recomendaciones</li>
+                                <li>🎯 Conclusiones</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>173 líneas • Audiencia: Project Managers</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análisis de Rutas -->
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card doc-card h-100" onclick="openDoc('ANALISIS_RUTAS_COMPLETO.md')">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">🛣️ Análisis de Rutas</h5>
+                                <span class="badge bg-success">15.2 KB</span>
+                            </div>
+                            <p class="card-text">Mapeo completo y categorizado de todas las 252 rutas del sistema.</p>
+                            <ul class="list-unstyled small">
+                                <li>🏠 Rutas principales</li>
+                                <li>👨‍💼 Panel administrativo</li>
+                                <li>🌐 API endpoints</li>
+                                <li>⚙️ Setup y configuración</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>373 líneas • Audiencia: Desarrolladores</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentación Funcional -->
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card doc-card h-100" onclick="openDoc('DOCUMENTACION_FUNCIONALIDADES.md')">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">🔧 Funcionalidades</h5>
+                                <span class="badge bg-info">6.4 KB</span>
+                            </div>
+                            <p class="card-text">Guía completa de uso y funcionalidades principales del segmentador.</p>
+                            <ul class="list-unstyled small">
+                                <li>🗺️ Carga de datos GIS</li>
+                                <li>📊 APIs disponibles</li>
+                                <li>🛠️ Flujos de procesamiento</li>
+                                <li>📁 Archivos de ejemplo</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>192 líneas • Audiencia: Usuarios</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Codificación Geográfica -->
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card doc-card h-100" onclick="openDoc('CODIFICACION_AGLOMERADOS_LOCALIDADES.md')">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">🗺️ Códigos Geográficos</h5>
+                                <span class="badge bg-warning">3.5 KB</span>
+                            </div>
+                            <p class="card-text">Sistema de codificación PPDDDLLL para aglomerados y localidades.</p>
+                            <ul class="list-unstyled small">
+                                <li>📍 Estructura PPDDDLLL</li>
+                                <li>📄 Archivos E00 analizados</li>
+                                <li>🏛️ Estructura provincial</li>
+                                <li>💡 Casos de uso</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>109 líneas • Audiencia: Administradores</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Access Section -->
+    <section class="bg-light py-5">
+        <div class="container">
+            <h3 class="mb-4 text-center">🚀 Acceso Rápido</h3>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>🔍 Testing Completo</h5>
+                            <p>Esquema e0125 (Chajarí) analizado con 41 segmentos creados</p>
+                            <a href="#" onclick="openDoc('INFORME_TESTING_SEGMENTADOR.md')" class="btn btn-primary btn-sm">Ver detalles</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>🚨 Seguridad</h5>
+                            <p>Vulnerabilidades identificadas y correcciones aplicadas</p>
+                            <a href="#" onclick="openDoc('INFORME_TESTING_SEGMENTADOR.md')" class="btn btn-danger btn-sm">Ver issues</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>📊 APIs Funcionales</h5>
+                            <p>Endpoints probados y documentados en puerto 8090</p>
+                            <a href="#" onclick="openDoc('ANALISIS_RUTAS_COMPLETO.md')" class="btn btn-success btn-sm">Ver APIs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background-color: #343a40; color: white; padding: 2rem 0;">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📚 Documentación Generada</h6>
+                    <p class="small">31.5 KB • 847 líneas • 100% cobertura</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="small mb-0">🤖 Generado con Claude Code AI</p>
+                    <p class="small">Fecha: 10 de enero de 2025</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal para documentos -->
+    <div class="modal fade" id="docModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="docTitle">Documento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="#" id="downloadLink" class="btn btn-outline-primary btn-sm" download>
+                            📥 Descargar Markdown
+                        </a>
+                    </div>
+                    <div id="docContent" style="max-height: 70vh; overflow-y: auto;">
+                        <!-- Contenido del documento -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript optimizado desde assets compilados -->
+    <script src="../js/app.js" defer></script>
+    <script src="../js/docs.js" defer></script>
+    
+    <!-- Fallback para funcionalidad básica -->
+    <script>
+        // Función básica para abrir documentos si los assets no cargan
+        if (typeof openDoc === 'undefined') {
+            window.openDoc = function(filename) {
+                // Simple fallback: abrir en nueva ventana
+                window.open(filename, '_blank');
+            };
+        }
+        
+        // Performance: precargar documentos críticos
+        document.addEventListener('DOMContentLoaded', function() {
+            const criticalDocs = ['INFORME_TESTING_SEGMENTADOR.md'];
+            criticalDocs.forEach(doc => {
+                fetch(doc).catch(() => {}); // Silent preload
+            });
+        });
+    </script>
+</body>
+</html>
