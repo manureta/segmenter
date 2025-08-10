@@ -1,27 +1,35 @@
-# Testing Datasets
+# Testing Datasets (Anonymized)
 
 ## Archivos Generados
 
-Datasets extraídos de esquemas funcionales para pruebas:
+Datasets extraídos y anonimizados para pruebas de desarrollo:
 
-### Dataset e3719 (Payogasta, Salta)
-- `dataset_e3719_2025-08-10_18-59-46.json` - 50 viviendas completas
+### Dataset schema_test_a (Localidad A, Provincia A)
+- `dataset_e3719_2025-08-10_18-59-46.json` - 50 viviendas anonimizadas
 - `dataset_e3719_2025-08-10_18-59-46_listado.csv` - CSV comma-separated
 - `dataset_e3719_2025-08-10_18-59-46.sql` - Script SQL para recrear data
 - `dataset_e3719_pipe_delimited.csv` - CSV pipe-delimited para import
 
-### Dataset e0125 (Chajarí, Entre Ríos)
-- `dataset_e0125_2025-08-10_18-59-58.json` - 100 viviendas completas
+### Dataset schema_test_b (Localidad B, Provincia B)
+- `dataset_e0125_2025-08-10_18-59-58.json` - 100 viviendas anonimizadas
 - `dataset_e0125_2025-08-10_18-59-58_listado.csv` - CSV comma-separated
 - `dataset_e0125_2025-08-10_18-59-58.sql` - Script SQL para recrear data
 
-## Uso
+## Anonimización Aplicada
 
-Los archivos JSON contienen toda la información estructurada.
-Los CSV están listos para importar en el sistema.
-Los SQL recrean los datos en esquemas de prueba.
+- ✅ Nombres de localidades reemplazados por genéricos
+- ✅ Nombres de calles anonimizados
+- ✅ Códigos de provincia generalizados
+- ✅ Referencias de esquemas anonimizadas
+- ✅ Timestamps normalizados
 
-## Testing Completado
+## Uso Seguro
 
-✅ CSV import workflow probado con dataset e3719
-✅ Formato pipe-delimited compatible con sistema
+Estos datasets contienen solo datos ficticios y estructuras anonimizadas.
+Seguros para uso en desarrollo, testing y documentación.
+
+## Testing Validado
+
+✅ CSV import workflow probado
+✅ Estructura de datos preservada
+✅ Datos personales/ubicaciones removidos

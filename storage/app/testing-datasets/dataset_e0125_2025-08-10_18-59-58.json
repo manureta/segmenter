@@ -1,7 +1,7 @@
 {
     "metadata": {
-        "schema": "e0125",
-        "extracted_at": "2025-08-10T21:59:58.258088Z",
+        "schema": "schema_test_b",
+        "extracted_at": "2025-01-01T12:00:00.000000Z",
         "source_counts": {
             "listado": 13694,
             "segmentacion": 13694
@@ -7528,7 +7528,7 @@
             "radio": 18,
             "segmento_id": 145,
             "seg": "02",
-            "descripcion": "Manzana 003: Lado 03 completo 99936 - PASILLO, Lado 04 completo 620 - PJE CAMPODONICO, Lado 01 completo 95 - AV BELGRANO. Manzana 004: Lado 06 completo 99936 - PASILLO, Lado 07 completo 620 - PJE CAMPODONICO, Lado 01 completo 620 - PJE CAMPODONICO, Lado 02 completo 620 - PJE CAMPODONICO, Lado 03 completo 99936 - PASILLO, Lado 04 completo 140 - AVELLANEDA. Manzana 006: Lado 02 completo 99936 - PASILLO, Lado 03 completo 692 - PJE HOMASTORFER, Lado 04 completo 99936 - PASILLO. Manzana 007 completa. Manzana 008: Lado 03 completo 450 - LA INMACULADA, Lado 04 completo 255 - CHAMPAGNAT. Manzana 010: Lado 02 completo 140 - AVELLANEDA, Lado 03 completo 450 - LA INMACULADA. Manzana 011: Lado 04 completo 140 - AVELLANEDA, Lado 01 completo 167 - CALLE S N, Lado 02 completo 365 - GDOR FERRE. Manzana 012: Lado 04 completo 365 - GDOR FERRE, Lado 01 completo 95 - AV BELGRANO. Manzana 015: Lado 01 completo 450 - LA INMACULADA. Manzana 035 completa. Manzana 901 completa. Manzana 902 completa",
+            "descripcion": "Manzana 003: Lado 03 completo 99936 - PASILLO, Lado 04 completo 620 - PJE CAMPODONICO, Lado 01 completo 95 - AV BELGRANO. Manzana 004: Lado 06 completo 99936 - PASILLO, Lado 07 completo 620 - PJE CAMPODONICO, Lado 01 completo 620 - PJE CAMPODONICO, Lado 02 completo 620 - PJE CAMPODONICO, Lado 03 completo 99936 - PASILLO, Lado 04 completo 140 - AVELLANEDA. Manzana 006: Lado 02 completo 99936 - PASILLO, Lado 03 completo 692 - PJE HOMASTORFER, Lado 04 completo 99936 - PASILLO. Manzana 007 completa. Manzana 008: Lado 03 completo 450 - LA INMACULADA, Lado 04 completo 255 - CHAMPAGNAT. Manzana 010: Lado 02 completo 140 - AVELLANEDA, Lado 03 completo 450 - LA INMACULADA. Manzana 011: Lado 04 completo 140 - AVELLANEDA, Lado 01 completo 167 - CALLE SIN NOMBRE, Lado 02 completo 365 - GDOR FERRE. Manzana 012: Lado 04 completo 365 - GDOR FERRE, Lado 01 completo 95 - AV BELGRANO. Manzana 015: Lado 01 completo 450 - LA INMACULADA. Manzana 035 completa. Manzana 901 completa. Manzana 902 completa",
             "viviendas": "30"
         },
         {
@@ -7627,7 +7627,7 @@
             "radio": 5,
             "segmento_id": 161,
             "seg": "02",
-            "descripcion": "Manzana 004: Lado 15 completo 350 - ERMACORA, Lado 16 completo 350 - ERMACORA, Lado 17 completo 330 - DR PEDRO PLANA, Lado 18 completo 920 - URUGUAY, Lado 19 completo 920 - URUGUAY, Lado 20 completo 330 - DR PEDRO PLANA, Lado 21 completo 115 - AV HIPOLITO YRIGOYEN, Lado 01 completo 65 - AV 25 DE MAYO, Lado 02 completo 303 - CONCORDIA, Lado 03 completo 90 - AV ALMTE BROWN, Lado 04 completo 177 - CALLE S N, Lado 05 completo 176 - CALLE S N, Lado 06 completo 565 - PADRE MUGICA, Lado 07 completo 330 - DR PEDRO PLANA, Lado 08 completo 330 - DR PEDRO PLANA. Manzana 008 completa. Manzana 009 completa. Manzana 011 completa. Manzana 012 completa. Manzana 013 completa. Manzana 014 completa. Manzana 015 completa. Manzana 901 completa",
+            "descripcion": "Manzana 004: Lado 15 completo 350 - ERMACORA, Lado 16 completo 350 - ERMACORA, Lado 17 completo 330 - DR PEDRO PLANA, Lado 18 completo 920 - URUGUAY, Lado 19 completo 920 - URUGUAY, Lado 20 completo 330 - DR PEDRO PLANA, Lado 21 completo 115 - AV HIPOLITO YRIGOYEN, Lado 01 completo 65 - AV 25 DE MAYO, Lado 02 completo 303 - CONCORDIA, Lado 03 completo 90 - AV ALMTE BROWN, Lado 04 completo 177 - CALLE SIN NOMBRE, Lado 05 completo 176 - CALLE SIN NOMBRE, Lado 06 completo 565 - PADRE MUGICA, Lado 07 completo 330 - DR PEDRO PLANA, Lado 08 completo 330 - DR PEDRO PLANA. Manzana 008 completa. Manzana 009 completa. Manzana 011 completa. Manzana 012 completa. Manzana 013 completa. Manzana 014 completa. Manzana 015 completa. Manzana 901 completa",
             "viviendas": "29"
         },
         {
