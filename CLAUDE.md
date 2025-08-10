@@ -1,1 +1,3 @@
 - Ordenar libs para manejar con webapck, utiliza npm y herramientas de laravel
+- aplicacion en puerto 8090
+- utilizar librerias descargadas, preapradas para webpack. Usar npm y composer para su manejo

@@ -15,5 +15,7 @@ mix.js('resources/js/app.js', 'public/js')
    .sass('resources/sass/app.scss', 'public/css')
    .js('resources/js/api-docs.js', 'public/js')
    .sass('resources/sass/api-docs.scss', 'public/css')
+   .js('resources/js/docs.js', 'public/js')
+   .sass('resources/sass/docs.scss', 'public/css')
    .copyDirectory('node_modules/prismjs/themes', 'public/css/prism-themes')
    .version();
