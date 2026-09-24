@@ -1,10 +1,10 @@
-# Proyecto Mandarina
+# Sistema de Integración Geoestadisticio (Proyecto Mandarina)
 ![Logo INDEC][logo]
 
 Hola, bienvenide!
 
 Aquí están las instrucciones para instalar el entorno de desarrollo de este proyecto.
-Ésta es la parte web nacida del segmentador asistido para el censo de población, hogares y viviendas de la ronda 2020 de Argentina.
+Ésta es la parte web[1](nacida del segmentador asistido para el censo de población, hogares y viviendas de la ronda 2020 de Argentina.)
 
 Pensado como una interfaz para ejecutar el **Segmentador-core** y también como interfaz de carga de los datos mínimos necesarios para éste.
 
@@ -18,7 +18,7 @@ salud! M.
 
 ### Introducción
 En este repositorio se encunetran 4 ramas principales.
-- master  donde hago los desarrollos 
+- master  donde se integran los desarrollos 
 - dev     la versión que usada en el servidor de integración.
 - uat     versión de testing
 - prd     versión para producción
