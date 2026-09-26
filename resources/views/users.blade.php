@@ -307,7 +307,7 @@
 </script>
 
 <script>
-  $(document).ready(function(){
+  document.addEventListener('DOMContentLoaded', function(){
       $('.btn-detalles').click(function(){
           var role = $(this).data('role-id');
           var userId = $(this).data('user-id');

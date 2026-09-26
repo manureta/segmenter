@@ -109,6 +109,7 @@ $loc->codigo}}) {{ $loc->nombre}}</a>
 @endsection
 @section('footer_scripts')
 	<script>
+    document.addEventListener('DOMContentLoaded', function () {
     var transformMatrix = [1, 0, 0, 1, 0, 0];
     var svg = document.getElementById('radio_{{$radio->codigo}}');
     var viewbox = svg.getAttributeNS(null, "viewBox").split(" ");
@@ -117,16 +118,16 @@ $loc->codigo}}) {{ $loc->nombre}}</a>
     var matrixGroup = svg.getElementById("matrix-group");
 
 
-    function pan(dx, dy) {     	
+    window.pan = function pan(dx, dy) {
       transformMatrix[4] += dx;
       transformMatrix[5] += dy;
-                
+
       var newMatrix = "matrix(" +  transformMatrix.join(' ') + ")";
       matrixGroup.setAttributeNS(null, "transform", newMatrix);
     }
 
 
-function zoom(scale) {
+window.zoom = function zoom(scale) {
   for (var i = 0; i < 4; i++) {
     transformMatrix[i] *= scale;
   }
@@ -221,10 +222,11 @@ function zoom(scale) {
     });
 //    var layout = cy.layout({ name: 'cose'});
 //    layout.run();
-    function ordenar(){
+    window.ordenar = function ordenar(){
         var layout = cy.layout({ name: 'cose'});
         layout.run();
     }
     ordenar();
+    });
     </script>
 @endsection

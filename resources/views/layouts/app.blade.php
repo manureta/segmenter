@@ -9,11 +9,8 @@
 
     <title>{{ config('app.name', 'Mandarina') }} @yield('title','') </title>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}" ></script>
-
-    <!-- Styles -->
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <!-- Scripts & Styles -->
+    @vite(['resources/js/app.js', 'resources/sass/app.scss'])
 
     <!-- More Scripts -->
     @yield ('header_scripts')
@@ -138,7 +135,7 @@
 
             </div>
 <script>
-   $(document).ready( function () {
+   document.addEventListener('DOMContentLoaded',  function () {
     $('#flash-overlay-modal').modal();
     $('div.alert').not('.alert-important').delay(6000).fadeOut(2000);
 });

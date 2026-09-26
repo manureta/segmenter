@@ -27,7 +27,7 @@
         var Labels = new Array();
         var Viviendas = new Array();
         var Detalle = new Array();
-        $(document).ready(function(){
+        document.addEventListener('DOMContentLoaded', function(){
           $.post(url, {"_token": "{{ csrf_token() }}"},function(response){
             var sum = 0;
             var n_segs= 0;

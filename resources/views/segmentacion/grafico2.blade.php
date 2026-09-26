@@ -8,7 +8,6 @@
 </div>
 @endsection
 @section('footer_scripts')
-       <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.js" charset="utf-8"></script>
         <script>
         var myChart = '';
         var url = "{{url('ver-segmentacion-grafico-resumen')}}/{{$aglomerado->id}}";
@@ -16,7 +15,7 @@
         var Labels = new Array();
         var Viviendas = new Array();
         var Detalle = new Array();
-        $(document).ready(function(){
+        document.addEventListener('DOMContentLoaded', function(){
           $.post(url, {"_token": "{{ csrf_token() }}"},function(response){
             var sum = 0;
             var n_segs= 0;
@@ -46,16 +45,19 @@
                       responsive: true,
                       borderRadius: 10,
                       scales: {
-                          yAxes: [{
-                              gridLines: {
-                                  title: 'Cantidad de segmentos',
+                          y: {
+                              grid: {
                                   drawBorder: true,
                                   color: ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple']
+                              },
+                              title: {
+                                  display: true,
+                                  text: 'Cantidad de segmentos'
                               },
                               ticks: {
                                   beginAtZero:true
                               }
-                          }]
+                          }
                       }
                   }
               });

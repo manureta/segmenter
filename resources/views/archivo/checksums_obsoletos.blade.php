@@ -51,9 +51,8 @@
 
 @endsection
 @section('footer_scripts')
-<script>src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"</script>
-<script>src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap4.min.js"</script>
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
   $('#tabla-obsoletos').DataTable({
     language: {
       "sProcessing":     "Procesando...",
@@ -83,6 +82,7 @@
           "colvis": "Visibilidad"
       }
     }
+  });
   });
 </script>
 <script type="text/javascript">

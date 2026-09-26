@@ -112,7 +112,7 @@
 @endsection
 @section('footer_scripts')
  <script>
- $(document).ready( function () {
+ document.addEventListener('DOMContentLoaded',  function () {
      $.ajaxSetup({
           headers: {
               'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -331,7 +331,7 @@
 } );
 
     // función mostrar botones archivos repetidos, checksums no calculados y obsoletos
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
         // Ejecutar después de que Datatables ha terminado de cargar los datos
         $('#laravel_datatable').on('draw.dt', function() {
             var count_archivos_repetidos = 0;

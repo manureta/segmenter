@@ -39,7 +39,7 @@
 @endsection
 @section('footer_scripts')
  <script>
- $(document).ready( function () {
+ document.addEventListener('DOMContentLoaded',  function () {
      $.ajaxSetup({
           headers: {
               'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

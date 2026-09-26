@@ -1,4 +1,5 @@
-window._ = require('lodash');
+import _ from 'lodash';
+window._ = _;
 
 /**
  * We'll load jQuery and the Bootstrap jQuery plugin which provides support
@@ -6,25 +7,24 @@ window._ = require('lodash');
  * code may be modified to fit the specific needs of your application.
  */
 
-try {
-    window.Popper = require('popper.js').default;
-    window.$ = require('jquery');
-    window.$ = window.jQuery = require('jquery');
+import Popper from 'popper.js';
+window.Popper = Popper;
 
-    require('bootstrap');
-    
-    // bootstrap 4 toggle
-    require('bootstrap4-toggle/css/bootstrap4-toggle.min.css');
-    require('bootstrap4-toggle/js/bootstrap4-toggle.min.js');
-    // bootstrap icons
-    require('bootstrap-icons/font/bootstrap-icons.css');
+import './jquery-global';
 
-    require('datatables.net-bs4');
-    require('cose-base');
-    window.cytoscape = require('cytoscape');
-    require('chart.js');
+import 'bootstrap';
 
-} catch (e) {}
+// bootstrap 4 toggle
+import 'bootstrap4-toggle/css/bootstrap4-toggle.min.css';
+import 'bootstrap4-toggle/js/bootstrap4-toggle.min.js';
+// bootstrap icons
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
+import 'datatables.net-bs4';
+import 'cose-base';
+import cytoscape from 'cytoscape';
+window.cytoscape = cytoscape;
+import 'chart.js';
 
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
@@ -32,7 +32,8 @@ try {
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 
-window.axios = require('axios');
+import axios from 'axios';
+window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 

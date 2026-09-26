@@ -6,8 +6,8 @@
 
         <title>Mandarina</title>
 
-        <!-- Fonts -->
-        <link href="{{ asset('css/app.css') }}" rel="stylesheet"/>
+        <!-- Styles -->
+        @vite('resources/sass/app.scss')
         <!-- Styles -->
         <style>
             html, body {

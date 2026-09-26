@@ -53,7 +53,7 @@
 @endsection
 @section('footer_scripts')
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
                     var propagacion = false;
                     $.ajaxSetup({
                         headers: {

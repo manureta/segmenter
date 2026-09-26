@@ -8,13 +8,12 @@
 </div>
 @endsection
 @section('footer_scripts')
-       <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.js" charset="utf-8"></script>
         <script>
         var url = "{{url('ver-segmentacion-lados-grafico-resumen')}}/{{$aglomerado->id}}";
         var SegmentosCantidad = new Array();
         var Labels = new Array();
         var Viviendas = new Array();
-        $(document).ready(function(){
+        document.addEventListener('DOMContentLoaded', function(){
           $.post(url, {"_token": "{{ csrf_token() }}"},function(response){
             var sum = 0;
             var n_segs= 0; 
@@ -41,23 +40,24 @@
                       }]
                   },
                   options: {
-                      tooltips: {
-                        callbacks: {
-                            title: function(tooltipItem, data) { return 'Cantidad de Viviendas: '+tooltipItem[0].xLabel }
+                      plugins: {
+                        tooltip: {
+                          callbacks: {
+                              title: function(context) { return 'Cantidad de Viviendas: '+context[0].label }
+                          }
                         }
-                       },
+                      },
                       responsive: true,
                       scales: {
-                          yAxes: [
-                              {
-                              gridLines: {
+                          y: {
+                              grid: {
                                   drawBorder: true,
                                   color: ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple']
                               },
                               ticks: {
                                   beginAtZero:true
                               }
-                          }]
+                          }
                       }
                   }
               });

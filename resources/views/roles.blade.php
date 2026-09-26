@@ -296,7 +296,7 @@
 </script>
 
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
         $('#switch-role-type-create').prop('checked', false).change();
         $('#switch-role-type-create').change(function() {
             if ($(this).prop('checked')) {
@@ -318,7 +318,7 @@
 </script>
 
 <script>
-  $(document).ready(function() {
+  document.addEventListener('DOMContentLoaded', function() {
     $('.switch-role-type-edit').change(function() {
         // Obtener el ID del rol correspondiente al switch
         var rolId = $(this).data('rol-id');
@@ -351,7 +351,7 @@
 </script>
 
 <script>
-  $(document).ready(function(){
+  document.addEventListener('DOMContentLoaded', function(){
     $('.btn-role-delete').click(function(){
       var role = $(this).data('role');
       var row = $(this).closest('tr');

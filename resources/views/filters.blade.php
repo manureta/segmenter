@@ -173,7 +173,7 @@
 </script>
 
 <script>
-  $(document).ready(function(){
+  document.addEventListener('DOMContentLoaded', function(){
     $('.btn-filter-delete').click(function(){
       var filter = $(this).data('filter');
       var row = $(this).closest('tr');
@@ -208,7 +208,7 @@
 </script>
 
 <script>
-  $(document).ready(function() {
+  document.addEventListener('DOMContentLoaded', function() {
     $('#btn-trigger-modal-filtros-provs').click(function() {
         // Abre el modal al hacer clic en el botón
         $('#provsFiltersModal').modal('show');

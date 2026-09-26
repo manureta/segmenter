@@ -9,11 +9,8 @@
 
     <title>{{ config('app.name', 'Mandarina') }}</title>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}" defer></script>
-
-    <!-- Styles -->
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <!-- Scripts & Styles -->
+    @vite(['resources/js/app.js', 'resources/sass/app.scss'])
 
     <!-- More Scripts -->
     @yield ('header_scripts')
@@ -100,7 +97,7 @@
             <div>{{ Git::branch() }} - {{ Git::version() }} -  {{ Git::lastCommitDate() }}</div>
             </div>
 <script>
-   $(document).ready( function () {
+   document.addEventListener('DOMContentLoaded',  function () {
    $('#flash-overlay-modal').modal();
    $('div.alert').not('.alert-important').delay(5000).fadeOut(500);
 });

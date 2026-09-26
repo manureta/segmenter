@@ -407,7 +407,7 @@
 
 
   // Función modal detalles de roles
-  $(document).ready(function(){
+  document.addEventListener('DOMContentLoaded', function(){
       $('.btn-detalles').click(function(){
           var role = $(this).data('role-id');
           $.ajax({

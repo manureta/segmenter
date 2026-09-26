@@ -78,7 +78,7 @@
           index=(parseInt(index)+2)/4;
           return COLORS[index % COLORS.length];
         };
-        $(document).ready(function(){
+        document.addEventListener('DOMContentLoaded', function(){
           $.post(url, {"_token": "{{ csrf_token() }}"},function(response){
             var sum = 0;
             var n_cants= 0;
