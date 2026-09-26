@@ -20,7 +20,7 @@ class Operativo extends Model
      */
     public function provincias()
     {
-        return $this->belongsToMany('App\Model\Provincia', 'operativo_provincia');
+        return $this->belongsToMany('App\Model\Provincia', 'operativo_provincia')->withTimestamps();
     }
 
     /**
