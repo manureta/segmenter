@@ -20,6 +20,27 @@ class Provincia extends Model
     protected $url_json = 'https://geoservicios.indec.gob.ar/geoserver/sig/ows';
     protected $params = ['service'=>'WFS','version'=>'1.0.0','request'=>'GetFeature',
     'typeName'=>'sig:v_provincias','outputFormat'=>'application/json'];
+
+    // Fuentes alternativas de geojson de provincias, se prueban en orden ante
+    // fallas de la fuente primaria (geoservicios.indec.gob.ar viene fallando
+    // con cURL error 56 / SSL_read EOF del lado del servidor).
+    protected $json_fallback_sources = [
+        [
+            'url' => 'https://geonode.indec.gob.ar/geoserver/ows',
+            'params' => ['service'=>'WFS','version'=>'1.0.0','request'=>'GetFeature',
+                'typeName'=>'geonode:jurisdicciones','outputFormat'=>'application/json',
+                'srsName'=>'EPSG:4326'],
+            'filter_field' => 'cpr',
+        ],
+        [
+            'url' => 'https://wms.ign.gob.ar/geoserver/ows',
+            'params' => ['service'=>'WFS','version'=>'1.0.0','request'=>'GetFeature',
+                'typeName'=>'ign:provincia','outputFormat'=>'application/json',
+                'srsName'=>'EPSG:4326'],
+            'filter_field' => 'in1',
+        ],
+    ];
+
     protected $url_svg = 'http://172.26.68.22:8080/geoserver/precenso/wms';
     protected $params_svg = ['service'=>'WMS','version'=>'1.1.0','request'=>'GetMap','layers'=>'precenso:provincias',
     'bbox'=>'-73.9999999999999,-90.000000029,-24.9999999999999,-21.780856764','width'=>'551','height'=>'768',
@@ -76,24 +97,29 @@ class Provincia extends Model
      */
     public function geojson()
     {
-      try {
-        $response = Http::timeout(5)->retry(2, 200)->get(
-          $this->url_json,
-          Arr::add($this->params,"cql_filter","link =  '".$this->codigo."'")
-        );
-      } catch ( ConnectionException $e) {
-        flash('Timeout de 5 seg. a: '.$this->url_json)->warning();
-        return null;
-      } catch ( RequestException $e) {
-        flash('Error de conexión a: '.$this->url_json.' ('.$e->getMessage().')')->warning();
-        return null;
-      }
-         if ($response->ok()) {
-           return $response;
-         } else {
-           return $response->headers()->json;
-         }
+      $sources = array_merge(
+        [['url'=>$this->url_json,'params'=>$this->params,'filter_field'=>'link']],
+        $this->json_fallback_sources
+      );
 
+      foreach ($sources as $source) {
+        try {
+          $response = Http::timeout(5)->retry(2, 200)->get(
+            $source['url'],
+            Arr::add($source['params'],"cql_filter",$source['filter_field']." =  '".$this->codigo."'")
+          );
+        } catch ( ConnectionException $e) {
+          continue;
+        } catch ( RequestException $e) {
+          continue;
+        }
+        if ($response->ok()) {
+          return $response;
+        }
+      }
+
+      flash('No se pudo obtener el geojson de la provincia desde ninguna fuente disponible.')->warning();
+      return null;
     }
 
 
