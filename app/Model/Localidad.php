@@ -51,6 +51,24 @@ class Localidad extends Model
         return $this->belongsToMany('App\Model\Radio', 'radio_localidad');
     }
 
+    /**
+     * Relación con Gobiernos Locales, con historial (fecha_desde/fecha_hasta propias del vínculo).
+     */
+    public function gobiernosLocales()
+    {
+        return $this->belongsToMany('App\Model\GobiernoLocal', 'localidad_gobierno_local')
+            ->using('App\Model\LocalidadGobiernoLocal')
+            ->withPivot(['id', 'fecha_desde', 'fecha_hasta', 'observacion_id']);
+    }
+
+    /**
+     * Solo los Gobiernos Locales cuyo vínculo con esta Localidad está vigente hoy.
+     */
+    public function gobiernosLocalesVigentes()
+    {
+        return $this->gobiernosLocales()->wherePivotNull('fecha_hasta');
+    }
+
     //
     public function getCodigoLocAttribute($value){
         return $codloc= substr(trim($this->codigo), 5, 3);

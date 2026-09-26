@@ -51,6 +51,24 @@ class Departamento extends Model
     }
 
     /**
+     * Relación con Gobiernos Locales, con historial (fecha_desde/fecha_hasta propias del vínculo).
+     */
+    public function gobiernosLocales()
+    {
+        return $this->belongsToMany('App\Model\GobiernoLocal', 'gobierno_local_departamento')
+            ->using('App\Model\GobiernoLocalDepartamento')
+            ->withPivot(['id', 'fecha_desde', 'fecha_hasta', 'observacion_id']);
+    }
+
+    /**
+     * Solo los Gobiernos Locales cuyo vínculo con este Departamento está vigente hoy.
+     */
+    public function gobiernosLocalesVigentes()
+    {
+        return $this->gobiernosLocales()->wherePivotNull('fecha_hasta');
+    }
+
+    /**
      * Denominación según provincia: departamento, comuna o partido.
      *
      */
