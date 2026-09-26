@@ -26,8 +26,8 @@ parte de  {{ count($provincia->operativos) }} operativos
                </li>
 		@endforeach
     @endif
-    {{!! $provincia->svg() !!}}
-    {{ $provincia->geojson() }}
+    {!! $provincia->svg() !!}
+    <div id="provincia-{{ $provincia->id }}-geojson" data-geojson="{{ $provincia->geojson() }}" style="display:none;"></div>
 <div/>
 @if($provincia->codigo =='30')         
 <div>
