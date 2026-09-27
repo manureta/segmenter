@@ -11,9 +11,23 @@
     <div class="card mb-3">
         <div class="card-header">
             {{ $operativo->nombre }}
-            <a href="{{ route('operativos.edit', $operativo) }}" class="badge badge-pill badge-secondary float-right">Editar</a>
+            <span class="badge badge-pill {{ $operativo->es_publico ? 'badge-success' : 'badge-secondary' }}">
+                {{ $operativo->es_publico ? 'Público' : 'Privado' }}
+            </span>
+            @if ($puedeEditar)
+                <a href="{{ route('operativos.edit', $operativo) }}" class="badge badge-pill badge-secondary float-right ml-1">Editar</a>
+            @endif
+            @if (!session('operativo_actual_id') || session('operativo_actual_id') != $operativo->id)
+                <form action="{{ route('operativos.seleccionar', $operativo) }}" method="POST" class="d-inline float-right">
+                    @csrf
+                    <button type="submit" class="badge badge-pill badge-primary" style="border:none;">Usar como operativo actual</button>
+                </form>
+            @else
+                <span class="badge badge-pill badge-primary float-right">Es el operativo actual</span>
+            @endif
         </div>
         <div class="card-body">
+            <p><strong>Dueño:</strong> {{ optional($operativo->usuario)->name ?? optional($operativo->usuario)->email ?? 'sin dueño (preexistente)' }}</p>
             <p><strong>Observación:</strong> {{ $operativo->observacion ?? '—' }}</p>
             <p><strong>Topología asociada:</strong> {{ optional($operativo->topologia)->name ?? 'sin asociar' }}</p>
             <p class="mb-0">
@@ -25,6 +39,14 @@
                 {{ $operativo->parajes_count }} parajes ·
                 {{ $operativo->base_antarticas_count }} bases antárticas
             </p>
+            @if ($puedePublicar)
+                <form action="{{ route($operativo->es_publico ? 'operativos.despublicar' : 'operativos.publicar', $operativo) }}" method="POST" class="mt-2">
+                    @csrf
+                    <button type="submit" class="btn btn-sm {{ $operativo->es_publico ? 'btn-outline-secondary' : 'btn-outline-success' }}">
+                        {{ $operativo->es_publico ? 'Volver a privado' : 'Publicar (visible para todos)' }}
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 

@@ -9,7 +9,7 @@ class Operativo extends Model
     protected $table = 'operativo';
 
     protected $fillable = [
-        'nombre', 'observacion', 'topologia_id',
+        'nombre', 'observacion', 'topologia_id', 'user_id', 'es_publico',
     ];
 
     // Sin fecha de creación o modificación
@@ -75,5 +75,27 @@ class Operativo extends Model
     public function topologia()
     {
         return $this->belongsTo('App\Model\Topologia', 'topologia_id');
+    }
+
+    public function usuario()
+    {
+        return $this->belongsTo('App\User', 'user_id');
+    }
+
+    /**
+     * Los operativos que $user puede al menos VER: propios + públicos, o
+     * todos si tiene "Administrar Operativos" (mismo criterio que
+     * OperativoPolicy::view, pero aplicado a nivel de query en vez de por
+     * instancia, para armar el listado sin traer y filtrar en PHP).
+     */
+    public function scopeVisiblesPara($query, $user)
+    {
+        if ($user->can('Administrar Operativos')) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user) {
+            $q->where('es_publico', true)->orWhere('user_id', $user->id);
+        });
     }
 }

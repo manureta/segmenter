@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 class Localidad extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     //
     protected $table = 'localidad';
 
@@ -105,6 +107,16 @@ class Localidad extends Model
     public function gobiernosLocalesVigentes()
     {
         return $this->gobiernosLocales()->wherePivotNull('fecha_hasta');
+    }
+
+    /**
+     * Relación con Operativos, una Localidad puede participar de varios.
+     * No existía - Operativo::localidades() ya apuntaba acá pero el lado
+     * inverso nunca se agregó.
+     */
+    public function operativos()
+    {
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_localidad');
     }
 
     //

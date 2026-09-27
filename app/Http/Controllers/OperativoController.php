@@ -10,18 +10,20 @@ use Illuminate\Http\Request;
 class OperativoController extends Controller
 {
     /**
-     * Mismo gate que SetupController: operativo se scaffoldeó bajo el
-     * paraguas de /setup, administrarlo requiere el mismo permiso.
+     * Sin gate de "run-setup" acá a propósito: cualquier usuario autenticado
+     * puede crear su propio operativo privado (pedido explícito). El control
+     * fino de qué puede ver/editar/publicar de otros pasa por OperativoPolicy,
+     * no por un gate parejo para todos.
      */
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('can:run-setup');
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $operativos = Operativo::withCount(['provincias', 'localidades', 'entidades', 'gobiernosLocales', 'parajes', 'baseAntarticas'])
+        $operativos = Operativo::visiblesPara($request->user())
+            ->withCount(['provincias', 'localidades', 'entidades', 'gobiernosLocales', 'parajes', 'baseAntarticas'])
             ->orderBy('nombre')
             ->get();
 
@@ -30,6 +32,8 @@ class OperativoController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Operativo::class);
+
         $topologias = Topologia::orderBy('name')->get();
 
         return view('operativo.form', [
@@ -40,30 +44,43 @@ class OperativoController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Operativo::class);
+
         $datos = $request->validate([
             'nombre' => 'required|string|max:50|unique:operativo,nombre',
             'observacion' => 'nullable|string|max:50',
             'topologia_id' => ['nullable', 'integer', $this->reglaTopologiaExiste()],
         ]);
 
+        // Nace privado y con dueño - publicarlo es una acción aparte que
+        // requiere el permiso "Publicar Operativos" (ver OperativoPolicy).
+        $datos['user_id'] = $request->user()->id;
+        $datos['es_publico'] = false;
+
         $operativo = Operativo::create($datos);
 
-        flash('Operativo "'.$operativo->nombre.'" creado.')->success();
+        flash('Operativo "'.$operativo->nombre.'" creado (privado).')->success();
 
         return redirect()->route('operativos.show', $operativo);
     }
 
-    public function show(Operativo $operativo)
+    public function show(Request $request, Operativo $operativo)
     {
+        $this->authorize('view', $operativo);
+
         $operativo->loadCount(['provincias', 'localidades', 'entidades', 'gobiernosLocales', 'parajes', 'baseAntarticas']);
         $provinciasVinculadas = $operativo->provincias()->orderBy('nombre')->get();
         $provinciasDisponibles = Provincia::whereNotIn('id', $provinciasVinculadas->pluck('id'))->orderBy('nombre')->get();
+        $puedeEditar = $request->user()->can('update', $operativo);
+        $puedePublicar = $request->user()->can('publicar', $operativo);
 
-        return view('operativo.show', compact('operativo', 'provinciasVinculadas', 'provinciasDisponibles'));
+        return view('operativo.show', compact('operativo', 'provinciasVinculadas', 'provinciasDisponibles', 'puedeEditar', 'puedePublicar'));
     }
 
     public function edit(Operativo $operativo)
     {
+        $this->authorize('update', $operativo);
+
         $topologias = Topologia::orderBy('name')->get();
 
         return view('operativo.form', compact('operativo', 'topologias'));
@@ -71,6 +88,8 @@ class OperativoController extends Controller
 
     public function update(Request $request, Operativo $operativo)
     {
+        $this->authorize('update', $operativo);
+
         $datos = $request->validate([
             'nombre' => 'required|string|max:50|unique:operativo,nombre,'.$operativo->id,
             'observacion' => 'nullable|string|max:50',
@@ -90,8 +109,10 @@ class OperativoController extends Controller
      * confirmado en las migraciones que las crearon) - si no, el DELETE
      * falla por violación de FK en vez de dar un error entendible.
      */
-    public function destroy(Operativo $operativo)
+    public function destroy(Request $request, Operativo $operativo)
     {
+        $this->authorize('delete', $operativo);
+
         $operativo->provincias()->detach();
         $operativo->localidades()->detach();
         $operativo->entidades()->detach();
@@ -100,12 +121,70 @@ class OperativoController extends Controller
         $operativo->baseAntarticas()->detach();
 
         $nombre = $operativo->nombre;
+        $eraElActual = session('operativo_actual_id') == $operativo->id;
         $operativo->delete();
+        if ($eraElActual) {
+            session()->forget('operativo_actual_id');
+        }
 
         flash('Operativo "'.$nombre.'" eliminado (se desvincularon sus '.
             'relaciones con provincias/localidades/etc antes de borrar).')->success();
 
         return redirect()->route('operativos.index');
+    }
+
+    /**
+     * Privado -> público. Requiere OperativoPolicy::publicar (dueño +
+     * permiso "Publicar Operativos", o "Administrar Operativos").
+     */
+    public function publicar(Request $request, Operativo $operativo)
+    {
+        $this->authorize('publicar', $operativo);
+
+        $operativo->update(['es_publico' => true]);
+
+        flash('Operativo "'.$operativo->nombre.'" ahora es público - lo pueden ver todos.')->success();
+
+        return redirect()->route('operativos.show', $operativo);
+    }
+
+    /**
+     * Público -> privado (mismo permiso que publicar; volver a esconderlo
+     * no es más peligroso que mostrarlo).
+     */
+    public function despublicar(Request $request, Operativo $operativo)
+    {
+        $this->authorize('publicar', $operativo);
+
+        $operativo->update(['es_publico' => false]);
+
+        flash('Operativo "'.$operativo->nombre.'" ahora es privado.')->success();
+
+        return redirect()->route('operativos.show', $operativo);
+    }
+
+    /**
+     * "Operativo actual" en sesión - el que usa EscopadoPorOperativo para
+     * filtrar todo el resto de la app (ver App\Model\Concerns).
+     */
+    public function seleccionar(Request $request, Operativo $operativo)
+    {
+        $this->authorize('view', $operativo);
+
+        session(['operativo_actual_id' => $operativo->id]);
+
+        flash('Operativo actual: "'.$operativo->nombre.'". El resto de la navegación queda filtrado a lo que tiene vinculado.')->success();
+
+        return redirect()->back();
+    }
+
+    public function deseleccionar(Request $request)
+    {
+        session()->forget('operativo_actual_id');
+
+        flash('Se quitó el filtro de operativo - navegando sin restricción de nuevo.')->success();
+
+        return redirect()->back();
     }
 
     /**
@@ -125,6 +204,8 @@ class OperativoController extends Controller
 
     public function attachProvincia(Request $request, Operativo $operativo)
     {
+        $this->authorize('update', $operativo);
+
         $request->validate(['provincia_id' => 'required|integer|exists:provincia,id']);
 
         $operativo->provincias()->syncWithoutDetaching([$request->provincia_id]);
@@ -134,8 +215,10 @@ class OperativoController extends Controller
         return redirect()->route('operativos.show', $operativo);
     }
 
-    public function detachProvincia(Operativo $operativo, Provincia $provincia)
+    public function detachProvincia(Request $request, Operativo $operativo, Provincia $provincia)
     {
+        $this->authorize('update', $operativo);
+
         $operativo->provincias()->detach($provincia->id);
 
         flash('Provincia desvinculada.')->success();

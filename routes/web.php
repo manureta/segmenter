@@ -79,6 +79,10 @@ Route::put('operativos/{operativo}', 'OperativoController@update')->name('operat
 Route::delete('operativos/{operativo}', 'OperativoController@destroy')->name('operativos.destroy');
 Route::post('operativos/{operativo}/provincias', 'OperativoController@attachProvincia')->name('operativos.provincias.attach');
 Route::delete('operativos/{operativo}/provincias/{provincia}', 'OperativoController@detachProvincia')->name('operativos.provincias.detach');
+Route::post('operativos/{operativo}/publicar', 'OperativoController@publicar')->name('operativos.publicar');
+Route::post('operativos/{operativo}/despublicar', 'OperativoController@despublicar')->name('operativos.despublicar');
+Route::post('operativos/{operativo}/seleccionar', 'OperativoController@seleccionar')->name('operativos.seleccionar');
+Route::post('operativo-actual/quitar', 'OperativoController@deseleccionar')->name('operativos.deseleccionar');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/fixSRID/{esquema}/{srid}',

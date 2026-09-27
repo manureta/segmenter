@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Paraje extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     protected $table = 'paraje';
 
     protected $fillable = [

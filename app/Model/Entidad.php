@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Entidad extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     protected $table = 'entidad';
 
     protected $fillable = [

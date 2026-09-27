@@ -18,6 +18,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
+                        <th>Visibilidad</th>
                         <th>Observación</th>
                         <th>Topología</th>
                         <th>Provincias</th>
@@ -33,6 +34,11 @@
                     @forelse ($operativos as $operativo)
                         <tr>
                             <td><a href="{{ route('operativos.show', $operativo) }}">{{ $operativo->nombre }}</a></td>
+                            <td>
+                                <span class="badge {{ $operativo->es_publico ? 'badge-success' : 'badge-secondary' }}">
+                                    {{ $operativo->es_publico ? 'Público' : 'Privado' }}
+                                </span>
+                            </td>
                             <td>{{ $operativo->observacion }}</td>
                             <td>{{ optional($operativo->topologia)->name ?? '—' }}</td>
                             <td>{{ $operativo->provincias_count }}</td>
@@ -42,17 +48,21 @@
                             <td>{{ $operativo->parajes_count }}</td>
                             <td>{{ $operativo->base_antarticas_count }}</td>
                             <td class="text-right">
-                                <a href="{{ route('operativos.edit', $operativo) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
-                                <form action="{{ route('operativos.destroy', $operativo) }}" method="POST" style="display:inline"
-                                      onsubmit="return confirm('¿Eliminar {{ $operativo->nombre }}? Se desvinculan sus relaciones primero.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                                </form>
+                                @can('update', $operativo)
+                                    <a href="{{ route('operativos.edit', $operativo) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                                @endcan
+                                @can('delete', $operativo)
+                                    <form action="{{ route('operativos.destroy', $operativo) }}" method="POST" style="display:inline"
+                                          onsubmit="return confirm('¿Eliminar {{ $operativo->nombre }}? Se desvinculan sus relaciones primero.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                    </form>
+                                @endcan
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="text-muted">Sin operativos cargados todavía.</td></tr>
+                        <tr><td colspan="11" class="text-muted">Sin operativos que puedas ver todavía.</td></tr>
                     @endforelse
                 </tbody>
             </table>

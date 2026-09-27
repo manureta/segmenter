@@ -11,6 +11,8 @@ use GuzzleHttp\Exception\RequestException;
 
 class Provincia extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     //
     protected $table='provincia';
 
@@ -87,11 +89,14 @@ class Provincia extends Model
 //    }
 
     /**
-     * Relación con Operativo, diretamente puede tener varios operativos.
+     * Relación con Operativos, una Provincia puede participar de varios.
+     * Antes devolvía hasMany(OperativoProv) - filas del pivot en vez de
+     * Operativo real, sin columnas nombre/observacion que provinfo.blade.php
+     * ya intentaba leer (bug latente, corregido de paso acá).
      */
     public function operativos()
     {
-        return $this->hasMany('App\Model\OperativoProv');
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_provincia')->withTimestamps();
     }
 
     /**

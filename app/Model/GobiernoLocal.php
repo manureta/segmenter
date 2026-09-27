@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class GobiernoLocal extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     protected $table = 'gobierno_local';
 
     protected $fillable = [

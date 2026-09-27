@@ -58,6 +58,7 @@
                         }}"> Descargar plugin </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/guia') }}"> Guia </a> </li>
                     @endauth
+                    @include('includes.operativo_selector')
                     </ul>
 
                     <!-- Right Side Of Navbar -->

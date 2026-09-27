@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class BaseAntartica extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativo;
+
     protected $table = 'base_antartica';
 
     protected $fillable = [
