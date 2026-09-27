@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\MyDB;
+use App\Model\Provincia;
 
 class TableroController extends Controller
 {
