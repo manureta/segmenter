@@ -84,6 +84,9 @@ Route::post('operativos/{operativo}/despublicar', 'OperativoController@despublic
 Route::post('operativos/{operativo}/seleccionar', 'OperativoController@seleccionar')->name('operativos.seleccionar');
 Route::post('operativo-actual/quitar', 'OperativoController@deseleccionar')->name('operativos.deseleccionar');
 Route::get('controles-calidad', 'ControlCalidadController@index')->name('controles-calidad');
+Route::get('controles-calidad/radios-duplicados/{codigo}', 'ControlCalidadController@verDuplicado')->name('controles-calidad.duplicado');
+Route::post('controles-calidad/radios-duplicados/{codigo}/historico', 'ControlCalidadController@marcarHistorico')->name('controles-calidad.marcar-historico');
+Route::post('controles-calidad/radios-duplicados/{codigo}/completar-fraccion', 'ControlCalidadController@completarFraccion')->name('controles-calidad.completar-fraccion');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/fixSRID/{esquema}/{srid}',

@@ -58,13 +58,14 @@
                 <p class="text-success mb-0">Sin problemas.</p>
             @else
                 <table class="table table-sm">
-                    <thead><tr><th>Id</th><th>Código</th><th>Nombre</th></tr></thead>
+                    <thead><tr><th>Id</th><th>Código</th><th>Nombre</th><th></th></tr></thead>
                     <tbody>
                         @foreach ($controles['radios_codigo_duplicado'] as $radio)
                             <tr>
                                 <td>{{ $radio->id }}</td>
                                 <td>{{ $radio->codigo }}</td>
                                 <td>{{ $radio->nombre ?? '—' }}</td>
+                                <td><a href="{{ route('controles-calidad.duplicado', $radio->codigo) }}" class="btn btn-sm btn-outline-primary">Conciliar</a></td>
                             </tr>
                         @endforeach
                     </tbody>

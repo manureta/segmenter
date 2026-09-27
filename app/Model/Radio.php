@@ -35,6 +35,24 @@ class Radio extends Model
         return $this->belongsTo('App\Model\Observacion');
     }
 
+    /**
+     * Radios que este reemplazó al conciliar un código duplicado
+     * (ver ControlCalidadController@marcarHistorico).
+     */
+    public function historicoComoVigente()
+    {
+        return $this->hasMany('App\Model\HistoricoRadio', 'nuevo_id');
+    }
+
+    /**
+     * Si este radio fue conciliado (marcado histórico), el registro que
+     * indica por cuál quedó reemplazado. Null si sigue vigente.
+     */
+    public function historicoComoReemplazado()
+    {
+        return $this->hasOne('App\Model\HistoricoRadio', 'viejo_id');
+    }
+
     public static function getRadioData() {
         // devuelve todos los registros los radios de la tabla radio
         $value=DB::table($table)->orderBy('id', 'asc')->get();

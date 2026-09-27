@@ -17,7 +17,7 @@ class Fraccion extends Model
     }
 
     protected $fillable = [
-        'codigo'
+        'codigo', 'departamento_id'
     ];
 
     // Sin fecha de creación o modificación
