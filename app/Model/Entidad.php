@@ -31,6 +31,11 @@ class Entidad extends Model
         return $this->belongsTo('App\Model\GobiernoLocal', 'gobierno_local_id');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
     /**
      * Historial de Gobiernos Locales (gobierno_local_entidad, con fecha_desde/fecha_hasta) —
      * a diferencia de gobiernoLocal(), acá puede haber más de un vínculo a lo largo del tiempo.

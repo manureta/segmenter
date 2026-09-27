@@ -29,6 +29,16 @@ class Aglomerado extends Model
     public function localidades() {
         return $this->hasMany('App\Model\Localidad');
     }
+
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
+    public function tipoDePoblacion()
+    {
+        return $this->belongsTo('App\Model\TipoDePoblacion', 'tipo_de_poblacion_id');
+    }
     
     public function getNombreAttribute($value) {
         /// do your magic

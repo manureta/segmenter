@@ -42,6 +42,21 @@ class Localidad extends Model
         return $this->belongsTo('App\Model\Aglomerado');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
+    public function tipoDePoblacion()
+    {
+        return $this->belongsTo('App\Model\TipoDePoblacion', 'tipo_de_poblacion_id');
+    }
+
+    public function tipoDeLocalidad()
+    {
+        return $this->belongsTo('App\Model\TipoDeLocalidad', 'tipo_de_localidad_id');
+    }
+
     /**
      * Relación con Radios, una localidad tiene muchos radios (que pueden estas en mas de una localidad?).
      */

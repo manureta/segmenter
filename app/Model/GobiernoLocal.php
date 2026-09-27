@@ -94,4 +94,25 @@ class GobiernoLocal extends Model
     {
         return $this->belongsToMany('App\Model\Operativo', 'operativo__gobierno_local');
     }
+
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
+    public function tipoDePoblacion()
+    {
+        return $this->belongsTo('App\Model\TipoDePoblacion', 'tipo_de_poblacion_id');
+    }
+
+    public function categoriaDeAgl()
+    {
+        return $this->belongsTo('App\Model\CategoriaDeAgl', 'categoria_de_agl_id');
+    }
+
+    // Columna sin sufijo _id, así viene del dump original.
+    public function tipoDeAgl()
+    {
+        return $this->belongsTo('App\Model\TipoDeAgl', 'tipo_de_agl');
+    }
 }

@@ -28,6 +28,11 @@ class GobiernoLocalEntidad extends Pivot
         return $this->belongsTo('App\Model\Entidad');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
     /**
      * Solo la relación vigente (fecha_hasta null) - la BD garantiza que hay
      * a lo sumo una por par gobierno_local/entidad (índice único parcial).

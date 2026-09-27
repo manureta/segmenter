@@ -39,6 +39,16 @@ class Paraje extends Model
         return $this->belongsTo('App\Model\Fuente');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
+    public function tipoDePoblacion()
+    {
+        return $this->belongsTo('App\Model\TipoDePoblacion', 'tipo_de_poblacion_id');
+    }
+
     /**
      * Relación con Operativos, un Paraje puede participar de varios operativos.
      */

@@ -23,6 +23,11 @@ class Radio extends Model
     private $_esquema;
     private $_esquemas;
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
     public static function getRadioData() {
         // devuelve todos los registros los radios de la tabla radio
         $value=DB::table($table)->orderBy('id', 'asc')->get();

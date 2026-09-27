@@ -37,4 +37,9 @@ class Fraccion extends Model
          return $this->belongsTo('App\Model\Departamento');
      }
 
+     public function observacion()
+     {
+         return $this->belongsTo('App\Model\Observacion');
+     }
+
 }

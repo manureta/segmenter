@@ -140,6 +140,11 @@ class Provincia extends Model
         return $this->belongsTo('App\Model\Geometria');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
     /**
      * Devuelve la Geometria cacheada para esta provincia, consultando la
      * cadena de geoservers remota y persistiendo el resultado la primera

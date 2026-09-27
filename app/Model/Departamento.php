@@ -25,6 +25,11 @@ class Departamento extends Model
         return $this->belongsTo('App\Model\Provincia');
     }
 
+    public function observacion()
+    {
+        return $this->belongsTo('App\Model\Observacion');
+    }
+
     /**
      * Relación con Localidades, un departamentos puede tener muchos localidades.
      */
