@@ -67,6 +67,7 @@ Route::get('/guia', function()
 Route::get('/sala', 'SalaController@index')->name('sala');
 
 Route::get('/setup', 'SetupController@index')->name('setup');
+Route::get('/setup-panel', 'SetupController@panel')->name('setup.panel');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/fixSRID/{esquema}/{srid}',

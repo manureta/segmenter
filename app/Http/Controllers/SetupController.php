@@ -21,6 +21,179 @@ class SetupController extends Controller
     }
 
     /**
+     * Panel de desarrollo: lista los endpoints de /setup/* agrupados, con un
+     * input por parámetro de la URL y un botón que arma el link y lo abre -
+     * hoy la única forma de dispararlos es escribiendo la URL a mano
+     * (relevamiento técnico, riesgo de "batch manual sin scheduler ni cola").
+     * No agrega ninguna ruta ni lógica nueva de negocio, solo un índice
+     * clickeable de lo que ya existe.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function panel()
+    {
+        $grupos = [
+            'Topología' => [
+                ['label' => 'Cargar topología (país)', 'path' => '/setup/topo/pais'],
+                ['label' => 'Cargar topología (esquema)', 'path' => '/setup/topo/{esquema}'],
+                ['label' => 'Cargar topología (esquema, tolerancia)', 'path' => '/setup/topo/{esquema}/{tolerancia}'],
+                ['label' => 'Borrar topología', 'path' => '/setup/topo_drop/{esquema}'],
+                ['label' => 'Generar adyacencias', 'path' => '/setup/adyacencias/{esquema}'],
+            ],
+            'Georreferenciación / SRID' => [
+                ['label' => 'Fijar SRID + regenerar topología', 'path' => '/setup/fixSRID/{esquema}/{srid}'],
+                ['label' => 'Georreferenciar esquema', 'path' => '/setup/geo/{esquema}'],
+                ['label' => 'Georreferenciar (forzado)', 'path' => '/setup/geo/{esquema}/{n}'],
+                ['label' => 'Georreferenciar (forzado, fracción)', 'path' => '/setup/geo/{esquema}/{n}/{frac}'],
+                ['label' => 'Georreferenciar (forzado, fracción, radio)', 'path' => '/setup/geo/{esquema}/{n}/{frac}/{radio}'],
+                ['label' => 'Georreferenciar segmentación', 'path' => '/setup/geoseg/{esquema}'],
+                ['label' => 'Cargar SRID de localidades', 'path' => '/setup/update/localidad_srid'],
+                ['label' => 'Corregir SRID de localidades', 'path' => '/setup/update/corrige_localidad_srid'],
+            ],
+            'Segmentación' => [
+                ['label' => 'Segmentar esquema', 'path' => '/setup/segmenta/{esquema}'],
+                ['label' => 'Muestrear esquema', 'path' => '/setup/muestrea/{esquema}'],
+                ['label' => 'Limpiar esquema', 'path' => '/setup/limpia/{esquema}'],
+                ['label' => 'Limpiar esquemas temporales', 'path' => '/setup/limpiar/Temporales'],
+                ['label' => 'Juntar segmentos', 'path' => '/setup/junta/{esquema}'],
+                ['label' => 'Juntar segmentos (fracción, radio)', 'path' => '/setup/junta/{esquema}/{frac}/{radio}'],
+                ['label' => 'Juntar segmentos menores', 'path' => '/setup/juntaMenores/{esquema}/{frac}/{radio}/{n}'],
+            ],
+            'Consolidación (public.*)' => [
+                ['label' => 'Juntar listados segmentados', 'path' => '/setup/update/LS'],
+                ['label' => 'Juntar R3', 'path' => '/setup/update/R3'],
+                ['label' => 'Juntar Manzanas', 'path' => '/setup/update/Manzanas'],
+                ['label' => 'Juntar Vías', 'path' => '/setup/update/Vias'],
+                ['label' => 'Juntar Localidades', 'path' => '/setup/update/Localidades'],
+                ['label' => 'Juntar Cuadras', 'path' => '/setup/update/Cuadras'],
+                ['label' => 'Radios de listados', 'path' => '/setup/update/RadiosDeListados'],
+                ['label' => 'Radios de arcs', 'path' => '/setup/update/RadiosDeArcs'],
+            ],
+            'Índices' => [
+                ['label' => 'Índices de listado', 'path' => '/setup/index/{esquema}'],
+                ['label' => 'Índice de id por tabla', 'path' => '/setup/index/id/{tabla}'],
+                ['label' => 'Crear índice (tabla, columnas)', 'path' => '/setup/index/{esquema}/{tabla}/{cols}'],
+            ],
+            'Permisos / usuarios' => [
+                ['label' => 'Dar permisos de esquema', 'path' => '/setup/{esquema}'],
+                ['label' => 'Agregar usuario a grupo geoestadística', 'path' => '/setup/grupogeoestadistica/{usuario}'],
+                ['label' => 'Permisos de grupo sobre tabla', 'path' => '/setup/grupogeoestadistica/tabla/{tabla}'],
+            ],
+            'Limpieza de listado' => [
+                ['label' => 'Duplicados LSV', 'path' => '/setup/duplicadosLSV/{esquema}'],
+                ['label' => 'Actualizar tipo de vivienda', 'path' => '/setup/updateTipoViv/{esquema}'],
+            ],
+
+            // Resto de routes/web.php - accesos directos, no son endpoints de acción como /setup/*.
+            // Deliberadamente afuera: los bloques "Auto-generated admin routes" (guard admin,
+            // namespace Admin\*) - confirmado roto hoy (Admin\UsersController no existe, ver
+            // SIGeo-relevamiento-tecnico.md / falla real de `php artisan route:list`).
+            'Home / páginas estáticas' => [
+                ['label' => 'Welcome', 'path' => '/'],
+                ['label' => 'Home', 'path' => '/home'],
+                ['label' => 'About', 'path' => '/about'],
+                ['label' => 'Projects', 'path' => '/projects'],
+                ['label' => 'Contact', 'path' => '/contact'],
+                ['label' => 'Server info', 'path' => '/serverinfo'],
+                ['label' => 'Guía', 'path' => '/guia'],
+                ['label' => 'Sala', 'path' => '/sala'],
+                ['label' => 'Gracias', 'path' => '/gracias'],
+                ['label' => 'Colaboradores', 'path' => '/colaboradores'],
+                ['label' => 'Inicio', 'path' => '/inicio'],
+            ],
+            'Provincias' => [
+                ['label' => 'Listado (provs-list)', 'path' => '/provs-list'],
+                ['label' => 'Índice', 'path' => '/provs'],
+                ['label' => 'Ver una', 'path' => '/prov/{provincia}'],
+            ],
+            'Departamentos' => [
+                ['label' => 'Por provincia', 'path' => '/prov/deptos/{provincia}'],
+                ['label' => 'Listar (json)', 'path' => '/prov/list/{provincia}'],
+                ['label' => 'Ver uno', 'path' => '/depto/{departamento}'],
+            ],
+            'Localidades' => [
+                ['label' => 'Listado (locas-list)', 'path' => '/locas-list'],
+                ['label' => 'Índice', 'path' => '/localidades'],
+                ['label' => 'Índice (json)', 'path' => '/localidades_json'],
+                ['label' => 'Ver una', 'path' => '/localidad/{localidad}'],
+                ['label' => 'Ver por código', 'path' => '/localidad/codigo/{codigo}'],
+                ['label' => 'PxSeg', 'path' => '/localidad/{localidad}/pxseg'],
+                ['label' => 'Ver segmentación', 'path' => '/localidad/{localidad}/segmentacion'],
+                ['label' => 'Ver segmentación (lados)', 'path' => '/localidad/{localidad}/segmentacion-lados'],
+                ['label' => 'Ver gráfico', 'path' => '/localidad/{localidad}/grafico'],
+                ['label' => 'Ejecutar segmentación', 'path' => '/localidad-segmenta/{localidad}'],
+            ],
+            'Aglomerados' => [
+                ['label' => 'Listado (aglos-list)', 'path' => '/aglos-list'],
+                ['label' => 'Índice', 'path' => '/aglos'],
+                ['label' => 'Ver uno', 'path' => '/aglo/{aglomerado}'],
+                ['label' => 'Ejecutar segmentación', 'path' => '/aglo-segmenta/{aglomerado}'],
+                ['label' => 'PxSeg', 'path' => '/aglo/{aglomerado}/pxseg'],
+                ['label' => 'Ver segmentación', 'path' => '/ver-segmentacion/{aglomerado}'],
+                ['label' => 'Ver segmentación (lados)', 'path' => '/ver-segmentacion-lados/{aglomerado}'],
+                ['label' => 'Ver gráfico', 'path' => '/ver-segmentacion/grafico/{aglomerado}'],
+                ['label' => 'Ver gráfico resumen', 'path' => '/ver-segmentacion/grafico-resumen/{aglomerado}'],
+                ['label' => 'Ver gráfico resumen (lados)', 'path' => '/ver-segmentacion-lados/grafico-resumen/{aglomerado}'],
+            ],
+            'Radios / grafos' => [
+                ['label' => 'Radios de localidad+depto (CABA)', 'path' => '/radios/{localidad}/{departamento}'],
+                ['label' => 'Ver radio', 'path' => '/radio/{radio}'],
+                ['label' => 'Ver radio por código', 'path' => '/radio/codigo/{codigo}'],
+                ['label' => 'Grafo de aglomerado', 'path' => '/grafo/{aglomerado}'],
+                ['label' => 'Grafo (legacy, aglo+radio)', 'path' => '/grafo/{aglomerado}/{radio}'],
+                ['label' => 'Ver grafo (localidad+radio)', 'path' => '/radio/{localidad}/{radio}'],
+            ],
+            'Archivos' => [
+                ['label' => 'Índice', 'path' => '/archivos'],
+                ['label' => 'Ver uno', 'path' => '/archivo/{archivo}'],
+                ['label' => 'Descargar', 'path' => '/archivo/{archivo}/descargar'],
+                ['label' => 'Procesar', 'path' => '/archivo/{archivo}/procesar'],
+                ['label' => 'Limpiar repetidos', 'path' => '/archivos/limpiar'],
+                ['label' => 'Listar repetidos', 'path' => '/archivos/repetidos'],
+                ['label' => 'Recalcular checksums', 'path' => '/archivos/recalcular_cs/{archivo_id}'],
+                ['label' => 'Checksums obsoletos', 'path' => '/archivos/checksums_obsoletos'],
+                ['label' => 'Checksums no calculados', 'path' => '/archivos/checksums_no_calculados'],
+            ],
+            'Tablero / informes' => [
+                ['label' => 'Gráfico provincias', 'path' => '/informe/prov'],
+                ['label' => 'Gráfico avances', 'path' => '/informe/avances'],
+                ['label' => 'Gráfico avance', 'path' => '/informe/avance'],
+            ],
+            'Usuarios / roles / filtros / perfil' => [
+                ['label' => 'Mi perfil', 'path' => '/perfil'],
+                ['label' => 'Listar usuarios', 'path' => '/users'],
+                ['label' => 'Roles de usuario', 'path' => '/users/{user}/roles'],
+                ['label' => 'Permisos de usuario', 'path' => '/users/{user}/permission'],
+                ['label' => 'Filtro de usuario', 'path' => '/users/{user}/filter'],
+                ['label' => 'Listar filtros', 'path' => '/filtros'],
+                ['label' => 'Renombrar filtro', 'path' => '/filtros/{filter}/rename'],
+                ['label' => 'Nuevo filtro', 'path' => '/filtros/new'],
+                ['label' => 'Editar filtros de provincias', 'path' => '/filtros/provs/edit'],
+                ['label' => 'Listar filtros de provincias', 'path' => '/filtros/provs'],
+                ['label' => 'Listar roles', 'path' => '/roles'],
+                ['label' => 'Editar rol', 'path' => '/roles/{role}/edit'],
+                ['label' => 'Nuevo rol', 'path' => '/roles/new'],
+                ['label' => 'Detalle de rol', 'path' => '/roles/{role}/detail'],
+            ],
+            'Segmentador / segmentos / listado' => [
+                ['label' => 'Segmentador', 'path' => '/segmentador'],
+                ['label' => 'Listado (índice)', 'path' => '/listado'],
+                ['label' => 'Segmentos (índice)', 'path' => '/segmentos'],
+            ],
+            'Utilidades' => [
+                ['label' => 'CSV file', 'path' => '/csv_file'],
+                ['label' => 'CSV export', 'path' => '/csv_file/export'],
+                ['label' => 'Buscar provincia', 'path' => '/search_provincia'],
+                ['label' => 'Autocomplete provincia', 'path' => '/autocomplete_provincia'],
+                ['label' => 'Limpiar caché', 'path' => '/clear-cache'],
+                ['label' => 'Logout', 'path' => '/logout'],
+            ],
+        ];
+
+        return view('setup.panel', compact('grupos'));
+    }
+
+    /**
      * Show the application dashboard.
      *
      * @return \Illuminate\Contracts\Support\Renderable
