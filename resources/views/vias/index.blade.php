@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content_main')
  <div class="container">
-   <h2>Listado de Vías de circulación</h2>
+   <h2>Listado de Vías de circulación <a href="{{ route('vias.resumen') }}" class="btn btn-sm btn-outline-primary float-right">Ver resumen</a></h2>
    <p class="text-muted small">
        159 mil+ filas — la columna Localidad/Aglomerado puede aparecer vacía si esa localidad
        todavía no está cargada en esta base (dataset parcial), no es necesariamente un error.
