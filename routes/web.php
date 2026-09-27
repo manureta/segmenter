@@ -255,8 +255,10 @@ Route::post('deptos-list', 'DepartamentoController@listAll')->name('deptos-list'
 Route::get('vias', 'ViaController@index')->name('vias');
 Route::get('vias/resumen', 'ViaController@resumen')->name('vias.resumen');
 Route::post('vias-list', 'ViaController@listAll')->name('vias-list');
-Route::get('depto/{departamento}','DepartamentoController@show');
+Route::get('depto/{departamento}','DepartamentoController@show')->name('depto.show');
 Route::post('depto/{departamento}','DepartamentoController@show_post');
+Route::post('depto/{departamento}/localidad/{localidad}/vincular', 'DepartamentoController@vincularLocalidad')->name('depto.vincular-localidad');
+Route::post('depto/{departamento}/vincular-localidades', 'DepartamentoController@vincularTodasLasLocalidades')->name('depto.vincular-localidades');
 
 // ---------- LOCALIDADES --------
 Route::get('locas-list', 'LocalidadController@locasList');

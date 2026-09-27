@@ -34,6 +34,11 @@
             están vinculadas a este departamento en <code>localidad_departamento</code>. La tabla de vínculo real
             es la que manda (scope, permisos, etc.), pero el listado de abajo muestra <em>ambas</em> para que la
             brecha sea visible.
+            <form method="POST" action="{{ route('depto.vincular-localidades', $departamento) }}" class="mt-2"
+                  onsubmit="return confirm('Vincular las {{ $departamento->localidadesPorCodigo->count() }} localidades por código a {{ $departamento->nombre }}?');">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-warning">Reparar: vincular todas por código</button>
+            </form>
         </div>
     @endif
 
@@ -59,6 +64,10 @@
                     <a href="{{ url("/localidad/{$localidad->id}") }}">({{ $localidad->codigo }}) <b>{{ $localidad->nombre }}</b></a>
                     @if (!$departamento->localidades->contains('id', $localidad->id))
                         <span class="badge badge-warning">sin vínculo en localidad_departamento</span>
+                        <form method="POST" action="{{ route('depto.vincular-localidad', [$departamento, $localidad->id]) }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-xs btn-outline-warning" style="padding: 0 6px;">Vincular</button>
+                        </form>
                     @endif
                 </li>
             @endforeach

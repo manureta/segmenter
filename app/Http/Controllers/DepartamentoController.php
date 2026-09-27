@@ -165,4 +165,41 @@ class DepartamentoController extends Controller
         return $departamento;
     }
 
+    /**
+     * Reparar el vínculo faltante en localidad_departamento (ver §2.13):
+     * vincula una localidad puntual. Chequeo de seguridad - el propio
+     * código de la localidad tiene que empezar con el código del
+     * departamento, para no poder vincular cualquier par de ids a mano
+     * editando el form.
+     */
+    public function vincularLocalidad(Departamento $departamento, $localidadId)
+    {
+        $localidad = Localidad::withoutGlobalScope('operativo_actual')->findOrFail($localidadId);
+
+        if (strpos($localidad->codigo, $departamento->codigo) !== 0) {
+            flash('La localidad '.$localidad->codigo.' no corresponde al departamento '.$departamento->codigo.'.')->error();
+            return redirect()->route('depto.show', $departamento);
+        }
+
+        $departamento->localidades()->syncWithoutDetaching([$localidad->id]);
+        flash('Vinculada: ('.$localidad->codigo.') '.$localidad->nombre.' ahora pertenece a '.$departamento->nombre.'.')->success();
+
+        return redirect()->route('depto.show', $departamento);
+    }
+
+    /**
+     * Vincula de una todas las localidades del cross-check por código que
+     * todavía no estén en el pivot.
+     */
+    public function vincularTodasLasLocalidades(Departamento $departamento)
+    {
+        $localidades = Localidad::withoutGlobalScope('operativo_actual')
+            ->where('codigo', 'like', $departamento->codigo.'%')->pluck('id');
+
+        $departamento->localidades()->syncWithoutDetaching($localidades);
+        flash('Vinculadas '.$localidades->count().' localidades a '.$departamento->nombre.' (las que ya estaban no se duplican).')->success();
+
+        return redirect()->route('depto.show', $departamento);
+    }
+
 }
