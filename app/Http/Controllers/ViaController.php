@@ -39,6 +39,14 @@ class ViaController extends Controller
             $porTipo->push((object) ['tipo' => 'Otros ('.($porTipoCrudo->count() - 12).' valores)', 'cantidad' => $restoTipo]);
         }
 
+        // Top 25 completo (para la tabla, no sólo el gráfico) y "valores
+        // raros": umbral fijo <=10 apariciones en 159611 filas - a esa
+        // frecuencia son casi siempre errores de tipeo/import (CALE, CLLE,
+        // OTRP, "TIPO" literal, códigos numéricos sueltos como "1015"), no
+        // tipos de vía real infrecuentes pero válidos.
+        $top25Tipos = $porTipoCrudo->take(25)->values();
+        $tiposRaros = $porTipoCrudo->filter(fn ($t) => $t->cantidad <= 10)->values();
+
         $localidadesDistintas = DB::table('vias')->distinct()->count('codloc');
 
         $sinAlturas = DB::table('vias')
@@ -52,7 +60,8 @@ class ViaController extends Controller
         $nombresProvincia = Provincia::withoutGlobalScope('operativo_actual')->pluck('nombre', 'codigo');
 
         return view('vias.resumen', compact(
-            'total', 'porTipo', 'localidadesDistintas', 'sinAlturas', 'porProvincia', 'nombresProvincia'
+            'total', 'porTipo', 'top25Tipos', 'tiposRaros',
+            'localidadesDistintas', 'sinAlturas', 'porProvincia', 'nombresProvincia'
         ));
     }
 
