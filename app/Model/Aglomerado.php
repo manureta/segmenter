@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class Aglomerado extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativoHeredado;
+
         //
     protected $table='aglomerados';
     protected $fillable = ['id','codigo','nombre'];
@@ -21,6 +23,16 @@ class Aglomerado extends Model
     // Sin fecha de creación o modificación
     //
     public $timestamps = false;
+
+    /**
+     * Aglomerado no tiene pivot propio con Operativo (no es una de las 6
+     * entidades con operativo_<tabla> directo) - hereda por Localidad,
+     * igual que Departamento/Fraccion/Radio heredan por su propia cadena.
+     */
+    public function rutaHaciaOperativo()
+    {
+        return 'localidades';
+    }
      /**
         * Relación con Localidades, un Aglomerados tiene una o varias localidad.
         *
