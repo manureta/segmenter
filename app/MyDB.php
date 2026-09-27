@@ -1299,7 +1299,13 @@ FROM
         public static function segmentar_equilibrado_ver_resumen($esquema)
         {
             $esquema = 'e'.$esquema;
-            return DB::select('SELECT vivs,count(*) cant_segmentos,
+            // Mismo criterio que segmentar_equilibrado_ver() (arriba): si el
+            // aglomerado todavía no tiene tabla de segmentación (nunca se
+            // corrió la segmentación), no es un error real - devuelve vacío
+            // en vez de un 500 con SQL crudo. Bug real encontrado navegando
+            // a /grafo/{id} de un aglomerado sin segmentar (168/0810).
+            try {
+                return DB::select('SELECT vivs,count(*) cant_segmentos,
                             string_agg(distinct array_to_string(en_lados,\' \'),\',\') en_lados FROM (
                             SELECT segmento_id,count(indec.contar_vivienda(tipoviv)) vivs,count(distinct mza) as
                             mzas,array_agg(distinct
@@ -1311,6 +1317,14 @@ FROM
                             WHERE segmento_id is not null
                             GROUP BY segmento_id
                             ORDER BY count(*) asc, array_agg(mza), segmento_id) foo GROUP BY vivs order by vivs asc;');
+            } catch (QueryException $e) {
+                if ($e->getCode() == '42P01') {
+                    Log::notice('No hubo modo de encontrar una segmentación en esquema: '.$esquema);
+                } else {
+                    Log::error('Se produjo error no esperado buscando segmentación (resumen equilibrado):', [$e]);
+                }
+                return [];
+            }
         // SQL retrun:
         }
 
@@ -1339,7 +1353,11 @@ FROM
             public static function segmentar_lados_ver_resumen($esquema)
             {
                 $esquema = 'e'.$esquema;
-                return DB::select('SELECT vivs,count(seg) cant_segmentos FROM (
+                // Mismo criterio que segmentar_equilibrado_ver_resumen(): sin
+                // arc/conteos todavía (aglomerado sin segmentar por lados
+                // completos), no es un error real - devuelve vacío.
+                try {
+                    return DB::select('SELECT vivs,count(seg) cant_segmentos FROM (
                     SELECT substr(lados.mza,1,12) radio, seg,count(*) lados,count(distinct lados.mza) as mzas_count,array_agg(distinct substr(lados.mza,13,3)) mzas, sum(c.conteo) vivs FROM
                     (SELECT segi seg,mzai mza,ladoi lado FROM '.$esquema.'.arc WHERE segi is not null
                     UNION SELECT segd,mzad,ladod FROM '.$esquema.'.arc WHERE segd is not null) lados
@@ -1349,6 +1367,14 @@ FROM
                                 WHERE lados.mza != \'\'
                                 GROUP BY  substr(lados.mza,1,12), seg ) foo
                                 GROUP BY vivs order by vivs asc;');
+                } catch (QueryException $e) {
+                    if ($e->getCode() == '42P01') {
+                        Log::notice('No hubo modo de encontrar una segmentación por lados en esquema: '.$esquema);
+                    } else {
+                        Log::error('Se produjo error no esperado buscando segmentación (resumen lados):', [$e]);
+                    }
+                    return [];
+                }
             // SQL retrun:
     }
 
