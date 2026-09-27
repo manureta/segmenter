@@ -46,6 +46,6 @@ class BaseAntartica extends Model
 
     public function operativos()
     {
-        return $this->belongsToMany('App\Model\Operativo', 'operativo__base_antartica');
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_base_antartica');
     }
 }

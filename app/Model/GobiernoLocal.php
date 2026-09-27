@@ -92,7 +92,7 @@ class GobiernoLocal extends Model
      */
     public function operativos()
     {
-        return $this->belongsToMany('App\Model\Operativo', 'operativo__gobierno_local');
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_gobierno_local');
     }
 
     public function observacion()

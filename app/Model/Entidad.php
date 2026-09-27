@@ -75,6 +75,6 @@ class Entidad extends Model
      */
     public function operativos()
     {
-        return $this->belongsToMany('App\Model\Operativo', 'operativo__entidad');
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_entidad');
     }
 }

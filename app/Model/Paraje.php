@@ -59,6 +59,6 @@ class Paraje extends Model
      */
     public function operativos()
     {
-        return $this->belongsToMany('App\Model\Operativo', 'operativo__paraje');
+        return $this->belongsToMany('App\Model\Operativo', 'operativo_paraje');
     }
 }

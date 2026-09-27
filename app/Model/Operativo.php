@@ -9,7 +9,7 @@ class Operativo extends Model
     protected $table = 'operativo';
 
     protected $fillable = [
-        'nombre', 'observacion',
+        'nombre', 'observacion', 'topologia_id',
     ];
 
     // Sin fecha de creación o modificación
@@ -28,7 +28,7 @@ class Operativo extends Model
      */
     public function localidades()
     {
-        return $this->belongsToMany('App\Model\Localidad', 'operativo__localidad');
+        return $this->belongsToMany('App\Model\Localidad', 'operativo_localidad');
     }
 
     /**
@@ -36,7 +36,7 @@ class Operativo extends Model
      */
     public function entidades()
     {
-        return $this->belongsToMany('App\Model\Entidad', 'operativo__entidad');
+        return $this->belongsToMany('App\Model\Entidad', 'operativo_entidad');
     }
 
     /**
@@ -44,7 +44,7 @@ class Operativo extends Model
      */
     public function gobiernosLocales()
     {
-        return $this->belongsToMany('App\Model\GobiernoLocal', 'operativo__gobierno_local');
+        return $this->belongsToMany('App\Model\GobiernoLocal', 'operativo_gobierno_local');
     }
 
     /**
@@ -52,7 +52,7 @@ class Operativo extends Model
      */
     public function parajes()
     {
-        return $this->belongsToMany('App\Model\Paraje', 'operativo__paraje');
+        return $this->belongsToMany('App\Model\Paraje', 'operativo_paraje');
     }
 
     /**
@@ -60,6 +60,20 @@ class Operativo extends Model
      */
     public function baseAntarticas()
     {
-        return $this->belongsToMany('App\Model\BaseAntartica', 'operativo__base_antartica');
+        return $this->belongsToMany('App\Model\BaseAntartica', 'operativo_base_antartica');
+    }
+
+    /**
+     * topology.topology asociada a este Operativo - hoy nullable y sin uso
+     * real: indec.cargartopologia()/cargar_topologia_pais() todavía nombran
+     * la topología por SRID (<srid>_topo) o una única nacional (pais_topo),
+     * compartida entre operativos, no por esta columna. Queda el modelo
+     * listo para cuando se decida cambiar esa convención (fuera de este
+     * spike: son funciones de riesgo, no se tocan sin test de
+     * caracterización antes).
+     */
+    public function topologia()
+    {
+        return $this->belongsTo('App\Model\Topologia', 'topologia_id');
     }
 }
