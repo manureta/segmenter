@@ -180,6 +180,12 @@ class SetupController extends Controller
                 ['label' => 'Listado (índice)', 'path' => '/listado'],
                 ['label' => 'Segmentos (índice)', 'path' => '/segmentos'],
             ],
+            'Operativos (ABM)' => [
+                ['label' => 'Listado', 'path' => '/operativos'],
+                ['label' => 'Nuevo', 'path' => '/operativos/new'],
+                ['label' => 'Ver uno', 'path' => '/operativos/{operativo}'],
+                ['label' => 'Editar', 'path' => '/operativos/{operativo}/edit'],
+            ],
             'Utilidades' => [
                 ['label' => 'CSV file', 'path' => '/csv_file'],
                 ['label' => 'CSV export', 'path' => '/csv_file/export'],
