@@ -57,6 +57,29 @@ class Localidad extends Model
         return $this->belongsTo('App\Model\TipoDeLocalidad', 'tipo_de_localidad_id');
     }
 
+    // Punteros al vínculo "vigente" - el historial completo vive en
+    // capital_de_republica/capital_de_provincia/cabecera_de_departamento/
+    // sede_gobierno_local (ver esas tablas para el pasado de cada estatus).
+    public function capitalDeRepublica()
+    {
+        return $this->belongsTo('App\Model\Pais', 'cap_de_rep');
+    }
+
+    public function capitalDeProvincia()
+    {
+        return $this->belongsTo('App\Model\Provincia', 'cap_de_pcia');
+    }
+
+    public function cabeceraDeDepartamento()
+    {
+        return $this->belongsTo('App\Model\Departamento', 'cab_de_depto');
+    }
+
+    public function sedeDeGobiernoLocal()
+    {
+        return $this->belongsTo('App\Model\GobiernoLocal', 'sede_gob_loc');
+    }
+
     /**
      * Relación con Radios, una localidad tiene muchos radios (que pueden estas en mas de una localidad?).
      */

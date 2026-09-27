@@ -49,6 +49,11 @@ class Paraje extends Model
         return $this->belongsTo('App\Model\TipoDePoblacion', 'tipo_de_poblacion_id');
     }
 
+    public function sedeDeGobiernoLocal()
+    {
+        return $this->belongsTo('App\Model\GobiernoLocal', 'sede_gob_loc');
+    }
+
     /**
      * Relación con Operativos, un Paraje puede participar de varios operativos.
      */

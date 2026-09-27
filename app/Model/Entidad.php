@@ -36,6 +36,21 @@ class Entidad extends Model
         return $this->belongsTo('App\Model\Observacion');
     }
 
+    public function capitalDeProvincia()
+    {
+        return $this->belongsTo('App\Model\Provincia', 'cap_de_pcia');
+    }
+
+    public function cabeceraDeDepartamento()
+    {
+        return $this->belongsTo('App\Model\Departamento', 'cab_de_depto');
+    }
+
+    public function sedeDeGobiernoLocal()
+    {
+        return $this->belongsTo('App\Model\GobiernoLocal', 'sede_gob_loc');
+    }
+
     /**
      * Historial de Gobiernos Locales (gobierno_local_entidad, con fecha_desde/fecha_hasta) —
      * a diferencia de gobiernoLocal(), acá puede haber más de un vínculo a lo largo del tiempo.

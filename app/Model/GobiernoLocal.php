@@ -115,4 +115,34 @@ class GobiernoLocal extends Model
     {
         return $this->belongsTo('App\Model\TipoDeAgl', 'tipo_de_agl');
     }
+
+    public function capitalDeRepublica()
+    {
+        return $this->belongsTo('App\Model\Pais', 'cap_de_rep');
+    }
+
+    public function capitalDeProvincia()
+    {
+        return $this->belongsTo('App\Model\Provincia', 'cap_de_pcia');
+    }
+
+    public function cabeceraDeDepartamento()
+    {
+        return $this->belongsTo('App\Model\Departamento', 'cab_de_depto');
+    }
+
+    public function sedeDeGobiernoLocal()
+    {
+        return $this->belongsTo('App\Model\GobiernoLocal', 'sede_gob_loc');
+    }
+
+    public function sedeVigente()
+    {
+        return $this->hasOne('App\Model\SedeGobiernoLocal')->vigente();
+    }
+
+    public function historialSede()
+    {
+        return $this->hasMany('App\Model\SedeGobiernoLocal');
+    }
 }

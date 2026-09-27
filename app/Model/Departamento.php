@@ -30,6 +30,16 @@ class Departamento extends Model
         return $this->belongsTo('App\Model\Observacion');
     }
 
+    public function cabeceraVigente()
+    {
+        return $this->hasOne('App\Model\CabeceraDeDepartamento')->vigente();
+    }
+
+    public function historialCabecera()
+    {
+        return $this->hasMany('App\Model\CabeceraDeDepartamento');
+    }
+
     /**
      * Relación con Localidades, un departamentos puede tener muchos localidades.
      */

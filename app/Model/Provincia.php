@@ -145,6 +145,16 @@ class Provincia extends Model
         return $this->belongsTo('App\Model\Observacion');
     }
 
+    public function capitalVigente()
+    {
+        return $this->hasOne('App\Model\CapitalDeProvincia')->vigente();
+    }
+
+    public function historialCapital()
+    {
+        return $this->hasMany('App\Model\CapitalDeProvincia');
+    }
+
     /**
      * Devuelve la Geometria cacheada para esta provincia, consultando la
      * cadena de geoservers remota y persistiendo el resultado la primera
