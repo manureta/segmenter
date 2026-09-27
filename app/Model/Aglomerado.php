@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 //use App\Model\Radio;
 
 class Aglomerado extends Model
@@ -55,11 +56,17 @@ class Aglomerado extends Model
     public function getNombreAttribute($value) {
         /// do your magic
         if ($value=='Sin Nombre') {
-            $nombres='de :';
-            foreach ($this->localidades as $localidad) {
-                $nombres.= ' - ' . $localidad->nombre;
-            }
-            return $nombres;
+            // Sin distinct esto repetía "zona rural"/"Zona Rural" una vez
+            // por cada localidad rural del aglomerado (53 veces en el
+            // aglomerado "Zona Rural", id 1) - normaliza espacios y
+            // compara sin importar mayúsculas/minúsculas antes de deduplicar,
+            // así "zona rural" y "Zona Rural" cuentan como el mismo nombre.
+            $nombres = $this->localidades->pluck('nombre')
+                ->filter()
+                ->map(fn ($nombre) => trim(preg_replace('/\s+/', ' ', $nombre)))
+                ->unique(fn ($nombre) => Str::lower($nombre))
+                ->values();
+            return $nombres->isEmpty() ? 'Sin Nombre' : 'de: '.$nombres->implode(' - ');
         } else {
             return $value;
         }
