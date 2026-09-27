@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Model\Departamento;
 use App\Model\Provincia;
+use App\Model\Localidad;
 use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
@@ -133,15 +134,35 @@ class DepartamentoController extends Controller
    public function show(Departamento $departamento)
     {
         //
-        return view('deptoview',['departamento' =>
-        $departamento->loadCount('localidades')]);
+        return view('deptoview',['departamento' => $this->cargarInfoDetallada($departamento)]);
     }
 
     public function show_post(Departamento $departamento)
     {
         //
-        //return view('provinfo',['provincia' => Provincia::withCount('departamentos')->findOrFail($provincia)]);
-        return view('deptoinfo',['departamento' => $departamento->loadCount('localidades')]);
+        return view('deptoinfo',['departamento' => $this->cargarInfoDetallada($departamento)]);
+    }
+
+    /**
+     * Info detallada para explorar un departamento en profundidad: además
+     * de la relación real (pivot localidad_departamento, a veces vacía -
+     * ver §2.13 de la documentación), se agrega localidadesPorCodigo como
+     * cross-check derivado del propio código (localidad.codigo empieza con
+     * departamento.codigo) para que la brecha entre ambas quede visible en
+     * la pantalla, no escondida.
+     */
+    private function cargarInfoDetallada(Departamento $departamento)
+    {
+        $departamento->loadCount(['localidades', 'fracciones', 'radios',
+            'radios as segmentados' => function ($query) {
+                $query->whereNotNull('resultado');
+            },
+        ])->load(['provincia', 'localidades.aglomerado', 'cabeceraVigente', 'gobiernosLocalesVigentes', 'observacion']);
+
+        $departamento->localidadesPorCodigo = Localidad::withoutGlobalScope('operativo_actual')
+            ->where('codigo', 'like', $departamento->codigo.'%')->orderBy('codigo')->get();
+
+        return $departamento;
     }
 
 }
