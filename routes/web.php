@@ -87,6 +87,7 @@ Route::get('controles-calidad', 'ControlCalidadController@index')->name('control
 Route::get('controles-calidad/radios-duplicados/{codigo}', 'ControlCalidadController@verDuplicado')->name('controles-calidad.duplicado');
 Route::post('controles-calidad/radios-duplicados/{codigo}/historico', 'ControlCalidadController@marcarHistorico')->name('controles-calidad.marcar-historico');
 Route::post('controles-calidad/radios-duplicados/{codigo}/completar-fraccion', 'ControlCalidadController@completarFraccion')->name('controles-calidad.completar-fraccion');
+Route::post('controles-calidad/radios-duplicados/{codigo}/eliminar/{radioId}', 'ControlCalidadController@eliminarRadio')->name('controles-calidad.eliminar-radio');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/fixSRID/{esquema}/{srid}',

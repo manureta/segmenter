@@ -176,6 +176,38 @@ class ControlCalidadController extends Controller
     }
 
     /**
+     * Eliminar directamente: para cuando el duplicado es un error de carga
+     * (no dos radios reales compitiendo por una fracción faltante). Chequeo
+     * de seguridad: sólo permite borrar si el radio no tiene ninguna
+     * relación real (localidades, entidades, histórico) - si las tiene, hay
+     * que reasignarlas primero o conciliar por histórico en cambio.
+     */
+    public function eliminarRadio($codigo, $radioId)
+    {
+        $radio = Radio::withoutGlobalScope('operativo_actual')
+            ->where('codigo', $codigo)->findOrFail($radioId);
+
+        $tieneRelaciones = $radio->localidades()->exists()
+            || $radio->entidades()->exists()
+            || $radio->historicoComoVigente()->exists()
+            || $radio->historicoComoReemplazado;
+
+        if ($tieneRelaciones) {
+            flash('No se puede eliminar el radio #'.$radio->id.': tiene relaciones (localidades, entidades o histórico). Conciliá por histórico en cambio.')->error();
+            return redirect()->route('controles-calidad.duplicado', $codigo);
+        }
+
+        $radio->delete();
+
+        $quedan = Radio::withoutGlobalScope('operativo_actual')->where('codigo', $codigo)->count();
+        flash('Radio #'.$radio->id.' eliminado (duplicado sin fracción ni relaciones).')->success();
+
+        return $quedan >= 2
+            ? redirect()->route('controles-calidad.duplicado', $codigo)
+            : redirect()->route('controles-calidad');
+    }
+
+    /**
      * "Completar información faltante": crea (si no existe) la Fraccion
      * que le corresponde al código y la asigna a los radios de ese código
      * que todavía tengan fraccion_id nulo.

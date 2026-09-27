@@ -108,6 +108,14 @@
                         @else
                             <p class="text-muted small mb-0">Sin listado cargado en ningún esquema — no hay gráfico disponible.</p>
                         @endif
+
+                        @if (!$radio->historicoComoReemplazado && $info['localidades'] == 0 && $info['entidades'] == 0)
+                            <form method="POST" action="{{ route('controles-calidad.eliminar-radio', [$codigo, $radio->id]) }}" class="mt-2"
+                                  onsubmit="return confirm('Eliminar el radio #{{ $radio->id }} definitivamente? No tiene localidades, entidades ni histórico asociado.');">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar (sin relaciones)</button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </div>
