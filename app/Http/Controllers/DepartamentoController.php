@@ -13,11 +13,14 @@ class DepartamentoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    /**
+     * Sin provincia: listado global (antes forzaba provincia_id=8, Entre
+     * Ríos, a lo pincho cuando no se pasaba ninguna - bug real, "listado de
+     * departamentos" sin más nunca mostraba todos, mostraba siempre Entre Ríos).
+     */
     public function index(Provincia $provincia = null)
     {
-        //  
-    if (is_null($provincia)) {$provincia=8;}
-    	return view('deptos', ['provincia' => $provincia]);
+        return view('deptos', ['provincia' => $provincia]);
     }
 
     /**
@@ -93,6 +96,31 @@ class DepartamentoController extends Controller
               }])->get(); 
 	    //Departamento::where('provincia_id',$provincia)->get(['codigo','nombre']);
         return datatables()->of($deptos)
+            ->make(true);
+    }
+
+    /**
+     * Igual que list($provincia) pero sin scope a una sola provincia - es
+     * el endpoint que faltaba para que el listado "de todas" (que la propia
+     * vista deptos.blade.php ya contemplaba en el título) funcionara.
+     * Respeta el scope de operativo actual si hay uno seleccionado (via
+     * EscopadoPorOperativoHeredado en Departamento).
+     */
+    public function listAll()
+    {
+        $deptos = Departamento::with(['provincia', 'localidades'])
+            ->withCount(['localidades' => function ($query) {
+                $query->where('codigo', 'not like', '%000');
+            }, 'fracciones', 'radios',
+              'radios as segmentados' => function ($query) {
+                $query->whereNotNull('resultado');
+            }])
+            ->get();
+
+        return datatables()->of($deptos)
+            ->addColumn('provincia', function (Departamento $depto) {
+                return optional($depto->provincia)->nombre ?? '(sin provincia)';
+            })
             ->make(true);
     }
 

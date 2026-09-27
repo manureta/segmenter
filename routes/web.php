@@ -83,6 +83,7 @@ Route::post('operativos/{operativo}/publicar', 'OperativoController@publicar')->
 Route::post('operativos/{operativo}/despublicar', 'OperativoController@despublicar')->name('operativos.despublicar');
 Route::post('operativos/{operativo}/seleccionar', 'OperativoController@seleccionar')->name('operativos.seleccionar');
 Route::post('operativo-actual/quitar', 'OperativoController@deseleccionar')->name('operativos.deseleccionar');
+Route::get('controles-calidad', 'ControlCalidadController@index')->name('controles-calidad');
 Route::get('/setup/test', 'SetupController@testFlash')->name('setup.test');
 Route::get('/setup/{esquema}', 'SetupController@permisos')->name('setup.permisos');
 Route::get('/setup/fixSRID/{esquema}/{srid}',
@@ -230,16 +231,23 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ---------- PROVINCIAS --------
-Route::get('provs-list', 'ProvinciaController@provsList'); 
+Route::get('provs-list', 'ProvinciaController@provsList');
 Route::get('provs','ProvinciaController@index');
+// prov/deptos y prov/list van ANTES de prov/{provincia} a propósito: son
+// más específicos, pero como Laravel matchea rutas en orden de
+// declaración, si el wildcard queda primero se come "deptos"/"list" como
+// si fueran un id de provincia (bug real encontrado navegando: probar
+// /prov/deptos tiraba "sintaxis de entrada no válida para tipo bigint:
+// «deptos»" porque prov/{provincia} lo capturaba primero).
+Route::get('prov/deptos/{provincia?}','DepartamentoController@index');
+Route::get('prov/list/{provincia}','DepartamentoController@list');
 Route::get('prov/{provincia}','ProvinciaController@show');
 Route::post('prov/{provincia}','ProvinciaController@show_post');
 Route::delete('provincia/{provincia}','ProvinciaController@destroy')->name('provincia.delete');
 
 // ---------- DEPARTAMENTOS --------
 
-Route::get('prov/deptos/{provincia?}','DepartamentoController@index');
-Route::get('prov/list/{provincia}','DepartamentoController@list');
+Route::post('deptos-list', 'DepartamentoController@listAll')->name('deptos-list');
 Route::get('depto/{departamento}','DepartamentoController@show');
 Route::post('depto/{departamento}','DepartamentoController@show_post');
 

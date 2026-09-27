@@ -34,5 +34,6 @@ import './bootstrap';
 import Chart from 'chart.js/auto';
 window.Chart = Chart;
 import 'chartjs-adapter-date-fns';
+import './datatable-helper';
 
 
