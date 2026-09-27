@@ -55,7 +55,11 @@ class Operativo extends Model
         return $this->belongsToMany('App\Model\Paraje', 'operativo__paraje');
     }
 
-    // Nota: operativo__base_antartica existe como tabla pivot pero la tabla
-    // base_antartica que debería referenciar no está creada todavía en este
-    // esquema (confirmado); por eso no hay relación baseAntarticas() acá.
+    /**
+     * Relación con Bases Antárticas que participan de este Operativo.
+     */
+    public function baseAntarticas()
+    {
+        return $this->belongsToMany('App\Model\BaseAntartica', 'operativo__base_antartica');
+    }
 }
