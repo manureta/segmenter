@@ -52,6 +52,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url('/prov/deptos') }}"> Departamentos </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ route('vias') }}"> Vías </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{ url('/archivos') }}"> Archivos </a> </li>
                         <li class="nav-item"><a class="nav-link" href="{{

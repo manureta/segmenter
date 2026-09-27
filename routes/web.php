@@ -252,6 +252,8 @@ Route::delete('provincia/{provincia}','ProvinciaController@destroy')->name('prov
 // ---------- DEPARTAMENTOS --------
 
 Route::post('deptos-list', 'DepartamentoController@listAll')->name('deptos-list');
+Route::get('vias', 'ViaController@index')->name('vias');
+Route::post('vias-list', 'ViaController@listAll')->name('vias-list');
 Route::get('depto/{departamento}','DepartamentoController@show');
 Route::post('depto/{departamento}','DepartamentoController@show_post');
 
