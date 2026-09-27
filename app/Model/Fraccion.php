@@ -6,8 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Fraccion extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativoHeredado;
+
     //
     protected $table='fraccion';
+
+    public function rutaHaciaOperativo()
+    {
+        return 'departamento.provincia';
+    }
 
     protected $fillable = [
         'codigo'

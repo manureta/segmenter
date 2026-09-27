@@ -13,6 +13,8 @@ use Auth;
 
 class Radio extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativoHeredado;
+
     //
     protected $table = 'radio';
     protected $primaryKey = 'id';
@@ -22,6 +24,11 @@ class Radio extends Model
     private $_resultado;
     private $_esquema;
     private $_esquemas;
+
+    public function rutaHaciaOperativo()
+    {
+        return 'fraccion.departamento.provincia';
+    }
 
     public function observacion()
     {

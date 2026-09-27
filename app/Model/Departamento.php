@@ -6,8 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Departamento extends Model
 {
+    use \App\Model\Concerns\EscopadoPorOperativoHeredado;
+
     //
     protected $table = 'departamentos';
+
+    public function rutaHaciaOperativo()
+    {
+        return 'provincia';
+    }
 
     protected $fillable = [
         'codigo','nombre','provincia_id'
