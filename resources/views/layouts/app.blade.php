@@ -30,102 +30,91 @@
 <body>
     @yield('divs4content')
     <div id="app">
-            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
-            <div class="container">
-                <div class="m-0 p-0 text-center" >
-                <a class="navbar-brand text-uppercase" href="{{ url('/') }}">
-                <img src="/images/mandarina.svg" width="30" height="30" class="d-inline-block align-top" alt="">
+            {{-- Barra 1: logo + usuario. Sólo esto - nada de menú acá, para que
+                 no crezca de nuevo con cada pantalla nueva que se agregue. --}}
+            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm py-1">
+            <div class="container d-flex justify-content-between align-items-center">
+                <a class="navbar-brand text-uppercase d-flex align-items-center mb-0" href="{{ url('/') }}">
+                    <img src="/images/mandarina.svg" width="26" height="26" class="d-inline-block align-top mr-2" alt="">
                     {{ config('app.name', 'App sin nombre') }}
+                    <small class="text-muted ml-2" style="text-transform: none;">{{ Git::branch() }}</small>
                 </a>
-                <div style="position: relative; top: -15px; height:0px;">{{ Git::branch() }}</div>
+                <div class="d-flex align-items-center">
+                    @guest
+                        <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
+                        @if (Route::has('register'))
+                            <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
+                        @endif
+                    @else
+                        <a class="nav-link" alt="Ver/Ocultar mensajes" title="Ver/Ocultar Mensajes flash"
+                           onclick="$('div.alert').toggle();" style="cursor: pointer;">Mensajes</a>
+                        <div class="dropdown">
+                            <a id="navbarDropdownLogin" class="nav-link dropdown-toggle d-flex align-items-center"
+                               href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <img src="{{Auth::user()->getProfilePicURL()}}" style="border-radius: 50%;" width="26" height="26" class="mr-1" alt="Foto de perfil">
+                                {{ Auth::user()->name }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownLogin">
+                                <a class="dropdown-item" href="{{ route('perfil') }}">{{ __('Perfil') }}</a>
+                                <a class="dropdown-item" href="{{ route('archivos') }}">{{ __('Archivos') }}</a>
+                                @if (Auth::user()->hasRole('Super Admin'))
+                                    <a class="dropdown-item" href="{{ route('admin.listarUsuarios') }}">{{ __('Usuarios') }}</a>
+                                @endif
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{ route('logout') }}"
+                                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    {{ __('Logout') }}
+                                </a>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </div>
+                        </div>
+                    @endguest
                 </div>
+            </div>
+        </nav>
+
+        @auth
+            {{-- Barra 2: menús agrupados (antes eran 10 links sueltos en fila,
+                 dejaron de entrar/leerse) + contexto (operativo/alcance). --}}
+            <nav class="navbar navbar-expand-md navbar-light bg-light border-bottom">
+            <div class="container">
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <!-- Left Side Of Navbar -->
-                    <ul class="navbar-nav mr-auto btn">
-                    @auth
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/home') }}"> Inicio </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/provs') }}"> Provincias </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/prov/deptos') }}"> Departamentos </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/aglos') }}"> Aglomerados </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/localidades') }}"> Localidades </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('vias') }}"> Vías </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/segmentador') }}"> Cargar </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/archivos') }}"> Archivos </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{
-                        url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip')
-                        }}"> Descargar plugin </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url('/guia') }}"> Guia </a> </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('controles-calidad') }}"> Controles </a> </li>
-                    @endauth
-                    @include('includes.operativo_selector')
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/home') }}">Inicio</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown">Territorio</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{{ url('/provs') }}">Provincias</a>
+                                <a class="dropdown-item" href="{{ url('/prov/deptos') }}">Departamentos</a>
+                                <a class="dropdown-item" href="{{ url('/aglos') }}">Aglomerados</a>
+                                <a class="dropdown-item" href="{{ url('/localidades') }}">Localidades</a>
+                                <a class="dropdown-item" href="{{ route('vias') }}">Vías</a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown">Trabajo</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{{ url('/segmentador') }}">Cargar</a>
+                                <a class="dropdown-item" href="{{ url('/archivos') }}">Archivos</a>
+                                <a class="dropdown-item" href="{{ url('/guia') }}">Guía</a>
+                                <a class="dropdown-item" href="{{ url('https://github.com/bichav/salidagrafica-atlas/archive/master.zip') }}">Descargar plugin</a>
+                            </div>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="{{ route('controles-calidad') }}">Controles</a></li>
                     </ul>
-
-                    <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
-                        <!-- Authentication Links -->
-                        @guest
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-                            </li>
-                            @if (Route::has('register'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
-                                </li>
-                            @endif
-                        @else
-                            <li class="nav-item btn mr-4">
-                                    <a class="nav-link" alt="Ver/Ocultar mensajes"
-                                    title="Ver/Ocultar Menaajes flash"
-                                    onclick="$('div.alert').toggle();">
-                                    Mensajes</a>
-                            </li>
-                            <li class="nav-item dropdown" style="display: flex; align-items: center;">
-                                <img src="{{Auth::user()->getProfilePicURL()}}" style="border-radius: 50%;" width="30" height="30" class="d-inline-block align-top" alt="Foto de perfil">
-                                <a id="navbarDropdownLogin" class="nav-link
-                                dropdown-toggle" href="#logout" role="button"
-                                aria-controls=logout
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre> {{ Auth::user()->name }} <span class="caret"></span>
-                                </a>
-
-                                <div id=logout class="dropdown-menu dropdown-menu-right collapse"
-                                aria-labelledby="navbarDropdownLogin">
-                                <!-- DropDown Of Side Navbar -->
-                                <ul class="navbar-nav ml-auto">
-                                <li class="nav-item dropdown">
-                                  <a class="dropdown-item" href="{{ route('perfil') }}">{{ __('Perfil') }}</a>
-                                </li>
-                                <li class="nav-item dropdown">
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                       onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
-                                        {{ __('Logout') }}
-                                    </a>
-
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                                        @csrf
-                                    </form>
-                                </li>
-                                <li class="nav-item dropdown">
-                                  <a class="dropdown-item" href="{{ route('archivos') }}">{{ __('Archivos') }}</a>
-                                </li>
-                                @if (Auth::user()->hasRole('Super Admin'))
-                                <li class="nav-item dropdown">
-                                  <a class="dropdown-item" href="{{ route('admin.listarUsuarios') }}">{{ __('Usuarios') }}</a>
-                                </li>
-                                @endif
-                              </ul>
-                             </div>
-
-                            </li>
-                        @endguest
+                        @include('includes.operativo_selector')
+                        @include('includes.objeto_actual_selector')
                     </ul>
                 </div>
             </div>
         </nav>
+        @endauth
         <main class="py-4">
 		    @include('flash::message')
             @yield('content')
