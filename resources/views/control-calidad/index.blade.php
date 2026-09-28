@@ -27,13 +27,22 @@
                 <p class="text-success mb-0">Sin problemas.</p>
             @else
                 <table class="table table-sm">
-                    <thead><tr><th>Id</th><th>Código</th><th>Nombre</th></tr></thead>
+                    <thead><tr><th>Id</th><th>Código</th><th>Nombre</th><th></th></tr></thead>
                     <tbody>
                         @foreach ($controles['radios_sin_fraccion'] as $radio)
                             <tr>
                                 <td>{{ $radio->id }}</td>
                                 <td>{{ $radio->codigo }}</td>
                                 <td>{{ $radio->nombre ?? '—' }}</td>
+                                <td>
+                                    @if (!$radio->localidades_count && !$radio->entidades_count && !$radio->historico_como_vigente_count && !$radio->historico_como_reemplazado_count)
+                                        <form method="POST" action="{{ route('controles-calidad.eliminar-radio', [$radio->codigo, $radio->id]) }}"
+                                              onsubmit="return confirm('Eliminar el radio #{{ $radio->id }} ({{ $radio->codigo }})? No tiene fracción, localidades, entidades ni histórico.');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -52,7 +52,12 @@ class ControlCalidadController extends Controller
         // radio sin fraccion_id de por sí nunca matchea ningún operativo,
         // así que sin este bypass el reporte daría "0 problemas" siempre
         // que hay un operativo activo, aunque el problema exista).
+        // withCount para poder mostrar el botón "Eliminar" en la vista sin
+        // disparar una query de relaciones por fila (mismo chequeo de
+        // seguridad real que hace eliminarRadio(), acá sólo decide si se
+        // muestra el botón).
         return Radio::withoutGlobalScope('operativo_actual')
+            ->withCount(['localidades', 'entidades', 'historicoComoVigente', 'historicoComoReemplazado'])
             ->whereNull('fraccion_id')->orderBy('codigo')->get();
     }
 
