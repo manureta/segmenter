@@ -6,6 +6,12 @@
        159 mil+ filas — la columna Localidad/Aglomerado puede aparecer vacía si esa localidad
        todavía no está cargada en esta base (dataset parcial), no es necesariamente un error.
    </p>
+   @if ($tipoFiltro)
+       <div class="alert alert-info">
+           Filtrando por tipo exacto: <code>{{ $tipoFiltro }}</code>
+           <a href="{{ route('vias') }}" class="float-right">Quitar filtro</a>
+       </div>
+   @endif
     <table class="table table-bordered table-striped table-hover order-column" id="laravel_datatable">
        <thead>
           <tr>
@@ -38,7 +44,15 @@
           { searchable: false, data: 'aglomerado', name: 'aglomerado' }
       ];
 
-      iniciarDataTable('#laravel_datatable', '{{ route("vias-list") }}', columnas, { pageLength: 25 });
+      var tipoFiltro = @json($tipoFiltro);
+      iniciarDataTable('#laravel_datatable', '{{ route("vias-list") }}', columnas, {
+          pageLength: 25,
+          ajax: {
+              url: '{{ route("vias-list") }}',
+              type: 'POST',
+              data: function (d) { if (tipoFiltro) { d.tipo = tipoFiltro; } },
+          },
+      });
 } );
 </script>
 @endsection
