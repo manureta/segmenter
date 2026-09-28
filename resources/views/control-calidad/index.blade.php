@@ -8,8 +8,16 @@
     <p class="text-muted">
         Objetos que no cumplen algún control esperado. Estas tablas ignoran el operativo
         actual seleccionado a propósito — un problema de datos es un problema, esté o no
-        vinculado a lo que estés mirando en este momento.
+        vinculado a lo que estés mirando en este momento. El alcance <strong>geográfico</strong>
+        (provincia/objeto elegido arriba, o tu restricción fija) sí aplica.
     </p>
+
+    <div class="alert {{ $alcance['global'] ? 'alert-info' : 'alert-warning' }} d-flex justify-content-between align-items-center">
+        <span>{{ $alcance['etiqueta'] }}</span>
+        @if (!$alcance['global'])
+            <span class="small text-muted">Cambiá el alcance desde el menú de arriba (Alcance: ...).</span>
+        @endif
+    </div>
 
     <div class="card mb-3">
         <div class="card-header">

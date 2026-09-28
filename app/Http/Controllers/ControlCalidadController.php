@@ -8,6 +8,7 @@ use App\Model\Departamento;
 use App\Model\Localidad;
 use App\Model\HistoricoRadio;
 use App\Model\ViaTipoCorreccion;
+use App\Support\AlcanceGeografico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -29,14 +30,58 @@ class ControlCalidadController extends Controller
 
     public function index()
     {
+        $alcance = $this->alcanceActivo();
+
         $controles = [
-            'radios_sin_fraccion' => $this->radiosSinFraccion(),
-            'radios_codigo_duplicado' => $this->radiosConCodigoDuplicado(),
-            'localidades_sin_departamento' => $this->localidadesSinDepartamento(),
-            'vias_correccion_revertida' => $this->viasConCorreccionRevertida(),
+            'radios_sin_fraccion' => $this->radiosSinFraccion($alcance['prefijos']),
+            'radios_codigo_duplicado' => $this->radiosConCodigoDuplicado($alcance['prefijos']),
+            'localidades_sin_departamento' => $this->localidadesSinDepartamento($alcance['prefijos']),
+            'vias_correccion_revertida' => $this->viasConCorreccionRevertida($alcance['prefijos']),
         ];
 
-        return view('control-calidad.index', compact('controles'));
+        return view('control-calidad.index', compact('controles', 'alcance'));
+    }
+
+    /**
+     * "Mantener scope y filtro para usuario con alcance restringido, sólo
+     * aclarar que no es global o cuándo sí lo es" (pedido explícito):
+     * - Restringido (provincias asignadas fijo) + nada elegido -> filtra
+     *   por sus provincias permitidas, aclarando que no es global.
+     * - Restringido + eligió un objeto propio -> filtra por ese objeto.
+     * - Restringido + el objeto elegido en sesión escapó de lo permitido
+     *   (p.ej. le cambiaron la asignación después) -> no confía en la
+     *   sesión, cae a sus provincias permitidas igual.
+     * - Sin restricción + nada elegido -> reporte GLOBAL de verdad.
+     * - Sin restricción + eligió un objeto -> filtra por ese objeto (puede
+     *   volver a Global cuando quiera, ver objeto_actual_selector.blade.php).
+     */
+    private function alcanceActivo(): array
+    {
+        $codigosPermitidos = auth()->user()->codigosProvinciaPermitidos();
+
+        if (app()->bound('objetoActual') && app('objetoActual')) {
+            $tipo = app('objetoActualTipo');
+            $objeto = app('objetoActual');
+            $prefijos = AlcanceGeografico::prefijosDe($tipo, $objeto);
+
+            if (AlcanceGeografico::permitidoPara($codigosPermitidos, $prefijos)) {
+                return [
+                    'prefijos' => $prefijos,
+                    'etiqueta' => 'Filtrado por: '.AlcanceGeografico::etiquetaDe($tipo, $objeto),
+                    'global' => false,
+                ];
+            }
+        }
+
+        if ($codigosPermitidos !== null) {
+            return [
+                'prefijos' => $codigosPermitidos,
+                'etiqueta' => 'No es global - restringido a tu(s) provincia(s): '.implode(', ', $codigosPermitidos),
+                'global' => false,
+            ];
+        }
+
+        return ['prefijos' => null, 'etiqueta' => 'Reporte GLOBAL (todas las provincias)', 'global' => true];
     }
 
     /**
@@ -44,21 +89,29 @@ class ControlCalidadController extends Controller
      * puede ubicar el radio en ninguna provincia (y `fraccion` en general
      * no tiene forma de asociarlo a nada más arriba en la jerarquía).
      */
-    private function radiosSinFraccion()
+    private function radiosSinFraccion(?array $prefijos)
     {
         // withoutGlobalScope a propósito: un control de calidad tiene que
         // ver TODO el dato sucio, no lo que quede filtrado por el operativo
         // que alguien tenga seleccionado en su sesión en este momento (un
         // radio sin fraccion_id de por sí nunca matchea ningún operativo,
         // así que sin este bypass el reporte daría "0 problemas" siempre
-        // que hay un operativo activo, aunque el problema exista).
+        // que hay un operativo activo, aunque el problema exista). El
+        // alcance geográfico (provincia/objeto elegido, o restricción fija
+        // del usuario) es un filtro aparte, no el scope de operativo.
         // withCount para poder mostrar el botón "Eliminar" en la vista sin
         // disparar una query de relaciones por fila (mismo chequeo de
         // seguridad real que hace eliminarRadio(), acá sólo decide si se
         // muestra el botón).
-        return Radio::withoutGlobalScope('operativo_actual')
+        $query = Radio::withoutGlobalScope('operativo_actual')
             ->withCount(['localidades', 'entidades', 'historicoComoVigente', 'historicoComoReemplazado'])
-            ->whereNull('fraccion_id')->orderBy('codigo')->get();
+            ->whereNull('fraccion_id');
+
+        if ($prefijos !== null) {
+            AlcanceGeografico::filtrarPorPrefijos($query, 'codigo', $prefijos);
+        }
+
+        return $query->orderBy('codigo')->get();
     }
 
     /**
@@ -66,14 +119,13 @@ class ControlCalidadController extends Controller
      * pasar nunca (el código es la identidad territorial del radio), pero
      * los 2 huérfanos encontrados comparten código exacto.
      */
-    private function radiosConCodigoDuplicado()
+    private function radiosConCodigoDuplicado(?array $prefijos)
     {
-        $codigosDuplicados = Radio::withoutGlobalScope('operativo_actual')
-            ->select('codigo')
-            ->whereNotNull('codigo')
-            ->groupBy('codigo')
-            ->havingRaw('count(*) > 1')
-            ->pluck('codigo');
+        $base = Radio::withoutGlobalScope('operativo_actual')->select('codigo')->whereNotNull('codigo');
+        if ($prefijos !== null) {
+            AlcanceGeografico::filtrarPorPrefijos($base, 'codigo', $prefijos);
+        }
+        $codigosDuplicados = $base->groupBy('codigo')->havingRaw('count(*) > 1')->pluck('codigo');
 
         return Radio::withoutGlobalScope('operativo_actual')
             ->whereIn('codigo', $codigosDuplicados)->orderBy('codigo')->get();
@@ -86,10 +138,13 @@ class ControlCalidadController extends Controller
      * ubicarla en la jerarquía (afecta el conteo "Localidades" del listado
      * de Departamentos, entre otras cosas).
      */
-    private function localidadesSinDepartamento()
+    private function localidadesSinDepartamento(?array $prefijos)
     {
-        return Localidad::withoutGlobalScope('operativo_actual')
-            ->whereDoesntHave('departamentos')->orderBy('codigo')->get();
+        $query = Localidad::withoutGlobalScope('operativo_actual')->whereDoesntHave('departamentos');
+        if ($prefijos !== null) {
+            AlcanceGeografico::filtrarPorPrefijos($query, 'codigo', $prefijos);
+        }
+        return $query->orderBy('codigo')->get();
     }
 
     /**
@@ -98,10 +153,19 @@ class ControlCalidadController extends Controller
      * entera, así que esto pasa cada vez que se recarga cartografía sin
      * reaplicar el diccionario después.
      */
-    private function viasConCorreccionRevertida()
+    private function viasConCorreccionRevertida(?array $prefijos)
     {
-        return ViaTipoCorreccion::get()->map(function ($correccion) {
-            $correccion->revertidos = DB::table('vias')->where('tipo', $correccion->tipo_original)->count();
+        return ViaTipoCorreccion::get()->map(function ($correccion) use ($prefijos) {
+            $query = DB::table('vias')->where('tipo', $correccion->tipo_original);
+            if ($prefijos !== null) {
+                // vias.codloc es prov(2)+dpto(3)+loc(3) - un prefijo de
+                // radio/fracción (9/7 dígitos) no matchea nada acá, así que
+                // se recorta a los primeros 2 (nivel provincia, el único
+                // que vias comparte de forma confiable con el resto).
+                $codigosProvincia = collect($prefijos)->map(fn ($p) => substr($p, 0, 2))->unique()->all();
+                AlcanceGeografico::filtrarPorPrefijos($query, 'codloc', $codigosProvincia);
+            }
+            $correccion->revertidos = $query->count();
             return $correccion;
         })->filter(fn ($c) => $c->revertidos > 0)->values();
     }

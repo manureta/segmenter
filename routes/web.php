@@ -83,6 +83,9 @@ Route::post('operativos/{operativo}/publicar', 'OperativoController@publicar')->
 Route::post('operativos/{operativo}/despublicar', 'OperativoController@despublicar')->name('operativos.despublicar');
 Route::post('operativos/{operativo}/seleccionar', 'OperativoController@seleccionar')->name('operativos.seleccionar');
 Route::post('operativo-actual/quitar', 'OperativoController@deseleccionar')->name('operativos.deseleccionar');
+Route::post('objeto-actual/seleccionar', 'ObjetoActualController@seleccionar')->name('objeto-actual.seleccionar');
+Route::post('objeto-actual/subir', 'ObjetoActualController@subirNivel')->name('objeto-actual.subir');
+Route::post('objeto-actual/quitar', 'ObjetoActualController@deseleccionar')->name('objeto-actual.quitar');
 Route::get('controles-calidad', 'ControlCalidadController@index')->name('controles-calidad');
 Route::get('controles-calidad/radios-duplicados/{codigo}', 'ControlCalidadController@verDuplicado')->name('controles-calidad.duplicado');
 Route::post('controles-calidad/radios-duplicados/{codigo}/historico', 'ControlCalidadController@marcarHistorico')->name('controles-calidad.marcar-historico');

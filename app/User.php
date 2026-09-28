@@ -57,6 +57,36 @@ class User extends Authenticatable
       } else {
         return "/images/mandarina.svg";
       }
- 
+
+    }
+
+    /**
+     * Provincias asignadas fijo (alcance geográfico restringido, pedido
+     * explícito) - asignación manual por un admin, no autoservicio.
+     */
+    public function provincias()
+    {
+        return $this->belongsToMany('App\Model\Provincia', 'user_provincia');
+    }
+
+    /**
+     * Sin ninguna provincia asignada, o Super Admin: sin restricción (ve
+     * todo). Con 1+ asignadas: sólo ve esas provincias (y su jerarquía)
+     * en los reportes que respeten esto.
+     */
+    public function tieneAlcanceRestringido()
+    {
+        return !$this->hasRole('Super Admin') && $this->provincias()->exists();
+    }
+
+    /**
+     * null = sin restricción (global). Array = códigos de 2 dígitos de
+     * las provincias permitidas.
+     */
+    public function codigosProvinciaPermitidos()
+    {
+        return $this->tieneAlcanceRestringido()
+            ? $this->provincias()->pluck('codigo')->all()
+            : null;
     }
 }
