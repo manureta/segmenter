@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Model\Radio;
 use App\Model\Fraccion;
 use App\Model\Departamento;
+use App\Model\Localidad;
 use App\Model\HistoricoRadio;
+use App\Model\ViaTipoCorreccion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -30,6 +32,8 @@ class ControlCalidadController extends Controller
         $controles = [
             'radios_sin_fraccion' => $this->radiosSinFraccion(),
             'radios_codigo_duplicado' => $this->radiosConCodigoDuplicado(),
+            'localidades_sin_departamento' => $this->localidadesSinDepartamento(),
+            'vias_correccion_revertida' => $this->viasConCorreccionRevertida(),
         ];
 
         return view('control-calidad.index', compact('controles'));
@@ -68,6 +72,33 @@ class ControlCalidadController extends Controller
 
         return Radio::withoutGlobalScope('operativo_actual')
             ->whereIn('codigo', $codigosDuplicados)->orderBy('codigo')->get();
+    }
+
+    /**
+     * Localidad sin ninguna fila en localidad_departamento (ver
+     * SIGeo-documentacion-general.md §2.13) - 678 de 907 hoy. Localidad no
+     * tiene departamento_id propio, así que sin esta fila no hay forma de
+     * ubicarla en la jerarquía (afecta el conteo "Localidades" del listado
+     * de Departamentos, entre otras cosas).
+     */
+    private function localidadesSinDepartamento()
+    {
+        return Localidad::withoutGlobalScope('operativo_actual')
+            ->whereDoesntHave('departamentos')->orderBy('codigo')->get();
+    }
+
+    /**
+     * Correcciones de vias.tipo (ver §2.14) donde el valor sucio original
+     * volvió a aparecer - vias es una tabla derivada que se reconstruye
+     * entera, así que esto pasa cada vez que se recarga cartografía sin
+     * reaplicar el diccionario después.
+     */
+    private function viasConCorreccionRevertida()
+    {
+        return ViaTipoCorreccion::get()->map(function ($correccion) {
+            $correccion->revertidos = DB::table('vias')->where('tipo', $correccion->tipo_original)->count();
+            return $correccion;
+        })->filter(fn ($c) => $c->revertidos > 0)->values();
     }
 
     /**

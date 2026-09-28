@@ -73,5 +73,73 @@
             @endif
         </div>
     </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Localidades sin departamento vinculado
+            <span class="badge badge-pill {{ $controles['localidades_sin_departamento']->count() ? 'badge-danger' : 'badge-success' }} float-right">
+                {{ $controles['localidades_sin_departamento']->count() }}
+            </span>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted">
+                Ninguna fila en <code>localidad_departamento</code> — sin vínculo, el listado de
+                Departamentos cuenta 0 localidades ahí aunque existan (ver §2.13). Entrá al detalle del
+                departamento correspondiente (<code>/depto/{id}</code>) para reparar el vínculo.
+            </p>
+            @if ($controles['localidades_sin_departamento']->isEmpty())
+                <p class="text-success mb-0">Sin problemas.</p>
+            @else
+                <table class="table table-sm">
+                    <thead><tr><th>Id</th><th>Código</th><th>Nombre</th></tr></thead>
+                    <tbody>
+                        @foreach ($controles['localidades_sin_departamento']->take(30) as $localidad)
+                            <tr>
+                                <td>{{ $localidad->id }}</td>
+                                <td>{{ $localidad->codigo }}</td>
+                                <td>{{ $localidad->nombre ?? '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @if ($controles['localidades_sin_departamento']->count() > 30)
+                    <p class="small text-muted mb-0">... y {{ $controles['localidades_sin_departamento']->count() - 30 }} más.</p>
+                @endif
+            @endif
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Correcciones de Vías revertidas
+            <span class="badge badge-pill {{ $controles['vias_correccion_revertida']->count() ? 'badge-danger' : 'badge-success' }} float-right">
+                {{ $controles['vias_correccion_revertida']->count() }}
+            </span>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted">
+                <code>vias</code> se reconstruye entera desde el origen (ver §2.14) — si un tipo ya
+                corregido antes vuelve a aparecer, es que se recargó cartografía sin reaplicar el
+                diccionario después.
+            </p>
+            @if ($controles['vias_correccion_revertida']->isEmpty())
+                <p class="text-success mb-0">Sin problemas.</p>
+            @else
+                <table class="table table-sm">
+                    <thead><tr><th>Original</th><th>Corregido</th><th>Filas revertidas</th></tr></thead>
+                    <tbody>
+                        @foreach ($controles['vias_correccion_revertida'] as $correccion)
+                            <tr>
+                                <td><code>{{ $correccion->tipo_original }}</code></td>
+                                <td>{{ $correccion->tipo_corregido }}</td>
+                                <td>{{ $correccion->revertidos }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <a href="{{ route('vias.resumen') }}" class="btn btn-sm btn-outline-primary">Ir a reaplicar</a>
+            @endif
+        </div>
+    </div>
 </div>
 @endsection
