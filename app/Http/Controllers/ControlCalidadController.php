@@ -9,12 +9,15 @@ use App\Model\Localidad;
 use App\Model\HistoricoRadio;
 use App\Model\ViaTipoCorreccion;
 use App\Support\AlcanceGeografico;
+use App\Http\Controllers\Concerns\TieneAlcanceGeografico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class ControlCalidadController extends Controller
 {
+    use TieneAlcanceGeografico;
+
     /**
      * "Informes con objetos que no cumplen algún control" - primer control
      * concreto: los 2 radios huérfanos encontrados probando el scope de
@@ -40,48 +43,6 @@ class ControlCalidadController extends Controller
         ];
 
         return view('control-calidad.index', compact('controles', 'alcance'));
-    }
-
-    /**
-     * "Mantener scope y filtro para usuario con alcance restringido, sólo
-     * aclarar que no es global o cuándo sí lo es" (pedido explícito):
-     * - Restringido (provincias asignadas fijo) + nada elegido -> filtra
-     *   por sus provincias permitidas, aclarando que no es global.
-     * - Restringido + eligió un objeto propio -> filtra por ese objeto.
-     * - Restringido + el objeto elegido en sesión escapó de lo permitido
-     *   (p.ej. le cambiaron la asignación después) -> no confía en la
-     *   sesión, cae a sus provincias permitidas igual.
-     * - Sin restricción + nada elegido -> reporte GLOBAL de verdad.
-     * - Sin restricción + eligió un objeto -> filtra por ese objeto (puede
-     *   volver a Global cuando quiera, ver objeto_actual_selector.blade.php).
-     */
-    private function alcanceActivo(): array
-    {
-        $codigosPermitidos = auth()->user()->codigosProvinciaPermitidos();
-
-        if (app()->bound('objetoActual') && app('objetoActual')) {
-            $tipo = app('objetoActualTipo');
-            $objeto = app('objetoActual');
-            $prefijos = AlcanceGeografico::prefijosDe($tipo, $objeto);
-
-            if (AlcanceGeografico::permitidoPara($codigosPermitidos, $prefijos)) {
-                return [
-                    'prefijos' => $prefijos,
-                    'etiqueta' => 'Filtrado por: '.AlcanceGeografico::etiquetaDe($tipo, $objeto),
-                    'global' => false,
-                ];
-            }
-        }
-
-        if ($codigosPermitidos !== null) {
-            return [
-                'prefijos' => $codigosPermitidos,
-                'etiqueta' => 'No es global - restringido a tu(s) provincia(s): '.implode(', ', $codigosPermitidos),
-                'global' => false,
-            ];
-        }
-
-        return ['prefijos' => null, 'etiqueta' => 'Reporte GLOBAL (todas las provincias)', 'global' => true];
     }
 
     /**

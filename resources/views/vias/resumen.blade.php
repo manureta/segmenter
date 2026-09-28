@@ -4,6 +4,16 @@
     <h2>Vías de circulación — resumen</h2>
     <p><a href="{{ route('vias') }}">Ver listado completo &rarr;</a></p>
 
+    <div class="alert {{ $alcance['global'] ? 'alert-info' : 'alert-warning' }} d-flex justify-content-between align-items-center">
+        <span>{{ $alcance['etiqueta'] }}</span>
+        @if (!$alcance['global'])
+            <span class="small text-muted">
+                vias sólo comparte el nivel provincia de forma confiable — el filtro se acota ahí,
+                aunque hayas elegido un departamento/fracción/radio más fino.
+            </span>
+        @endif
+    </div>
+
     <div class="row text-center mb-4">
         <div class="col-md-3">
             <div class="card"><div class="card-body">
@@ -44,11 +54,11 @@
 
     <div class="row">
         <div class="col-md-6 mb-4">
-            <h5>Top 25 tipos más frecuentes</h5>
+            <h5>Top 10 tipos más frecuentes</h5>
             <table class="table table-sm table-bordered">
                 <thead><tr><th>#</th><th>Tipo</th><th>Cantidad</th></tr></thead>
                 <tbody>
-                    @foreach ($top25Tipos as $fila)
+                    @foreach ($top10Tipos as $fila)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td><a href="{{ route('vias', ['tipo' => $fila->tipo]) }}">{{ $fila->tipo }}</a></td>
@@ -124,6 +134,51 @@
                     </tbody>
                 </table>
             @endif
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h5>Top 25 nombres más repetidos</h5>
+            <p class="small text-muted">
+                Mismo nombre de calle en distintas localidades (esperable — "San Martín"/"Belgrano" se
+                repiten en casi todos los pueblos). Comparado sin distinguir mayúsculas/minúsculas.
+            </p>
+            <table class="table table-sm table-bordered">
+                <thead><tr><th>#</th><th>Nombre</th><th>Repeticiones</th><th>Localidades</th></tr></thead>
+                <tbody>
+                    @foreach ($top25NombresRepetidos as $fila)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $fila->nombre }}</td>
+                            <td>{{ number_format($fila->cantidad) }}</td>
+                            <td>{{ number_format($fila->localidades) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h5>Top 25 por longitud (metros)</h5>
+            <p class="small text-muted">
+                <code>ST_Length(geom::geography)</code> — geom está en SRID 4326 (WGS84), sin el cast a
+                <code>geography</code> daría grados, no metros. Longitudes extremas (cientos de km) suelen
+                ser un <code>ST_Union</code> agrupando muchos segmentos reales bajo el mismo nombre/código,
+                no una sola calle real de ese largo — dato a revisar, no necesariamente un error de carga.
+            </p>
+            <table class="table table-sm table-bordered">
+                <thead><tr><th>#</th><th>Nombre</th><th>Tipo</th><th>Metros</th></tr></thead>
+                <tbody>
+                    @foreach ($top25PorMetros as $fila)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $fila->nombre }}</td>
+                            <td>{{ $fila->tipo }}</td>
+                            <td>{{ number_format($fila->metros) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 
