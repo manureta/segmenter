@@ -158,5 +158,21 @@
             @endif
         </div>
     </div>
+
+    @can('Administrar Vias')
+        <div class="card mb-3">
+            <div class="card-header">Actualizar vías desde un esquema</div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    Revisar caso por caso qué cambió en <code>&lt;esquema&gt;.arc</code> respecto a
+                    <code>public.vias</code> (altas/bajas/modificaciones) y elegir cuáles aplicar — en
+                    vez de reconstruir toda la tabla desde cero con <code>MyDB::juntaVias()</code>.
+                </p>
+                <a href="{{ route('controles-calidad.vias.index') }}" class="btn btn-sm btn-outline-primary">
+                    Selector de esquemas + historial
+                </a>
+            </div>
+        </div>
+    @endcan
 </div>
 @endsection

@@ -8,8 +8,10 @@ use App\Model\Departamento;
 use App\Model\Localidad;
 use App\Model\HistoricoRadio;
 use App\Model\ViaTipoCorreccion;
+use App\Model\ViaActualizacion;
 use App\Support\AlcanceGeografico;
 use App\Http\Controllers\Concerns\TieneAlcanceGeografico;
+use App\MyDB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -296,5 +298,80 @@ class ControlCalidadController extends Controller
 
         flash('Fracción '.$fraccion->codigo.' ('.$depto->nombre.') lista. Se completó fraccion_id en '.$actualizados.' radio(s).')->success();
         return redirect()->route('controles-calidad.duplicado', $codigo);
+    }
+
+    /**
+     * Panel de admin: selector de esquemas con diferencias pendientes
+     * (MyDB::esquemasConViasPendientes(), puede tardar — recorre todos los
+     * esquemas) + historial de actualizaciones ya aplicadas (última
+     * actualización por esquema sale de acá mismo, por MAX(created_at)).
+     */
+    public function viasIndex()
+    {
+        $this->autorizarVias();
+
+        $pendientes = MyDB::esquemasConViasPendientes();
+        $historial = ViaActualizacion::with('usuario')->latest('created_at')->take(50)->get();
+        $ultimaPorEsquema = ViaActualizacion::selectRaw('esquema, max(created_at) as ultima')
+            ->groupBy('esquema')->pluck('ultima', 'esquema');
+
+        return view('control-calidad.vias-index', compact('pendientes', 'historial', 'ultimaPorEsquema'));
+    }
+
+    /**
+     * Diff caso por caso entre public.vias y la cartografía actual de un
+     * esquema (ver MyDB::diffViasDesdeEsquema()) — para revisar antes de
+     * aplicar nada, a diferencia de MyDB::juntaVias() que reconstruye toda
+     * la tabla a ciegas.
+     */
+    public function revisarVias($esquema)
+    {
+        $this->autorizarVias();
+
+        $diff = MyDB::diffViasDesdeEsquema($esquema);
+        $historialEsquema = ViaActualizacion::with('usuario')->where('esquema', $esquema)->latest('created_at')->get();
+
+        return view('control-calidad.vias-esquema', compact('esquema', 'diff', 'historialEsquema'));
+    }
+
+    /**
+     * Aplica sólo los casos que el usuario tildó en revisarVias() — no hay
+     * "aplicar todo" implícito, cada link va explícito en el request.
+     * Exige motivo/origen del cambio y queda registrado junto al usuario en
+     * vias_actualizaciones (MyDB::aplicarCasosVias()).
+     */
+    public function aplicarVias(Request $request, $esquema)
+    {
+        $this->autorizarVias();
+
+        $data = $request->validate([
+            'links' => 'required|array|min:1',
+            'links.*' => 'string',
+            'motivo' => 'required|string|max:2000',
+        ]);
+
+        $diff = MyDB::diffViasDesdeEsquema($esquema);
+        $casosSeleccionados = collect($diff['casos'])->whereIn('link', $data['links'])->values()->all();
+
+        $resultado = MyDB::aplicarCasosVias($esquema, $casosSeleccionados, auth()->id(), $data['motivo']);
+
+        $resultado['aplicados'] > 0
+            ? flash($resultado['mensaje'])->success()
+            : flash($resultado['mensaje'])->warning();
+
+        return redirect()->route('controles-calidad.vias', $esquema);
+    }
+
+    /**
+     * "Administrar Vias" concentra tanto ver el selector/historial como
+     * aplicar cambios — public.vias es una tabla compartida por todo el
+     * sistema, no hay una versión "de solo lectura" de esto que tenga
+     * sentido exponer a cualquier usuario.
+     */
+    private function autorizarVias()
+    {
+        if (! auth()->user()->can('Administrar Vias')) {
+            abort(403, 'Necesitás el permiso "Administrar Vias".');
+        }
     }
 }
