@@ -1,0 +1,293 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "01",
+                "radio": "01",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.225,
+                    -38.150000000000006
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "01",
+                "radio": "03",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.225,
+                    -38.05
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "02",
+                "radio": "01",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.225,
+                    -37.95
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "02",
+                "radio": "03",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.225,
+                    -37.849999999999994
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "01",
+                "radio": "02",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.075,
+                    -38.150000000000006
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "01",
+                "radio": "04",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.075,
+                    -38.05
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "02",
+                "radio": "02",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.075,
+                    -37.95
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "001",
+                "codloc": null,
+                "frac": "02",
+                "radio": "04",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -65.075,
+                    -37.849999999999994
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "01",
+                "radio": "01",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.925,
+                    -38.150000000000006
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "01",
+                "radio": "03",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.925,
+                    -38.05
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "02",
+                "radio": "01",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.925,
+                    -37.95
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "02",
+                "radio": "03",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.925,
+                    -37.849999999999994
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "01",
+                "radio": "02",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.775,
+                    -38.150000000000006
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "01",
+                "radio": "04",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.775,
+                    -38.05
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "02",
+                "radio": "02",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.775,
+                    -37.95
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "prov": "98",
+                "depto": "002",
+                "codloc": null,
+                "frac": "02",
+                "radio": "04",
+                "mza": "01"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.775,
+                    -37.849999999999994
+                ]
+            }
+        }
+    ]
+}

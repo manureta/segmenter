@@ -115,6 +115,28 @@ php artisan migrate
 php artisan db:seed
 ```
 
+- `db:seed` por sí solo deja la app sin Departamento/Fracción/Radio/topología
+  cargados (esos seeders vienen comentados en `DatabaseSeeder` porque cargan
+  el dump nacional completo). Para tener la jerarquía completa operable en
+  minutos con datos ficticios (provincia demo, código 98, con topología real
+  generada por `cargarTopologia()`), correr aparte:
+```bash
+php artisan db:seed --class=DemoProvinciaSeeder
+```
+
+- Para probar además el flujo real de carga de listado de viviendas
+  (`/segmentador`: C1 + cartografía → `listado_geo`), con columnas y
+  convención de lados/manzana reales, no inventadas:
+```bash
+php artisan db:seed --class=DemoListadoSeeder
+```
+  Esto carga directo a la base (sin pasar por el form). Para probar el form
+  en sí con un operario real, los mismos datos están descargables en
+  `app/developer_docs/demo/`: `c1_e98001001.csv` (listado, ya con el
+  delimitador `|` que espera el importador) y `shapefile_arc/` +
+  `shapefile_lab/` (cartografía, shp/shx/dbf/prj) — se puede subir esa
+  carpeta tal cual por `/segmentador`.
+
 - Para configurar las tareas programadas de laravel agregamos al cron (vía crontab -e)
 ```
 * * * * * cd segmenter && php artisan schedule:run >> /dev/null 2>&1

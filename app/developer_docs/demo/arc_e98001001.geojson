@@ -1,0 +1,731 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C010",
+                "codigo10": 10,
+                "codigo20": 10,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 10",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010101001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38.2
+                    ],
+                    [
+                        -65.15,
+                        -38.2
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C010",
+                "codigo10": 10,
+                "codigo20": 10,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 10",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010102001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38.2
+                    ],
+                    [
+                        -65,
+                        -38.2
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C011",
+                "codigo10": 11,
+                "codigo20": 11,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 11",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010103001",
+                "mzad": "980010010101001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38.1
+                    ],
+                    [
+                        -65.15,
+                        -38.1
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C011",
+                "codigo10": 11,
+                "codigo20": 11,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 11",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010104001",
+                "mzad": "980010010102001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38.1
+                    ],
+                    [
+                        -65,
+                        -38.1
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C012",
+                "codigo10": 12,
+                "codigo20": 12,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 12",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010201001",
+                "mzad": "980010010103001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38
+                    ],
+                    [
+                        -65.15,
+                        -38
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C012",
+                "codigo10": 12,
+                "codigo20": 12,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 12",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010202001",
+                "mzad": "980010010104001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38
+                    ],
+                    [
+                        -65,
+                        -38
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C013",
+                "codigo10": 13,
+                "codigo20": 13,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 13",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010203001",
+                "mzad": "980010010201001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -37.9
+                    ],
+                    [
+                        -65.15,
+                        -37.9
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C013",
+                "codigo10": 13,
+                "codigo20": 13,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 13",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": 1,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010204001",
+                "mzad": "980010010202001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -37.9
+                    ],
+                    [
+                        -65,
+                        -37.9
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C014",
+                "codigo10": 14,
+                "codigo20": 14,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 14",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": null,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010203001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -37.8
+                    ],
+                    [
+                        -65.15,
+                        -37.8
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "C014",
+                "codigo10": 14,
+                "codigo20": 14,
+                "tipo": "CALLE",
+                "nombre": "Calle Demo 14",
+                "ancho": 10,
+                "anchomed": 10,
+                "ladoi": null,
+                "ladod": 3,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010204001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -37.8
+                    ],
+                    [
+                        -65,
+                        -37.8
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A020",
+                "codigo10": 20,
+                "codigo20": 20,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 20",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": null,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010101001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38.2
+                    ],
+                    [
+                        -65.3,
+                        -38.1
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A020",
+                "codigo10": 20,
+                "codigo20": 20,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 20",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": null,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010103001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38.1
+                    ],
+                    [
+                        -65.3,
+                        -38
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A020",
+                "codigo10": 20,
+                "codigo20": 20,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 20",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": null,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010201001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -38
+                    ],
+                    [
+                        -65.3,
+                        -37.9
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A020",
+                "codigo10": 20,
+                "codigo20": 20,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 20",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": null,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": null,
+                "mzad": "980010010203001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.3,
+                        -37.9
+                    ],
+                    [
+                        -65.3,
+                        -37.8
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A021",
+                "codigo10": 21,
+                "codigo20": 21,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 21",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010101001",
+                "mzad": "980010010102001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38.2
+                    ],
+                    [
+                        -65.15,
+                        -38.1
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A021",
+                "codigo10": 21,
+                "codigo20": 21,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 21",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010103001",
+                "mzad": "980010010104001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38.1
+                    ],
+                    [
+                        -65.15,
+                        -38
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A021",
+                "codigo10": 21,
+                "codigo20": 21,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 21",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010201001",
+                "mzad": "980010010202001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -38
+                    ],
+                    [
+                        -65.15,
+                        -37.9
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A021",
+                "codigo10": 21,
+                "codigo20": 21,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 21",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": 4,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010203001",
+                "mzad": "980010010204001"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65.15,
+                        -37.9
+                    ],
+                    [
+                        -65.15,
+                        -37.8
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A022",
+                "codigo10": 22,
+                "codigo20": 22,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 22",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010102001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65,
+                        -38.2
+                    ],
+                    [
+                        -65,
+                        -38.1
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A022",
+                "codigo10": 22,
+                "codigo20": 22,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 22",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010104001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65,
+                        -38.1
+                    ],
+                    [
+                        -65,
+                        -38
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A022",
+                "codigo10": 22,
+                "codigo20": 22,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 22",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010202001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65,
+                        -38
+                    ],
+                    [
+                        -65,
+                        -37.9
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "nomencla": "A022",
+                "codigo10": 22,
+                "codigo20": 22,
+                "tipo": "AVENIDA",
+                "nombre": "Avenida Demo 22",
+                "ancho": 14,
+                "anchomed": 14,
+                "ladoi": 2,
+                "ladod": null,
+                "desdei": 100,
+                "hastai": 198,
+                "desded": 101,
+                "hastad": 199,
+                "mzai": "980010010204001",
+                "mzad": null
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -65,
+                        -37.9
+                    ],
+                    [
+                        -65,
+                        -37.8
+                    ]
+                ]
+            }
+        }
+    ]
+}

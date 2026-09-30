@@ -1,0 +1,39 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "codigo": "98",
+                "nombre": "Provincia Demo"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            -65.3,
+                            -38.2
+                        ],
+                        [
+                            -64.7,
+                            -38.2
+                        ],
+                        [
+                            -64.7,
+                            -37.8
+                        ],
+                        [
+                            -65.3,
+                            -37.8
+                        ],
+                        [
+                            -65.3,
+                            -38.2
+                        ]
+                    ]
+                ]
+            }
+        }
+    ]
+}
