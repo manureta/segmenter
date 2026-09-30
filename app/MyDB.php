@@ -2363,6 +2363,181 @@ order by 1,2
        return 'Se actualizo vias con '.$result.' registros';
     }
 
+    /**
+     * Calcula, caso por caso, la diferencia entre public.vias (para UN
+     * esquema) y lo que su cartografía (<esquema>.arc) dice ahora — sin
+     * tocar nada. Reemplaza el enfoque de juntaVias() (dropea y reconstruye
+     * TODA public.vias, de TODOS los esquemas, cada vez) por algo que se
+     * puede revisar y aplicar de a un caso por vez, vía
+     * MyDB::aplicarCasosVias().
+     *
+     * Cada caso identifica una vía por su `link` (= nomencla||nombre||tipo,
+     * la clave que ya usa indec.vias()) y trae su `accion`:
+     *   - "nueva": está en la cartografía, no en vias todavía.
+     *   - "eliminada": está en vias, ya no aparece en la cartografía.
+     *   - "modificada": mismo link, cambió tipo/nombre/código/numeración
+     *     (comparado con IS DISTINCT FROM, así que también detecta cuando
+     *     un valor pasó a o desde NULL).
+     *
+     * El esquema sigue la convención "e"+prov(2)+dpto(3)+codloc(3) (ver
+     * MyDB::getLocs()/moverDBF()); esos 8 caracteres son exactamente el
+     * valor que indec.vias()/vias_de_esquema() calculan como columna
+     * "codloc" (substr(mzai/mzad,0,9)).
+     *
+     * @return array{status:string,mensaje:string,casos:array}
+     */
+    public static function diffViasDesdeEsquema($esquema)
+    {
+        if (! Schema::hasTable($esquema.'.arc')) {
+            return ['status' => 'error', 'mensaje' => "Esquema sin tabla arc: $esquema", 'casos' => []];
+        }
+
+        if (! Schema::hasTable('public.vias')) {
+            return [
+                'status' => 'sin_vias',
+                'mensaje' => 'public.vias todavía no existe — se crea completa (sin nada que confirmar) en la primera carga.',
+                'casos' => [],
+            ];
+        }
+
+        $codloc = substr($esquema, 1, 8);
+
+        // IS DISTINCT FROM compara también NULLs correctamente (a != NULL da NULL, no true).
+        $criterioCambio = 'a.tipo IS DISTINCT FROM n.tipo OR a.nombre IS DISTINCT FROM n.nombre
+             OR a.codigo IS DISTINCT FROM n.codigo
+             OR a.desdei IS DISTINCT FROM n.desdei OR a.desded IS DISTINCT FROM n.desded
+             OR a.hastai IS DISTINCT FROM n.hastai OR a.hastad IS DISTINCT FROM n.hastad';
+
+        $filas = DB::select("
+            SELECT coalesce(n.link, a.link) as link,
+                   n.tipo as tipo_nuevo, n.nombre as nombre_nuevo,
+                   a.tipo as tipo_actual, a.nombre as nombre_actual,
+                   a.codigo as codigo_actual, n.codigo as codigo_nuevo,
+                   a.desdei as desdei_actual, n.desdei as desdei_nuevo,
+                   a.desded as desded_actual, n.desded as desded_nuevo,
+                   a.hastai as hastai_actual, n.hastai as hastai_nuevo,
+                   a.hastad as hastad_actual, n.hastad as hastad_nuevo
+            FROM indec.vias_de_esquema(?) n
+            FULL OUTER JOIN (SELECT * FROM public.vias WHERE codloc = ?) a ON a.link = n.link
+            WHERE a.link IS NULL OR n.link IS NULL OR ($criterioCambio)
+        ", [$esquema, $codloc]);
+
+        $casos = array_map(function ($f) {
+            $accion = $f->tipo_actual === null ? 'nueva' : ($f->tipo_nuevo === null ? 'eliminada' : 'modificada');
+
+            // "Completado": ningún campo pisa un valor ya cargado por otro
+            // distinto — lo único que cambia es que un campo vacío (código o
+            // numeración/altura) pasó a tener un valor real. Candidato obvio
+            // para aceptar sin revisar mucho (a diferencia de un valor real
+            // reemplazado por otro, que sí conviene mirar).
+            $sobrescribeAlgo = false;
+            foreach ([['codigo_actual', 'codigo_nuevo'], ['desdei_actual', 'desdei_nuevo'],
+                      ['desded_actual', 'desded_nuevo'], ['hastai_actual', 'hastai_nuevo'],
+                      ['hastad_actual', 'hastad_nuevo']] as [$colActual, $colNuevo]) {
+                if ($f->$colActual !== null && $f->$colActual != $f->$colNuevo) {
+                    $sobrescribeAlgo = true;
+                    break;
+                }
+            }
+            $completado = $accion === 'modificada' && ! $sobrescribeAlgo;
+
+            return [
+                'link' => $f->link,
+                'accion' => $accion,
+                'tipo' => $f->tipo_nuevo ?? $f->tipo_actual,
+                'nombre' => $f->nombre_nuevo ?? $f->nombre_actual,
+                'tipo_anterior' => $accion === 'modificada' ? $f->tipo_actual : null,
+                'nombre_anterior' => $accion === 'modificada' ? $f->nombre_actual : null,
+                'completado' => $completado,
+            ];
+        }, $filas);
+
+        return [
+            'status' => 'ok',
+            'mensaje' => count($casos)
+                ? count($casos).' caso(s) para revisar en '.$esquema.'.'
+                : 'Sin diferencias: vias ya está al día con la cartografía de '.$esquema.'.',
+            'casos' => $casos,
+        ];
+    }
+
+    /**
+     * Cuenta, por esquema, las diferencias pendientes contra public.vias
+     * (ver MyDB::diffViasDesdeEsquema()) — para poblar un selector de
+     * "esquemas con diferencias" sin traer el detalle caso por caso de
+     * cada uno. Recorre TODOS los esquemas e________ con tabla arc, así
+     * que en una base con cientos de esquemas puede tardar — pensado para
+     * una pantalla de admin que se visita a demanda, no para cada carga
+     * de página.
+     */
+    public static function esquemasConViasPendientes()
+    {
+        return DB::select('SELECT * FROM indec.esquemas_con_vias_pendientes() ORDER BY esquema');
+    }
+
+    /**
+     * Aplica SOLO los casos elegidos (subconjunto de lo que devuelve
+     * MyDB::diffViasDesdeEsquema()) — no es todo o nada. Para cada caso:
+     * borra la versión vieja si existía en vias (no-op si era "nueva") e
+     * inserta la versión fresca si todavía existe en la cartografía
+     * (no-op si era "eliminada") — una "modificada" queda como
+     * borrar+insertar en un solo paso. Reaplica via_tipo_correccion al
+     * final sobre lo tocado, y deja registro en vias_actualizaciones
+     * (esquema, usuario, motivo/origen, y el detalle de casos aplicados)
+     * — ese registro es a la vez el historial y, por MAX(created_at)
+     * agrupado por esquema, el "última actualización" de cada uno.
+     *
+     * @param  array  $casosSeleccionados  subconjunto de los 'casos' que devuelve diffViasDesdeEsquema()
+     */
+    public static function aplicarCasosVias($esquema, array $casosSeleccionados, $userId = null, $motivo = null)
+    {
+        if (empty($casosSeleccionados)) {
+            return ['aplicados' => 0, 'mensaje' => 'Nada seleccionado, no se aplicó ningún cambio.'];
+        }
+
+        $links = array_column($casosSeleccionados, 'link');
+        $codloc = substr($esquema, 1, 8);
+        $arrayPg = '{'.implode(',', array_map(fn ($l) => '"'.str_replace('"', '\"', $l).'"', $links)).'}';
+
+        try {
+            DB::beginTransaction();
+
+            if (! Schema::hasTable('public.vias')) {
+                DB::statement('CREATE TABLE public.vias AS SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $arrayPg]);
+                self::darPermisosTabla('vias');
+                self::createIndex('public', 'vias', 'codloc');
+                self::createIndex('public', 'vias', 'geom', 'gist');
+            } else {
+                DB::statement('DELETE FROM public.vias WHERE codloc = ? AND link = ANY(?)', [$codloc, $arrayPg]);
+                DB::statement('INSERT INTO public.vias SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $arrayPg]);
+            }
+
+            DB::statement(
+                'UPDATE public.vias v SET tipo = c.tipo_corregido
+                 FROM via_tipo_correccion c
+                 WHERE v.codloc = ? AND v.tipo = c.tipo_original',
+                [$codloc]
+            );
+
+            $agregados = count(array_filter($casosSeleccionados, fn ($c) => $c['accion'] !== 'eliminada'));
+            $borrados = count(array_filter($casosSeleccionados, fn ($c) => $c['accion'] !== 'nueva'));
+
+            \App\Model\ViaActualizacion::create([
+                'esquema' => $esquema, 'user_id' => $userId, 'motivo' => $motivo,
+                'agregados' => $agregados, 'borrados' => $borrados, 'casos' => $casosSeleccionados,
+            ]);
+
+            DB::commit();
+        } catch (QueryException $e) {
+            DB::Rollback();
+            Log::error("No se pudo aplicar casos de vias del esquema $esquema: $e");
+
+            return ['aplicados' => 0, 'mensaje' => 'Error al aplicar los cambios — revisar logs.'];
+        }
+
+        return ['aplicados' => count($links), 'mensaje' => count($links).' caso(s) aplicado(s) para '.$esquema.'.'];
+    }
+
     // MVT de manzanas
     //
     public static function mvtManzanas(Provincia $oProv)
