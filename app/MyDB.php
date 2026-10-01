@@ -2497,7 +2497,7 @@ order by 1,2
      */
     private static function miniSvg(
         $svgPathActual, $bboxActual, $svgPathNuevo, $bboxNuevo, $tipo = null, $proveedorFondo = 'esri',
-        array $contextoPaths = [], $anchoDisplay = 190, $altoDisplay = 120
+        array $contextoPaths = [], $anchoDisplay = 190, $altoDisplay = 120, $hueco = false
     ) {
         if ($svgPathActual === null && $svgPathNuevo === null) {
             return null;
@@ -2544,11 +2544,29 @@ order by 1,2
         // Halo blanco debajo de cada trazo para que se note sobre cualquier
         // fondo (foto satelital, no solo un color plano) -- sin esto una
         // línea fina se pierde contra terreno/edificios variados.
-        $trazo = function ($path, $dasharray = null) use ($color, $stroke, $halo) {
+        //
+        // En modo "hueco" (solo detalleVia()) en vez de pintar la línea
+        // entera se deja ver el mapa de fondo A TRAVÉS del trazo: una
+        // máscara (blanco grueso menos negro más fino = un anillo) tapa el
+        // centro del trazo coloreado, mostrando borde de color y centro
+        // transparente -- el truco estándar de SVG para "tubo hueco" sin
+        // tener que calcular geometría offset aparte en SQL.
+        $trazo = function ($path, $dasharray = null) use ($color, $stroke, $halo, $hueco) {
             if (! $path) {
                 return '';
             }
             $dash = $dasharray ? ' stroke-dasharray="'.$dasharray.'"' : '';
+
+            if ($hueco) {
+                $id = 'via-hueco-'.substr(md5($path.$color.$dasharray), 0, 10);
+                $borde = max($stroke * 0.4, 0.00002);
+
+                return '<mask id="'.$id.'" maskUnits="userSpaceOnUse">'
+                    .'<path d="'.e($path).'" stroke="#fff" stroke-width="'.$stroke.'" fill="none" stroke-linecap="round"'.$dash.' />'
+                    .'<path d="'.e($path).'" stroke="#000" stroke-width="'.max($stroke - 2 * $borde, 0).'" fill="none" stroke-linecap="round"'.$dash.' />'
+                    .'</mask>'
+                    .'<path d="'.e($path).'" fill="none" stroke="'.$color.'" stroke-width="'.$stroke.'" stroke-linecap="round"'.$dash.' mask="url(#'.$id.')" />';
+            }
 
             return '<path d="'.e($path).'" fill="none" stroke="#fff" stroke-width="'.$halo.'" stroke-linecap="round" opacity="0.85" />'
                 .'<path d="'.e($path).'" fill="none" stroke="'.$color.'" stroke-width="'.$stroke.'" stroke-linecap="round"'.$dash.' />';
@@ -2949,7 +2967,7 @@ order by 1,2
         $svg = self::miniSvg(
             $actual->svg_path ?? null, $actual->bbox ?? null,
             $nuevo->svg_path ?? null, $nuevo->bbox ?? null,
-            $tipo, $proveedorFondo, $contextoPaths, 520, 340
+            $tipo, $proveedorFondo, $contextoPaths, 520, 340, true
         );
 
         $historial = \App\Model\ViaActualizacion::where('esquema', $esquema)
