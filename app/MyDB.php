@@ -2668,24 +2668,44 @@ order by 1,2
         if ($proveedor === 'osm') {
             $centroLon = ($x0 + $x1) / 2;
             $centroLat = ($y0 + $y1) / 2;
-            $anchoGrados = max($x1 - $x0, 0.00001);
-            $zoom = (int) max(0, min(19, floor(log(360 * $anchoPx / ($anchoGrados * 256), 2))));
 
-            $n = 2 ** $zoom;
-            $tileX = (int) floor(($centroLon + 180) / 360 * $n);
-            $latRad = deg2rad($centroLat);
-            $tileY = (int) floor((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n);
-
-            $tileLon = fn ($tx) => $tx / $n * 360 - 180;
-            $tileLat = function ($ty) use ($n) {
+            $tileLon = fn ($tx, $n) => $tx / $n * 360 - 180;
+            $tileLat = function ($ty, $n) {
                 $rad = M_PI - 2 * M_PI * $ty / $n;
 
                 return rad2deg(atan(sinh($rad)));
             };
 
+            // Una tesela es siempre 256x256, sin importar $anchoPx -- el
+            // zoom tiene que elegirse para que la tesela CUBRA todo el
+            // bbox pedido, no para que tenga buena resolución a $anchoPx
+            // (eso dejaba teselas más chicas que el área pedida, se veía
+            // solo un pedazo del fondo). Se arranca en una estimación y se
+            // baja el zoom hasta que la tesela realmente lo cubra.
+            $anchoGrados = max($x1 - $x0, 0.00001);
+            $zoom = (int) max(0, min(19, floor(log(360 * $anchoPx / ($anchoGrados * 256), 2))));
+
+            do {
+                $n = 2 ** $zoom;
+                $tileX = (int) floor(($centroLon + 180) / 360 * $n);
+                $latRad = deg2rad($centroLat);
+                $tileY = (int) floor((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n);
+
+                $tLon0 = $tileLon($tileX, $n);
+                $tLon1 = $tileLon($tileX + 1, $n);
+                $tLat0 = $tileLat($tileY + 1, $n); // sur
+                $tLat1 = $tileLat($tileY, $n);     // norte
+
+                $cubre = $tLon0 <= $x0 && $tLon1 >= $x1 && $tLat0 <= $y0 && $tLat1 >= $y1;
+                if (! $cubre) {
+                    $zoom--;
+                }
+            } while (! $cubre && $zoom >= 0);
+            $zoom = max($zoom, 0);
+
             return [
                 'url' => "https://tile.openstreetmap.org/$zoom/$tileX/$tileY.png",
-                'bbox' => [$tileLon($tileX), $tileLat($tileY + 1), $tileLon($tileX + 1), $tileLat($tileY)],
+                'bbox' => [$tLon0, $tLat0, $tLon1, $tLat1],
             ];
         }
 
