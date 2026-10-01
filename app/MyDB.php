@@ -2623,52 +2623,55 @@ order by 1,2
     }
 
     /**
-     * Imagen de fondo (satelital u otra) para el bbox geográfico dado
-     * [x0,y0,x1,y1] en lon/lat (EPSG:4326). Devuelve ['url'=>, 'bbox'=>]
-     * -- no siempre 'bbox' es el mismo que se pidió: "osm" sirve una
-     * tesela entera (grilla fija, no bbox arbitrario), así que el llamador
-     * tiene que usar el bbox REAL devuelto para posicionar la imagen, no
-     * el que pidió, o queda desalineada.
+     * Fragmento <image> (uno o varios) para cuando el espacio del SVG YA es
+     * geográfico (lon/lat con Y invertida, como miniSvg() de vías) -- usa
+     * el bbox REAL de cada tesela que devuelve tileBackgroundUrl(), no el
+     * pedido (ver ahí).
+     */
+    private static function fondoImgEnEspacioGeografico($proveedor, array $bboxPedido, $anchoPx, $altoPx)
+    {
+        $html = '';
+        foreach (self::tileBackgroundUrl($proveedor, $bboxPedido, $anchoPx, $altoPx) as $tile) {
+            [$gx0, $gy0, $gx1, $gy1] = $tile['bbox'];
+            $html .= '<image class="svg-fondo" href="'.e($tile['url']).'" x="'.$gx0.'" y="'.(-$gy1).'" '
+                .'width="'.($gx1 - $gx0).'" height="'.($gy1 - $gy0).'" preserveAspectRatio="none" />';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Teselas de fondo (satelital u otra) para el bbox geográfico dado
+     * [x0,y0,x1,y1] en lon/lat (EPSG:4326). Devuelve una lista de
+     * ['url'=>, 'bbox'=>] -- una sola para "esri" (export directo, imagen
+     * exacta al bbox pedido), varias en grilla para "osm" (tile server de
+     * grilla fija: una sola tesela a buena resolución casi nunca cubre el
+     * bbox completo, así que se arma una grilla de teselas vecinas en vez
+     * de una sola estirada/pixelada). El `bbox` de cada tesela es el REAL
+     * (no el pedido), así que el llamador tiene que usarlo para posicionar
+     * cada `<image>`, no el bbox que pidió, o queda desalineado.
      *
      * Dos proveedores públicos, sin API key (dependencia externa real --
      * si el servicio cae o cambia, el fondo simplemente no carga, el SVG
      * de las líneas sigue andando igual porque <image> y <path> son
      * independientes):
      *
-     * - "esri": World Imagery (ArcGIS Online), export directo por bbox --
-     *   acepta lon/lat sin reproyectar, un solo request, imagen exacta.
+     * - "esri": World Imagery (ArcGIS Online), export directo por bbox.
      * - "osm": tile.openstreetmap.org, el tile server oficial de
-     *   OpenStreetMap (mapa de calles, no satelital) -- XYZ estándar, no
-     *   bbox: se calcula qué tesela cubre el centro del área pedida al
-     *   zoom más cercano, y se devuelve el bbox REAL de esa tesela (no el
-     *   bbox pedido). (staticmap.openstreetmap.de, usado antes acá, dejó
-     *   de resolver -- cambiado a la infraestructura oficial.)
+     *   OpenStreetMap (mapa de calles, no satelital). (Antes acá estaba
+     *   staticmap.openstreetmap.de, que dejó de resolver -- cambiado a la
+     *   infraestructura oficial.)
+     *
+     * @return array<array{url:string,bbox:array}>
      */
-    /**
-     * Fragmento <image> para cuando el espacio del SVG YA es geográfico
-     * (lon/lat con Y invertida, como miniSvg() de vías) -- usa el bbox REAL
-     * que devuelve tileBackgroundUrl() (no siempre el pedido, ver ahí).
-     */
-    private static function fondoImgEnEspacioGeografico($proveedor, array $bboxPedido, $anchoPx, $altoPx)
-    {
-        $tile = self::tileBackgroundUrl($proveedor, $bboxPedido, $anchoPx, $altoPx);
-        if (! $tile) {
-            return '';
-        }
-        [$gx0, $gy0, $gx1, $gy1] = $tile['bbox'];
-
-        return '<image class="svg-fondo" href="'.e($tile['url']).'" x="'.$gx0.'" y="'.(-$gy1).'" '
-            .'width="'.($gx1 - $gx0).'" height="'.($gy1 - $gy0).'" preserveAspectRatio="none" />';
-    }
-
     private static function tileBackgroundUrl($proveedor, array $bboxGeografico, $anchoPx, $altoPx)
     {
         [$x0, $y0, $x1, $y1] = $bboxGeografico;
 
         if ($proveedor === 'osm') {
-            $centroLon = ($x0 + $x1) / 2;
-            $centroLat = ($y0 + $y1) / 2;
-
+            $maxTeselas = 9; // tope prudente: cada caso de un diff puede pedir su propio fondo
+            $lonToX = fn ($lon, $n) => (int) floor(($lon + 180) / 360 * $n);
+            $latToY = fn ($lat, $n) => (int) floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / M_PI) / 2 * $n);
             $tileLon = fn ($tx, $n) => $tx / $n * 360 - 180;
             $tileLat = function ($ty, $n) {
                 $rad = M_PI - 2 * M_PI * $ty / $n;
@@ -2676,46 +2679,46 @@ order by 1,2
                 return rad2deg(atan(sinh($rad)));
             };
 
-            // Una tesela es siempre 256x256, sin importar $anchoPx -- el
-            // zoom tiene que elegirse para que la tesela CUBRA todo el
-            // bbox pedido, no para que tenga buena resolución a $anchoPx
-            // (eso dejaba teselas más chicas que el área pedida, se veía
-            // solo un pedazo del fondo). Se arranca en una estimación y se
-            // baja el zoom hasta que la tesela realmente lo cubra.
-            $anchoGrados = max($x1 - $x0, 0.00001);
-            $zoom = (int) max(0, min(19, floor(log(360 * $anchoPx / ($anchoGrados * 256), 2))));
+            // Estimación de zoom por resolución deseada (una tesela de
+            // referencia a $anchoPx px) y se baja hasta que la GRILLA de
+            // teselas que cubre el bbox entre dentro de $maxTeselas -- más
+            // zoom = teselas más chicas geográficamente = hace falta más
+            // cantidad para cubrir lo mismo, así que esto converge solo.
+            $zoom = (int) max(0, min(19, floor(log(360 * $anchoPx / (max($x1 - $x0, 0.00001) * 256), 2))));
 
             do {
                 $n = 2 ** $zoom;
-                $tileX = (int) floor(($centroLon + 180) / 360 * $n);
-                $latRad = deg2rad($centroLat);
-                $tileY = (int) floor((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n);
-
-                $tLon0 = $tileLon($tileX, $n);
-                $tLon1 = $tileLon($tileX + 1, $n);
-                $tLat0 = $tileLat($tileY + 1, $n); // sur
-                $tLat1 = $tileLat($tileY, $n);     // norte
-
-                $cubre = $tLon0 <= $x0 && $tLon1 >= $x1 && $tLat0 <= $y0 && $tLat1 >= $y1;
-                if (! $cubre) {
+                $txMin = $lonToX($x0, $n);
+                $txMax = $lonToX($x1, $n);
+                $tyMin = $latToY($y1, $n); // norte = tileY menor
+                $tyMax = $latToY($y0, $n); // sur = tileY mayor
+                $cantidad = ($txMax - $txMin + 1) * ($tyMax - $tyMin + 1);
+                if ($cantidad > $maxTeselas) {
                     $zoom--;
                 }
-            } while (! $cubre && $zoom >= 0);
+            } while ($cantidad > $maxTeselas && $zoom >= 0);
             $zoom = max($zoom, 0);
 
-            return [
-                'url' => "https://tile.openstreetmap.org/$zoom/$tileX/$tileY.png",
-                'bbox' => [$tLon0, $tLat0, $tLon1, $tLat1],
-            ];
+            $tiles = [];
+            for ($tx = $txMin; $tx <= $txMax; $tx++) {
+                for ($ty = $tyMin; $ty <= $tyMax; $ty++) {
+                    $tiles[] = [
+                        'url' => "https://tile.openstreetmap.org/$zoom/$tx/$ty.png",
+                        'bbox' => [$tileLon($tx, $n), $tileLat($ty + 1, $n), $tileLon($tx + 1, $n), $tileLat($ty, $n)],
+                    ];
+                }
+            }
+
+            return $tiles;
         }
 
         // esri (default)
-        return [
+        return [[
             'url' => 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export'
                 .'?bbox='.$x0.','.$y0.','.$x1.','.$y1
                 .'&bboxSR=4326&imageSR=4326&size='.$anchoPx.','.$altoPx.'&format=png&transparent=false&f=image',
             'bbox' => $bboxGeografico,
-        ];
+        ]];
     }
 
     /**
@@ -2849,16 +2852,16 @@ order by 1,2
         $anchoPx = $ratio >= 1 ? $ladoMax : max($ladoMin, round($ladoMax * $ratio));
         $altoPx = $ratio >= 1 ? max($ladoMin, round($ladoMax / $ratio)) : $ladoMax;
 
-        $tile = self::tileBackgroundUrl($proveedorFondo, [$geo->gx0, $geo->gy0, $geo->gx1, $geo->gy1], $anchoPx, $altoPx);
+        $tiles = self::tileBackgroundUrl($proveedorFondo, [$geo->gx0, $geo->gy0, $geo->gx1, $geo->gy1], $anchoPx, $altoPx);
 
         $rect = '<rect x="'.$x0.'" y="'.$rectY.'" width="'.$width.'" height="'.$height.'" fill="#e9ecef" />';
-        $imagen = '';
-        if ($tile) {
-            // El bbox que devuelve tileBackgroundUrl() puede no ser el que
-            // se pidió (osm sirve teselas de grilla fija, no bbox
-            // arbitrario) -- hay que reproyectar ESE bbox real de vuelta al
-            // SRID métrico del esquema para posicionar la imagen bien,
-            // salvo que sea exactamente el mismo que ya se pidió (esri).
+        $imagenes = '';
+        foreach ($tiles as $tile) {
+            // El bbox de cada tesela puede no ser el que se pidió (osm
+            // sirve teselas de grilla fija, no bbox arbitrario) -- hay que
+            // reproyectar ESE bbox real de vuelta al SRID métrico del
+            // esquema para posicionar la imagen bien, salvo que sea
+            // exactamente el que ya se pidió (esri, una sola tesela).
             if ($tile['bbox'] === [$geo->gx0, $geo->gy0, $geo->gx1, $geo->gy1]) {
                 [$ix0, $iy0, $ix1, $iy1] = [$x0, $y0, $x1, $y1];
             } else {
@@ -2866,7 +2869,8 @@ order by 1,2
                 // Campo Inchauspe faja 7) PROJ transforma 4326, pero no al
                 // revés ("could not parse proj string") -- sin esto, un
                 // esquema con ese SRID rompía el SVG entero por un fondo
-                // opcional. Si falla, sigue sin fondo en vez de crashear.
+                // opcional. Si falla, esa tesela se omite en vez de
+                // crashear (las demás pueden seguir andando igual).
                 try {
                     [$tgx0, $tgy0, $tgx1, $tgy1] = $tile['bbox'];
                     $m = DB::selectOne(
@@ -2877,16 +2881,15 @@ order by 1,2
                     [$ix0, $iy0, $ix1, $iy1] = [$m->ix0, $m->iy0, $m->ix1, $m->iy1];
                 } catch (QueryException $e) {
                     Log::warning("fondoSvgParaExtent: no se pudo reproyectar de vuelta a SRID $srid: $e");
-                    $ix0 = null;
+
+                    continue;
                 }
             }
-            $imagen = $ix0 !== null
-                ? '<image class="svg-fondo" href="'.e($tile['url']).'" x="'.$ix0.'" y="'.(-$iy1).'" '
-                    .'width="'.($ix1 - $ix0).'" height="'.($iy1 - $iy0).'" preserveAspectRatio="none" />'
-                : '';
+            $imagenes .= '<image class="svg-fondo" href="'.e($tile['url']).'" x="'.$ix0.'" y="'.(-$iy1).'" '
+                .'width="'.($ix1 - $ix0).'" height="'.($iy1 - $iy0).'" preserveAspectRatio="none" />';
         }
 
-        return $rect.$imagen;
+        return $rect.$imagenes;
     }
 
     /**
