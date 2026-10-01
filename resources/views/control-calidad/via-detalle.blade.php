@@ -32,6 +32,11 @@
         <span class="text-muted">— en gris fino, las demás calles del área (solo contexto)</span>
     </div>
 
+    <p class="small text-muted mb-1">
+        Vista previa aproximada, no es un mapa interactivo — punteado = antes, sólido = nuevo
+        (color por tipo de vía); negro fino con transparencia = otras calles del área, solo de
+        contexto.
+    </p>
     <div class="mb-3">{!! $detalle['svg'] ?? '<p class="text-muted">Sin geometría para mostrar.</p>' !!}</div>
 
     <div class="row">

@@ -61,7 +61,7 @@
                         <th>Tipo</th>
                         <th>Nombre</th>
                         <th>Largo (m)</th>
-                        <th>Geometría <span class="text-muted font-weight-normal">(rojo punteado = antes, azul = nuevo)</span></th>
+                        <th>Geometría (vista previa) <span class="text-muted font-weight-normal">— color por tipo de vía, punteado = antes, sólido = nuevo; negro fino = otras calles del área</span></th>
                         <th>Nota</th>
                     </tr>
                 </thead>

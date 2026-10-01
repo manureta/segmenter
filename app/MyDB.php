@@ -2470,8 +2470,18 @@ order by 1,2
         // cada caso (incluidos los empate, que combinan dos filas SQL
         // distintas), se arma el SVG combinado -- y se descartan los campos
         // crudos de geometría, que no hace falta guardar en el historial.
-        $casos = array_map(function ($c) use ($proveedorFondo) {
-            $c['svg'] = self::miniSvg($c['svg_path_actual'], $c['bbox_actual'], $c['svg_path_nuevo'], $c['bbox_nuevo'], $c['tipo'], $proveedorFondo);
+        //
+        // Incluye calles de contexto igual que detalleVia() -- una consulta
+        // espacial extra POR CASO: en un esquema con miles de diferencias
+        // (los hay, ver hallazgo más abajo) esto puede pesar; es la tabla
+        // de revisión de un admin, no una página pública, así que el
+        // trade-off parece razonable, pero si se nota lento es el primer
+        // lugar donde mirar.
+        $casos = array_map(function ($c) use ($proveedorFondo, $codloc) {
+            $vb = self::miniSvgViewBox($c['bbox_actual'], $c['bbox_nuevo']);
+            $contexto = $vb !== null ? self::contextoCercano($codloc, $c['tipo'], $c['nombre'], $vb[4]) : [];
+
+            $c['svg'] = self::miniSvg($c['svg_path_actual'], $c['bbox_actual'], $c['svg_path_nuevo'], $c['bbox_nuevo'], $c['tipo'], $proveedorFondo, $contexto);
 
             return array_diff_key($c, array_flip(['svg_path_actual', 'bbox_actual', 'svg_path_nuevo', 'bbox_nuevo']));
         }, $casos);
@@ -2927,6 +2937,28 @@ order by 1,2
     }
 
     /**
+     * Otras vías de public.vias cerca del bbox dado (excluyendo la propia
+     * tipo+nombre), para dibujar de contexto -- compartido entre el
+     * preview chico de la tabla de diff y detalleVia(). El área se agranda
+     * 1.5x respecto del bbox pedido: si no, "las otras calles del área"
+     * casi nunca entran en cuadro (el bbox ya viene recortado a la calle
+     * misma, con poco margen).
+     */
+    private static function contextoCercano($codloc, $tipo, $nombre, array $bboxGeografico)
+    {
+        [$x0, $y0, $x1, $y1] = $bboxGeografico;
+        $mx = ($x1 - $x0) * 1.5;
+        $my = ($y1 - $y0) * 1.5;
+
+        return collect(DB::select(
+            'SELECT ST_AsSVG(geom, 0, 8) as svg_path FROM public.vias
+             WHERE codloc = ? AND NOT (trim(tipo) = ? AND trim(nombre) = ?)
+               AND geom && ST_MakeEnvelope(?, ?, ?, ?, 4326)',
+            [$codloc, $tipo, $nombre, $x0 - $mx, $y0 - $my, $x1 + $mx, $y1 + $my]
+        ))->pluck('svg_path')->all();
+    }
+
+    /**
      * Detalle de UNA vía, identificada por tipo+nombre (no por el `link`
      * exacto que llegó) -- dos motivos:
      *
@@ -2983,23 +3015,7 @@ order by 1,2
         }
 
         $vb = self::miniSvgViewBox($actual->bbox ?? null, $nuevo->bbox ?? null);
-        $contextoPaths = [];
-        if ($vb !== null) {
-            [, , , , $bboxGeografico] = $vb;
-            // Área de contexto más amplia que el bbox ajustado de la propia
-            // calle -- si no, "las otras calles del área" casi nunca entran
-            // en cuadro (el bbox de miniSvgViewBox ya está recortado a la
-            // calle misma, con poco margen).
-            [$x0, $y0, $x1, $y1] = $bboxGeografico;
-            $mx = ($x1 - $x0) * 1.5;
-            $my = ($y1 - $y0) * 1.5;
-            $contextoPaths = collect(DB::select(
-                'SELECT ST_AsSVG(geom, 0, 8) as svg_path FROM public.vias
-                 WHERE codloc = ? AND NOT (trim(tipo) = ? AND trim(nombre) = ?)
-                   AND geom && ST_MakeEnvelope(?, ?, ?, ?, 4326)',
-                [$codloc, $tipo, $nombre, $x0 - $mx, $y0 - $my, $x1 + $mx, $y1 + $my]
-            ))->pluck('svg_path')->all();
-        }
+        $contextoPaths = $vb !== null ? self::contextoCercano($codloc, $tipo, $nombre, $vb[4]) : [];
 
         $svg = self::miniSvg(
             $actual->svg_path ?? null, $actual->bbox ?? null,
