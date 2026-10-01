@@ -2533,17 +2533,14 @@ order by 1,2
         $halo = max($width, $height, 0.00005) * 0.06;
 
         // Otras calles del área, de contexto -- no son seleccionables, van
-        // por debajo de todo lo demás. Gris pálido (#adb5bd) sin halo era
-        // invisible en la práctica (se perdía contra el fondo); ahora un
-        // gris bien oscuro + halo blanco fino, igual que el trazo
-        // principal, para que se note pero sin competir con el color por
+        // por debajo de todo lo demás. Negro fino con transparencia (sin
+        // halo): se nota que hay algo ahí sin competir con el color por
         // tipo de la vía que se está revisando.
         $contexto = '';
-        $strokeContexto = $stroke * 0.6;
+        $strokeContexto = max($stroke * 0.4, 0.00001);
         foreach ($contextoPaths as $p) {
             if ($p) {
-                $contexto .= '<path d="'.e($p).'" fill="none" stroke="#fff" stroke-width="'.($strokeContexto * 2).'" stroke-linecap="round" opacity="0.7" />'
-                    .'<path d="'.e($p).'" fill="none" stroke="#343a40" stroke-width="'.$strokeContexto.'" stroke-linecap="round" />';
+                $contexto .= '<path d="'.e($p).'" fill="none" stroke="#000" stroke-width="'.$strokeContexto.'" stroke-linecap="round" opacity="0.5" />';
             }
         }
 
@@ -2565,7 +2562,7 @@ order by 1,2
 
             if ($hueco) {
                 $id = 'via-hueco-'.substr(md5($path.$color.$dasharray), 0, 10);
-                $borde = max($stroke * 0.4, 0.00002);
+                $borde = max($stroke * 0.22, 0.00002); // más centro transparente, borde más fino
                 // mask con maskUnits="userSpaceOnUse" pero SIN x/y/width/height
                 // propios cae al default (-10%,-10%,120%,120%) interpretado
                 // en unidades de usuario -- en coordenadas geográficas chicas
@@ -2930,34 +2927,56 @@ order by 1,2
     }
 
     /**
-     * Detalle de UNA vía: su versión actual en public.vias (si está) y su
-     * versión fresca en la cartografía del esquema (si está) -- las mismas
-     * dos fuentes que diffViasDesdeEsquema(), pero para un solo link, con
-     * SVG grande y las otras calles del área dibujadas de contexto (ver
-     * MyDB::miniSvg(), parámetro $contextoPaths). Incluye el historial de
-     * vias_actualizaciones que tocó este link puntual (como link nuevo o
-     * como link_anterior de un "empate"), no el del esquema entero.
+     * Detalle de UNA vía, identificada por tipo+nombre (no por el `link`
+     * exacto que llegó) -- dos motivos:
      *
-     * @return array|null null si el link no existe ni en vias ni en la cartografía actual
+     * 1. Una calle real suele partirse en varios arcos con `nomencla`
+     *    (y por lo tanto `link`) distinto por tramo. Buscar por link exacto
+     *    solo mostraba el tramo clickeado, el resto quedaba invisible --
+     *    acá se unen TODOS los tramos que comparten tipo+nombre en una sola
+     *    geometría.
+     * 2. `nombre` trae datos sucios reales (espacios sin trim confirmados
+     *    en vias, ver SIGeo-catalogo-funciones.md) que hacían fallar una
+     *    igualdad de link exacta de forma intermitente. El link que llega
+     *    por querystring solo se usa UNA vez, para resolver qué tipo+nombre
+     *    corresponde (con trim de los dos lados); de ahí en más todo se
+     *    busca por tipo+nombre normalizados.
+     *
+     * Cuando hay muchos tramos con un nombre genérico ("CALLE S N", etc.)
+     * puede estar uniendo calles que en realidad NO son la misma -- por
+     * eso el conteo de tramos viaja en el resultado, para que la vista lo
+     * muestre y el usuario lo confirme mirando el mapa de fondo.
+     *
+     * @return array|null null si tipo+nombre no existe ni en vias ni en la cartografía actual
      */
     public static function detalleVia($esquema, $link, $proveedorFondo = 'esri')
     {
         $codloc = substr($esquema, 1, 8);
 
-        $actual = DB::selectOne(
-            'SELECT tipo, nombre, codigo, desdei, desded, hastai, hastad,
-                    round(ST_Length(geom::geography)::numeric) as longitud_m,
-                    ST_AsSVG(geom, 0, 8) as svg_path, Box2D(geom)::text as bbox
-             FROM public.vias WHERE codloc = ? AND link = ?',
-            [$codloc, $link]
+        $resuelto = DB::selectOne(
+            'SELECT tipo, nombre FROM (
+                SELECT tipo, nombre FROM public.vias WHERE codloc = ? AND trim(link) = trim(?)
+                UNION ALL
+                SELECT tipo, nombre FROM indec.vias_de_esquema(?) WHERE trim(link) = trim(?)
+             ) x LIMIT 1',
+            [$codloc, $link, $esquema, $link]
         );
-        $nuevo = DB::selectOne(
-            'SELECT tipo, nombre, codigo, desdei, desded, hastai, hastad,
-                    round(ST_Length(geom::geography)::numeric) as longitud_m,
-                    ST_AsSVG(geom, 0, 8) as svg_path, Box2D(geom)::text as bbox
-             FROM indec.vias_de_esquema(?) WHERE link = ?',
-            [$esquema, $link]
-        );
+        if (! $resuelto) {
+            return null;
+        }
+        $tipo = trim($resuelto->tipo);
+        $nombre = trim($resuelto->nombre);
+
+        $unionSql = 'SELECT count(*) tramos, round(ST_Length(ST_Union(geom)::geography)::numeric) longitud_m,
+                            ST_AsSVG(ST_Union(geom), 0, 8) svg_path, Box2D(ST_Union(geom))::text bbox,
+                            min(codigo) codigo, min(desdei) desdei, max(hastai) hastai,
+                            min(desded) desded, max(hastad) hastad';
+
+        $actual = DB::selectOne("$unionSql FROM public.vias WHERE codloc = ? AND trim(tipo) = ? AND trim(nombre) = ?", [$codloc, $tipo, $nombre]);
+        $actual = $actual && $actual->tramos > 0 ? $actual : null;
+
+        $nuevo = DB::selectOne("$unionSql FROM indec.vias_de_esquema(?) WHERE trim(tipo) = ? AND trim(nombre) = ?", [$esquema, $tipo, $nombre]);
+        $nuevo = $nuevo && $nuevo->tramos > 0 ? $nuevo : null;
 
         if (! $actual && ! $nuevo) {
             return null;
@@ -2976,13 +2995,12 @@ order by 1,2
             $my = ($y1 - $y0) * 1.5;
             $contextoPaths = collect(DB::select(
                 'SELECT ST_AsSVG(geom, 0, 8) as svg_path FROM public.vias
-                 WHERE codloc = ? AND link <> ?
+                 WHERE codloc = ? AND NOT (trim(tipo) = ? AND trim(nombre) = ?)
                    AND geom && ST_MakeEnvelope(?, ?, ?, ?, 4326)',
-                [$codloc, $link, $x0 - $mx, $y0 - $my, $x1 + $mx, $y1 + $my]
+                [$codloc, $tipo, $nombre, $x0 - $mx, $y0 - $my, $x1 + $mx, $y1 + $my]
             ))->pluck('svg_path')->all();
         }
 
-        $tipo = $nuevo->tipo ?? $actual->tipo;
         $svg = self::miniSvg(
             $actual->svg_path ?? null, $actual->bbox ?? null,
             $nuevo->svg_path ?? null, $nuevo->bbox ?? null,
@@ -2991,9 +3009,9 @@ order by 1,2
 
         $historial = \App\Model\ViaActualizacion::where('esquema', $esquema)
             ->get()
-            ->filter(function ($h) use ($link) {
-                return collect($h->casos)->contains(function ($c) use ($link) {
-                    return ($c['link'] ?? null) === $link || ($c['link_anterior'] ?? null) === $link;
+            ->filter(function ($h) use ($tipo, $nombre) {
+                return collect($h->casos)->contains(function ($c) use ($tipo, $nombre) {
+                    return trim($c['tipo'] ?? '') === $tipo && trim($c['nombre'] ?? '') === $nombre;
                 });
             })
             ->load('usuario');
@@ -3003,7 +3021,9 @@ order by 1,2
             'actual' => $actual,
             'nuevo' => $nuevo,
             'tipo' => $tipo,
-            'nombre' => $nuevo->nombre ?? $actual->nombre,
+            'nombre' => $nombre,
+            'tramos_actual' => $actual->tramos ?? 0,
+            'tramos_nuevo' => $nuevo->tramos ?? 0,
             'svg' => $svg,
             'historial' => $historial,
         ];

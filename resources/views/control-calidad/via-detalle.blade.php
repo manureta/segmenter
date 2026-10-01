@@ -5,7 +5,15 @@
 @section('content')
 <div class="container">
     <h2>{{ $detalle['tipo'] }} {{ $detalle['nombre'] }}</h2>
-    <p class="text-muted small">Esquema <code>{{ $esquema }}</code> — link <code>{{ $detalle['link'] }}</code></p>
+    <p class="text-muted small">
+        Esquema <code>{{ $esquema }}</code>
+        @if ($detalle['tramos_nuevo'] > 1 || $detalle['tramos_actual'] > 1)
+            — unificado desde {{ max($detalle['tramos_actual'], $detalle['tramos_nuevo']) }} tramos con este mismo tipo+nombre
+            @if (max($detalle['tramos_actual'], $detalle['tramos_nuevo']) > 3)
+                <span class="text-warning">(nombre repetido — confirmá en el mapa que sean la misma vía y no varias sin nombre)</span>
+            @endif
+        @endif
+    </p>
 
     <a href="{{ route('controles-calidad.vias', $esquema) }}" class="btn btn-sm btn-outline-secondary mb-3">&larr; Volver al diff</a>
 
@@ -31,11 +39,10 @@
             <h5>Actual (en <code>vias</code>)</h5>
             @if ($detalle['actual'])
                 <table class="table table-sm">
-                    <tr><th>Tipo</th><td>{{ $detalle['actual']->tipo }}</td></tr>
-                    <tr><th>Nombre</th><td>{{ $detalle['actual']->nombre }}</td></tr>
+                    <tr><th>Tramos</th><td>{{ $detalle['tramos_actual'] }}</td></tr>
                     <tr><th>Código</th><td>{{ $detalle['actual']->codigo }}</td></tr>
                     <tr><th>Numeración</th><td>{{ $detalle['actual']->desdei }}–{{ $detalle['actual']->hastai }} / {{ $detalle['actual']->desded }}–{{ $detalle['actual']->hastad }}</td></tr>
-                    <tr><th>Largo</th><td>{{ $detalle['actual']->longitud_m }} m</td></tr>
+                    <tr><th>Largo total</th><td>{{ $detalle['actual']->longitud_m }} m</td></tr>
                 </table>
             @else
                 <p class="text-muted small">No está en <code>vias</code> todavía (es una vía nueva, sin aplicar).</p>
@@ -45,11 +52,10 @@
             <h5>Nuevo (en la cartografía del esquema)</h5>
             @if ($detalle['nuevo'])
                 <table class="table table-sm">
-                    <tr><th>Tipo</th><td>{{ $detalle['nuevo']->tipo }}</td></tr>
-                    <tr><th>Nombre</th><td>{{ $detalle['nuevo']->nombre }}</td></tr>
+                    <tr><th>Tramos</th><td>{{ $detalle['tramos_nuevo'] }}</td></tr>
                     <tr><th>Código</th><td>{{ $detalle['nuevo']->codigo }}</td></tr>
                     <tr><th>Numeración</th><td>{{ $detalle['nuevo']->desdei }}–{{ $detalle['nuevo']->hastai }} / {{ $detalle['nuevo']->desded }}–{{ $detalle['nuevo']->hastad }}</td></tr>
-                    <tr><th>Largo</th><td>{{ $detalle['nuevo']->longitud_m }} m</td></tr>
+                    <tr><th>Largo total</th><td>{{ $detalle['nuevo']->longitud_m }} m</td></tr>
                 </table>
             @else
                 <p class="text-muted small">Ya no está en la cartografía actual del esquema (sería una baja).</p>
