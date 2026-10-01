@@ -2629,7 +2629,7 @@ order by 1,2
      * invertir) es lo que hay que mandarle a un servicio de teselas, no el
      * viewBox ya invertido para SVG.
      */
-    private static function miniSvgViewBox($bboxActual, $bboxNuevo)
+    private static function miniSvgViewBox($bboxActual, $bboxNuevo, $padFactor = 0.6)
     {
         $cajas = array_filter([$bboxActual, $bboxNuevo]);
         $puntos = [];
@@ -2649,8 +2649,14 @@ order by 1,2
 
         $width = max($x1 - $x0, 0.00005);
         $height = max($y1 - $y0, 0.00005);
-        $padX = $width * 0.15;
-        $padY = $height * 0.15;
+        // $padFactor default 0.6 (no el 0.15 original): el fondo/viewBox
+        // tiene que cubrir la MISMA área donde se buscan calles de
+        // contexto, si no quedan fuera del recorte visible aunque la
+        // consulta las haya encontrado -- ver contextoCercano(), que ahora
+        // recibe este mismo bbox ya ensanchado en vez de agrandarlo de
+        // nuevo por su cuenta.
+        $padX = $width * $padFactor;
+        $padY = $height * $padFactor;
 
         $xMin = $x0 - $padX;
         $widthPad = $width + 2 * $padX;
@@ -2939,16 +2945,19 @@ order by 1,2
     /**
      * Otras vías de public.vias cerca del bbox dado (excluyendo la propia
      * tipo+nombre), para dibujar de contexto -- compartido entre el
-     * preview chico de la tabla de diff y detalleVia(). El área se agranda
-     * 1.5x respecto del bbox pedido: si no, "las otras calles del área"
-     * casi nunca entran en cuadro (el bbox ya viene recortado a la calle
-     * misma, con poco margen).
+     * preview chico de la tabla de diff y detalleVia(). Recibe el MISMO
+     * bbox ya ensanchado que después se usa como viewBox/fondo (ver
+     * miniSvgViewBox(), $padFactor) -- antes este método lo volvía a
+     * agrandar 1.5x por su cuenta, buscando en un área más ancha de lo que
+     * el viewBox mostraba, así que encontraba calles de contexto que
+     * después quedaban recortadas fuera de lo visible. Un 10% extra acá
+     * nada más, para no cortar una línea justo en el borde.
      */
     private static function contextoCercano($codloc, $tipo, $nombre, array $bboxGeografico)
     {
         [$x0, $y0, $x1, $y1] = $bboxGeografico;
-        $mx = ($x1 - $x0) * 1.5;
-        $my = ($y1 - $y0) * 1.5;
+        $mx = ($x1 - $x0) * 0.1;
+        $my = ($y1 - $y0) * 0.1;
 
         return collect(DB::select(
             'SELECT ST_AsSVG(geom, 0, 8) as svg_path FROM public.vias
