@@ -2386,7 +2386,7 @@ order by 1,2
      *
      * @return array{status:string,mensaje:string,casos:array}
      */
-    public static function diffViasDesdeEsquema($esquema)
+    public static function diffViasDesdeEsquema($esquema, $proveedorFondo = 'esri')
     {
         if (! Schema::hasTable($esquema.'.arc')) {
             return ['status' => 'error', 'mensaje' => "Esquema sin tabla arc: $esquema", 'casos' => []];
@@ -2416,7 +2416,13 @@ order by 1,2
                    a.desdei as desdei_actual, n.desdei as desdei_nuevo,
                    a.desded as desded_actual, n.desded as desded_nuevo,
                    a.hastai as hastai_actual, n.hastai as hastai_nuevo,
-                   a.hastad as hastad_actual, n.hastad as hastad_nuevo
+                   a.hastad as hastad_actual, n.hastad as hastad_nuevo,
+                   round(ST_Length(a.geom::geography)::numeric) as longitud_actual_m,
+                   round(ST_Length(n.geom::geography)::numeric) as longitud_nueva_m,
+                   ST_AsSVG(a.geom, 0, 8) as svg_path_actual,
+                   ST_AsSVG(n.geom, 0, 8) as svg_path_nuevo,
+                   Box2D(a.geom)::text as bbox_actual,
+                   Box2D(n.geom)::text as bbox_nuevo
             FROM indec.vias_de_esquema(?) n
             FULL OUTER JOIN (SELECT * FROM public.vias WHERE codloc = ?) a ON a.link = n.link
             WHERE a.link IS NULL OR n.link IS NULL OR ($criterioCambio)
@@ -2449,8 +2455,26 @@ order by 1,2
                 'tipo_anterior' => $accion === 'modificada' ? $f->tipo_actual : null,
                 'nombre_anterior' => $accion === 'modificada' ? $f->nombre_actual : null,
                 'completado' => $completado,
+                'longitud_actual_m' => $f->longitud_actual_m !== null ? (int) $f->longitud_actual_m : null,
+                'longitud_nueva_m' => $f->longitud_nueva_m !== null ? (int) $f->longitud_nueva_m : null,
+                'svg_path_actual' => $f->svg_path_actual,
+                'bbox_actual' => $f->bbox_actual,
+                'svg_path_nuevo' => $f->svg_path_nuevo,
+                'bbox_nuevo' => $f->bbox_nuevo,
             ];
         }, $filas);
+
+        $casos = self::emparejarViasPorNombre($casos);
+
+        // Recién acá, ya resuelto quién es "actual" y quién "nuevo" para
+        // cada caso (incluidos los empate, que combinan dos filas SQL
+        // distintas), se arma el SVG combinado -- y se descartan los campos
+        // crudos de geometría, que no hace falta guardar en el historial.
+        $casos = array_map(function ($c) use ($proveedorFondo) {
+            $c['svg'] = self::miniSvg($c['svg_path_actual'], $c['bbox_actual'], $c['svg_path_nuevo'], $c['bbox_nuevo'], $c['tipo'], $proveedorFondo);
+
+            return array_diff_key($c, array_flip(['svg_path_actual', 'bbox_actual', 'svg_path_nuevo', 'bbox_nuevo']));
+        }, $casos);
 
         return [
             'status' => 'ok',
@@ -2459,6 +2483,240 @@ order by 1,2
                 : 'Sin diferencias: vias ya está al día con la cartografía de '.$esquema.'.',
             'casos' => $casos,
         ];
+    }
+
+    /**
+     * SVG chico y autocontenido para previsualizar una geometría de vía en
+     * la tabla de diff — solo para ver de un vistazo que el trazo es
+     * razonable, no un visor interactivo. Dibuja anterior (si hay) y nueva
+     * (si hay) EN LA MISMA imagen/coordenadas — ST_AsSVG ya da ambos paths
+     * en el mismo espacio global (geográfico, con Y invertida para SVG), así
+     * que no hace falta reproyectar uno respecto del otro, solo calcular un
+     * viewBox que cubra a los dos. Ver miniSvgViewBox() para el cálculo de
+     * viewBox/fondo (compartido con el fondo satelital/mapa).
+     */
+    private static function miniSvg(
+        $svgPathActual, $bboxActual, $svgPathNuevo, $bboxNuevo, $tipo = null, $proveedorFondo = 'esri',
+        array $contextoPaths = [], $anchoDisplay = 190, $altoDisplay = 120
+    ) {
+        if ($svgPathActual === null && $svgPathNuevo === null) {
+            return null;
+        }
+
+        $vb = self::miniSvgViewBox($bboxActual, $bboxNuevo);
+        if ($vb === null) {
+            return null;
+        }
+        [$xMin, $yMinSvg, $width, $height, $bboxGeografico] = $vb;
+
+        // Pedir el fondo con la MISMA proporción del viewBox -- si no, ArcGIS
+        // devuelve una imagen de tamaño fijo que se estira/deforma para
+        // calzar en un viewBox angosto o alargado (se veía "rotado" en
+        // calles muy largas y finas). El lado máximo pedido escala con el
+        // tamaño de despliegue para que una vista grande no salga borrosa.
+        $ladoMax = max(220, $anchoDisplay, $altoDisplay);
+        $ladoMin = 70;
+        $ratio = $width / $height;
+        $anchoPx = $ratio >= 1 ? $ladoMax : max($ladoMin, round($ladoMax * $ratio));
+        $altoPx = $ratio >= 1 ? max($ladoMin, round($ladoMax / $ratio)) : $ladoMax;
+
+        // Rect gris siempre presente, debajo de la imagen de fondo -- así el
+        // halo blanco del trazo se nota igual cuando el fondo satelital se
+        // oculta con el switch (ver vias-esquema.blade.php), en vez de
+        // quedar un blanco sobre blanco invisible.
+        $fondoBase = '<rect x="'.$xMin.'" y="'.$yMinSvg.'" width="'.$width.'" height="'.$height.'" fill="#e9ecef" />';
+
+        $fondoUrl = self::tileBackgroundUrl($proveedorFondo, $bboxGeografico, $anchoPx, $altoPx);
+        $fondo = $fondoUrl
+            ? '<image class="svg-fondo" href="'.e($fondoUrl).'" x="'.$xMin.'" y="'.$yMinSvg.'" width="'.$width.'" height="'.$height.'" preserveAspectRatio="none" />'
+            : '';
+
+        $color = self::colorPorTipoVia($tipo);
+        $stroke = max($width, $height, 0.00005) * 0.035;
+        $halo = max($width, $height, 0.00005) * 0.06;
+
+        // Otras calles del área, finas y grises, solo de contexto -- no son
+        // seleccionables ni tienen halo, van por debajo de todo lo demás.
+        $contexto = '';
+        foreach ($contextoPaths as $p) {
+            if ($p) {
+                $contexto .= '<path d="'.e($p).'" fill="none" stroke="#adb5bd" stroke-width="'.($stroke * 0.5).'" stroke-linecap="round" />';
+            }
+        }
+
+        // Halo blanco debajo de cada trazo para que se note sobre cualquier
+        // fondo (foto satelital, no solo un color plano) -- sin esto una
+        // línea fina se pierde contra terreno/edificios variados.
+        $trazo = function ($path, $dasharray = null) use ($color, $stroke, $halo) {
+            if (! $path) {
+                return '';
+            }
+            $dash = $dasharray ? ' stroke-dasharray="'.$dasharray.'"' : '';
+
+            return '<path d="'.e($path).'" fill="none" stroke="#fff" stroke-width="'.$halo.'" stroke-linecap="round" opacity="0.85" />'
+                .'<path d="'.e($path).'" fill="none" stroke="'.$color.'" stroke-width="'.$stroke.'" stroke-linecap="round"'.$dash.' />';
+        };
+
+        $pathActual = $trazo($svgPathActual, $stroke * 2.2);
+        $pathNuevo = $trazo($svgPathNuevo);
+
+        $viewBox = "$xMin $yMinSvg $width $height";
+
+        return '<svg viewBox="'.$viewBox.'" width="'.$anchoDisplay.'" height="'.$altoDisplay.'" preserveAspectRatio="xMidYMid meet" class="svg-via" '
+            .'style="margin:6px;min-width:'.round($anchoDisplay * 0.8).'px;min-height:'.round($altoDisplay * 0.8).'px;">'
+            .$fondoBase.$fondo.$contexto.$pathActual.$pathNuevo.'</svg>';
+    }
+
+    /**
+     * Color por tipo de vía, para distinguir CALLE/AVENIDA/RUTA/etc. de un
+     * vistazo. `tipo` en datos reales trae basura (mayúsculas variables,
+     * typos tipo "CALE"/"CLLE" -- ver via_tipo_correccion) así que se
+     * normaliza a mayúsculas/trim antes de buscar, con gris como default
+     * para cualquier valor no reconocido en vez de fallar.
+     */
+    private static function colorPorTipoVia($tipo)
+    {
+        $colores = [
+            'CALLE' => '#2563eb', 'AVENIDA' => '#f97316', 'RUTA' => '#dc2626',
+            'AUTOPISTA' => '#7c3aed', 'CAMINO' => '#16a34a', 'PASAJE' => '#0891b2',
+        ];
+
+        return $colores[strtoupper(trim((string) $tipo))] ?? '#6b7280';
+    }
+
+    /**
+     * Viewbox SVG (con Y invertida) + bbox geográfico original, combinando
+     * uno o dos Box2D() de texto ("BOX(x0 y0,x1 y1)"). Devuelve
+     * [xMin, yMinSvg, width, height, bboxGeografico] o null si no hay nada
+     * que mostrar. Separado de miniSvg() porque el bbox geográfico (sin
+     * invertir) es lo que hay que mandarle a un servicio de teselas, no el
+     * viewBox ya invertido para SVG.
+     */
+    private static function miniSvgViewBox($bboxActual, $bboxNuevo)
+    {
+        $cajas = array_filter([$bboxActual, $bboxNuevo]);
+        $puntos = [];
+        foreach ($cajas as $texto) {
+            if (preg_match('/BOX\(([-\d.]+) ([-\d.]+),([-\d.]+) ([-\d.]+)\)/', $texto, $m)) {
+                $puntos[] = array_map('floatval', array_slice($m, 1));
+            }
+        }
+        if (empty($puntos)) {
+            return null;
+        }
+
+        $x0 = min(array_map(fn ($p) => min($p[0], $p[2]), $puntos));
+        $x1 = max(array_map(fn ($p) => max($p[0], $p[2]), $puntos));
+        $y0 = min(array_map(fn ($p) => min($p[1], $p[3]), $puntos));
+        $y1 = max(array_map(fn ($p) => max($p[1], $p[3]), $puntos));
+
+        $width = max($x1 - $x0, 0.00005);
+        $height = max($y1 - $y0, 0.00005);
+        $padX = $width * 0.15;
+        $padY = $height * 0.15;
+
+        $xMin = $x0 - $padX;
+        $widthPad = $width + 2 * $padX;
+        $yMinSvg = -($y1 + $padY);
+        $heightPad = $height + 2 * $padY;
+
+        $bboxGeografico = [$xMin, $y0 - $padY, $xMin + $widthPad, $y1 + $padY];
+
+        return [$xMin, $yMinSvg, $widthPad, $heightPad, $bboxGeografico];
+    }
+
+    /**
+     * URL de una imagen de fondo (satelital u otra) para el bbox geográfico
+     * dado [x0,y0,x1,y1] en lon/lat (EPSG:4326). Dos proveedores públicos,
+     * sin API key (dependencia externa real -- si el servicio cae o
+     * cambia, el fondo simplemente no carga, el SVG de las líneas sigue
+     * andando igual porque <image> y <path> son independientes):
+     *
+     * - "esri": World Imagery (ArcGIS Online), export directo por bbox --
+     *   acepta lon/lat sin reproyectar, un solo request por imagen.
+     * - "osm": staticmap.openstreetmap.de sobre tiles de OpenStreetMap
+     *   (mapa de calles, no satelital) -- ese servicio pide centro+zoom,
+     *   no bbox, así que se aproxima el zoom desde el ancho del bbox.
+     */
+    private static function tileBackgroundUrl($proveedor, array $bboxGeografico, $anchoPx, $altoPx)
+    {
+        [$x0, $y0, $x1, $y1] = $bboxGeografico;
+
+        if ($proveedor === 'osm') {
+            $centroLon = ($x0 + $x1) / 2;
+            $centroLat = ($y0 + $y1) / 2;
+            $anchoGrados = max($x1 - $x0, 0.00001);
+            $zoom = (int) max(0, min(19, floor(log(360 * $anchoPx / ($anchoGrados * 256), 2))));
+
+            return 'https://staticmap.openstreetmap.de/staticmap.php?center='.$centroLat.','.$centroLon
+                .'&zoom='.$zoom.'&size='.$anchoPx.'x'.$altoPx.'&maplayer=mapnik';
+        }
+
+        // esri (default)
+        return 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export'
+            .'?bbox='.$x0.','.$y0.','.$x1.','.$y1
+            .'&bboxSR=4326&imageSR=4326&size='.$anchoPx.','.$altoPx.'&format=png&transparent=false&f=image';
+    }
+
+    /**
+     * El `link` que identifica una vía (nomencla||nombre||tipo) sale
+     * regenerado entero cada vez que se reprocesa cartografía -- así que
+     * "la misma calle con mejor numeración" aparece como una "nueva" y una
+     * "eliminada" sin relación explícita entre sí, aunque tipo+nombre no
+     * cambiaron. Esto agrupa por (tipo,nombre) y arma un caso "empate"
+     * cuando hay EXACTAMENTE una nueva y una eliminada con ese tipo+nombre
+     * -- ahí sí hay confianza razonable de que es la misma vía.
+     *
+     * Cuando hay más de una de cada lado (nombres genéricos tipo "CALLE
+     * S/N", "HUELLA", "CAMINO" -- confirmado con datos reales, no es
+     * hipotético) NO se empareja a ciegas: no hay forma de saber cuál
+     * "nueva" corresponde a cuál "eliminada". Esos casos quedan como
+     * nueva/eliminada sueltas, pero marcadas con `grupo_ambiguo` y el
+     * tamaño del grupo de cada lado, para que la UI avise por qué no se
+     * emparejaron en vez de dejarlo parecer arbitrario.
+     */
+    private static function emparejarViasPorNombre(array $casos)
+    {
+        $grupos = collect($casos)->groupBy(fn ($c) => $c['tipo'].'|'.$c['nombre']);
+        $resultado = [];
+
+        foreach ($grupos as $grupo) {
+            $nuevas = $grupo->where('accion', 'nueva')->values();
+            $eliminadas = $grupo->where('accion', 'eliminada')->values();
+            $otras = $grupo->whereNotIn('accion', ['nueva', 'eliminada'])->values();
+
+            if ($nuevas->count() === 1 && $eliminadas->count() === 1) {
+                $n = $nuevas->first();
+                $e = $eliminadas->first();
+                $resultado[] = [
+                    'link' => $n['link'],
+                    'link_anterior' => $e['link'],
+                    'accion' => 'empate',
+                    'tipo' => $n['tipo'], 'nombre' => $n['nombre'],
+                    'tipo_anterior' => $e['tipo'], 'nombre_anterior' => $e['nombre'],
+                    'completado' => false,
+                    'longitud_actual_m' => $e['longitud_actual_m'],
+                    'longitud_nueva_m' => $n['longitud_nueva_m'],
+                    'svg_path_actual' => $e['svg_path_actual'],
+                    'bbox_actual' => $e['bbox_actual'],
+                    'svg_path_nuevo' => $n['svg_path_nuevo'],
+                    'bbox_nuevo' => $n['bbox_nuevo'],
+                ];
+            } else {
+                $ambiguo = $nuevas->count() > 1 || $eliminadas->count() > 1;
+                foreach ($nuevas->concat($eliminadas) as $c) {
+                    $c['grupo_ambiguo'] = $ambiguo;
+                    $c['grupo_tamano'] = $ambiguo ? ['nuevas' => $nuevas->count(), 'eliminadas' => $eliminadas->count()] : null;
+                    $resultado[] = $c;
+                }
+            }
+
+            foreach ($otras as $c) {
+                $resultado[] = $c;
+            }
+        }
+
+        return $resultado;
     }
 
     /**
@@ -2473,6 +2731,144 @@ order by 1,2
     public static function esquemasConViasPendientes()
     {
         return DB::select('SELECT * FROM indec.esquemas_con_vias_pendientes() ORDER BY esquema');
+    }
+
+    /**
+     * Fondo satelital/mapa para insertar en los SVG que YA arman
+     * Radio::getSVG(), Localidad::getSVG() y Localidad::getSVGRadios() --
+     * esos tres arman el SVG entero vía SQL (`concat()`), en el SRID
+     * métrico nativo del esquema (ej. 22183), con su propio `viewBox()`
+     * (convención `-y1` como origen Y, ver Radio.php/Localidad.php). Esta
+     * función NO toca esa lógica: dado el mismo `$extent` ("BOX(x0 y0,x1
+     * y1)") y la tabla de origen (para sacarle el SRID), devuelve un
+     * fragmento `<rect>+<image>` ya en ESE mismo sistema de coordenadas
+     * (métrico, Y invertida), listo para insertarse como primer hijo del
+     * `<svg>` ya generado. Para pedir el tile reproyecta el extent a
+     * 4326 (lon/lat) -- la distorsión de reproyectar un rectángulo chico
+     * (escala de radio/localidad) es despreciable para una imagen de
+     * fondo, no hace falta alinear pixel a pixel.
+     *
+     * @return string fragmento SVG, o '' si no se pudo determinar el SRID/extent
+     */
+    public static function fondoSvgParaExtent($extent, $tablaOrigen, $proveedorFondo = 'esri')
+    {
+        if (! preg_match('/BOX\(([-\d.]+) ([-\d.]+),([-\d.]+) ([-\d.]+)\)/', $extent, $m)) {
+            return '';
+        }
+        [, $x0, $y0, $x1, $y1] = array_map('floatval', $m);
+
+        $srid = DB::selectOne("SELECT ST_SRID(wkb_geometry) srid FROM $tablaOrigen LIMIT 1")->srid ?? null;
+        if (! $srid) {
+            return '';
+        }
+
+        $geo = DB::selectOne(
+            'SELECT ST_XMin(t) gx0, ST_YMin(t) gy0, ST_XMax(t) gx1, ST_YMax(t) gy1
+             FROM (SELECT ST_Transform(ST_SetSRID(ST_MakeEnvelope(?,?,?,?), ?), 4326) t) s',
+            [$x0, $y0, $x1, $y1, $srid]
+        );
+        if (! $geo) {
+            return '';
+        }
+
+        $width = $x1 - $x0;
+        $height = $y1 - $y0;
+        $rectY = -$y1; // misma convención que Radio::viewBox()/Localidad::viewBox(): origen Y = -y1
+
+        $ladoMax = 400;
+        $ladoMin = 70;
+        $ratio = $width / max($height, 0.00001);
+        $anchoPx = $ratio >= 1 ? $ladoMax : max($ladoMin, round($ladoMax * $ratio));
+        $altoPx = $ratio >= 1 ? max($ladoMin, round($ladoMax / $ratio)) : $ladoMax;
+
+        $url = self::tileBackgroundUrl($proveedorFondo, [$geo->gx0, $geo->gy0, $geo->gx1, $geo->gy1], $anchoPx, $altoPx);
+
+        $rect = '<rect x="'.$x0.'" y="'.$rectY.'" width="'.$width.'" height="'.$height.'" fill="#e9ecef" />';
+        $imagen = $url
+            ? '<image class="svg-fondo" href="'.e($url).'" x="'.$x0.'" y="'.$rectY.'" width="'.$width.'" height="'.$height.'" preserveAspectRatio="none" />'
+            : '';
+
+        return $rect.$imagen;
+    }
+
+    /**
+     * Detalle de UNA vía: su versión actual en public.vias (si está) y su
+     * versión fresca en la cartografía del esquema (si está) -- las mismas
+     * dos fuentes que diffViasDesdeEsquema(), pero para un solo link, con
+     * SVG grande y las otras calles del área dibujadas de contexto (ver
+     * MyDB::miniSvg(), parámetro $contextoPaths). Incluye el historial de
+     * vias_actualizaciones que tocó este link puntual (como link nuevo o
+     * como link_anterior de un "empate"), no el del esquema entero.
+     *
+     * @return array|null null si el link no existe ni en vias ni en la cartografía actual
+     */
+    public static function detalleVia($esquema, $link, $proveedorFondo = 'esri')
+    {
+        $codloc = substr($esquema, 1, 8);
+
+        $actual = DB::selectOne(
+            'SELECT tipo, nombre, codigo, desdei, desded, hastai, hastad,
+                    round(ST_Length(geom::geography)::numeric) as longitud_m,
+                    ST_AsSVG(geom, 0, 8) as svg_path, Box2D(geom)::text as bbox
+             FROM public.vias WHERE codloc = ? AND link = ?',
+            [$codloc, $link]
+        );
+        $nuevo = DB::selectOne(
+            'SELECT tipo, nombre, codigo, desdei, desded, hastai, hastad,
+                    round(ST_Length(geom::geography)::numeric) as longitud_m,
+                    ST_AsSVG(geom, 0, 8) as svg_path, Box2D(geom)::text as bbox
+             FROM indec.vias_de_esquema(?) WHERE link = ?',
+            [$esquema, $link]
+        );
+
+        if (! $actual && ! $nuevo) {
+            return null;
+        }
+
+        $vb = self::miniSvgViewBox($actual->bbox ?? null, $nuevo->bbox ?? null);
+        $contextoPaths = [];
+        if ($vb !== null) {
+            [, , , , $bboxGeografico] = $vb;
+            // Área de contexto más amplia que el bbox ajustado de la propia
+            // calle -- si no, "las otras calles del área" casi nunca entran
+            // en cuadro (el bbox de miniSvgViewBox ya está recortado a la
+            // calle misma, con poco margen).
+            [$x0, $y0, $x1, $y1] = $bboxGeografico;
+            $mx = ($x1 - $x0) * 1.5;
+            $my = ($y1 - $y0) * 1.5;
+            $contextoPaths = collect(DB::select(
+                'SELECT ST_AsSVG(geom, 0, 8) as svg_path FROM public.vias
+                 WHERE codloc = ? AND link <> ?
+                   AND geom && ST_MakeEnvelope(?, ?, ?, ?, 4326)',
+                [$codloc, $link, $x0 - $mx, $y0 - $my, $x1 + $mx, $y1 + $my]
+            ))->pluck('svg_path')->all();
+        }
+
+        $tipo = $nuevo->tipo ?? $actual->tipo;
+        $svg = self::miniSvg(
+            $actual->svg_path ?? null, $actual->bbox ?? null,
+            $nuevo->svg_path ?? null, $nuevo->bbox ?? null,
+            $tipo, $proveedorFondo, $contextoPaths, 520, 340
+        );
+
+        $historial = \App\Model\ViaActualizacion::where('esquema', $esquema)
+            ->get()
+            ->filter(function ($h) use ($link) {
+                return collect($h->casos)->contains(function ($c) use ($link) {
+                    return ($c['link'] ?? null) === $link || ($c['link_anterior'] ?? null) === $link;
+                });
+            })
+            ->load('usuario');
+
+        return [
+            'link' => $link,
+            'actual' => $actual,
+            'nuevo' => $nuevo,
+            'tipo' => $tipo,
+            'nombre' => $nuevo->nombre ?? $actual->nombre,
+            'svg' => $svg,
+            'historial' => $historial,
+        ];
     }
 
     /**
@@ -2495,21 +2891,40 @@ order by 1,2
             return ['aplicados' => 0, 'mensaje' => 'Nada seleccionado, no se aplicó ningún cambio.'];
         }
 
-        $links = array_column($casosSeleccionados, 'link');
+        // "empate" (ver emparejarViasPorNombre()) borra un link DISTINTO del
+        // que inserta -- el resto (nueva/eliminada/modificada/completado)
+        // usa el mismo link de los dos lados, como antes.
+        $linksInsertar = [];
+        $linksBorrar = [];
+        foreach ($casosSeleccionados as $c) {
+            if ($c['accion'] !== 'eliminada') {
+                $linksInsertar[] = $c['link'];
+            }
+            if ($c['accion'] === 'empate') {
+                $linksBorrar[] = $c['link_anterior'];
+            } elseif ($c['accion'] !== 'nueva') {
+                $linksBorrar[] = $c['link'];
+            }
+        }
+
         $codloc = substr($esquema, 1, 8);
-        $arrayPg = '{'.implode(',', array_map(fn ($l) => '"'.str_replace('"', '\"', $l).'"', $links)).'}';
+        $pgArray = fn (array $links) => '{'.implode(',', array_map(fn ($l) => '"'.str_replace('"', '\"', $l).'"', $links)).'}';
 
         try {
             DB::beginTransaction();
 
             if (! Schema::hasTable('public.vias')) {
-                DB::statement('CREATE TABLE public.vias AS SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $arrayPg]);
+                DB::statement('CREATE TABLE public.vias AS SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $pgArray($linksInsertar)]);
                 self::darPermisosTabla('vias');
                 self::createIndex('public', 'vias', 'codloc');
                 self::createIndex('public', 'vias', 'geom', 'gist');
             } else {
-                DB::statement('DELETE FROM public.vias WHERE codloc = ? AND link = ANY(?)', [$codloc, $arrayPg]);
-                DB::statement('INSERT INTO public.vias SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $arrayPg]);
+                if (! empty($linksBorrar)) {
+                    DB::statement('DELETE FROM public.vias WHERE codloc = ? AND link = ANY(?)', [$codloc, $pgArray($linksBorrar)]);
+                }
+                if (! empty($linksInsertar)) {
+                    DB::statement('INSERT INTO public.vias SELECT * FROM indec.vias_de_esquema(?) WHERE link = ANY(?)', [$esquema, $pgArray($linksInsertar)]);
+                }
             }
 
             DB::statement(
@@ -2535,7 +2950,9 @@ order by 1,2
             return ['aplicados' => 0, 'mensaje' => 'Error al aplicar los cambios — revisar logs.'];
         }
 
-        return ['aplicados' => count($links), 'mensaje' => count($links).' caso(s) aplicado(s) para '.$esquema.'.'];
+        $n = count($casosSeleccionados);
+
+        return ['aplicados' => $n, 'mensaje' => $n.' caso(s) aplicado(s) para '.$esquema.'.'];
     }
 
     // MVT de manzanas

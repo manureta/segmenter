@@ -12,6 +12,26 @@
 
     <a href="{{ route('controles-calidad') }}" class="btn btn-sm btn-outline-secondary mb-3">&larr; Controles de calidad</a>
 
+    <div class="mb-2 small">
+        Fondo:
+        <a href="?fondo=esri" class="{{ $fondo === 'esri' ? 'font-weight-bold' : '' }}">satelital (ESRI)</a>
+        ·
+        <a href="?fondo=osm" class="{{ $fondo === 'osm' ? 'font-weight-bold' : '' }}">calles (OSM)</a>
+        <span class="text-muted">— servicios públicos externos</span>
+        ·
+        <label class="mb-0">
+            <input type="checkbox" id="toggle-fondo" checked onchange="toggleFondo(this.checked)">
+            mostrar imagen de fondo
+        </label>
+    </div>
+    <script>
+        function toggleFondo(mostrar) {
+            document.querySelectorAll('.svg-fondo').forEach(function (img) {
+                img.style.display = mostrar ? '' : 'none';
+            });
+        }
+    </script>
+
     @if ($diff['status'] === 'error')
         <div class="alert alert-danger">{{ $diff['mensaje'] }}</div>
     @elseif ($diff['status'] === 'sin_vias')
@@ -27,7 +47,8 @@
                 <div>
                     <button type="button" class="btn btn-sm btn-link" onclick="marcarTodos(true)">Tildar todos</button>
                     <button type="button" class="btn btn-sm btn-link" onclick="marcarTodos(false)">Destildar todos</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" onclick="marcarCompletados()">Tildar solo "completados"</button>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="marcarClase('caso-empate')">Tildar solo "empates"</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="marcarClase('caso-completado')">Tildar solo "completados"</button>
                 </div>
             </div>
             <table class="table table-sm">
@@ -37,21 +58,25 @@
                         <th>Acción</th>
                         <th>Tipo</th>
                         <th>Nombre</th>
-                        <th>Antes</th>
+                        <th>Largo (m)</th>
+                        <th>Geometría <span class="text-muted font-weight-normal">(rojo punteado = antes, azul = nuevo)</span></th>
+                        <th>Nota</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($diff['casos'] as $caso)
-                        <tr>
+                        <tr class="{{ ($caso['grupo_ambiguo'] ?? false) ? 'table-warning' : '' }}">
                             <td>
                                 <input type="checkbox" name="links[]" value="{{ $caso['link'] }}"
-                                       class="caso-checkbox {{ $caso['completado'] ? 'caso-completado' : '' }}">
+                                       class="caso-checkbox {{ $caso['completado'] ? 'caso-completado' : '' }} {{ $caso['accion'] === 'empate' ? 'caso-empate' : '' }}">
                             </td>
                             <td>
                                 @if ($caso['accion'] === 'nueva')
                                     <span class="badge badge-success">nueva</span>
                                 @elseif ($caso['accion'] === 'eliminada')
                                     <span class="badge badge-danger">eliminada</span>
+                                @elseif ($caso['accion'] === 'empate')
+                                    <span class="badge badge-primary">empate</span>
                                 @elseif ($caso['completado'])
                                     <span class="badge badge-info">completado</span>
                                 @else
@@ -59,10 +84,24 @@
                                 @endif
                             </td>
                             <td>{{ $caso['tipo'] }}</td>
-                            <td>{{ $caso['nombre'] }}</td>
+                            <td>
+                                <a href="{{ route('controles-calidad.vias.detalle', $esquema) }}?link={{ urlencode($caso['link']) }}">{{ $caso['nombre'] }}</a>
+                            </td>
+                            <td class="small">
+                                @if ($caso['longitud_nueva_m'] !== null && $caso['longitud_actual_m'] !== null && $caso['longitud_nueva_m'] != $caso['longitud_actual_m'])
+                                    {{ $caso['longitud_actual_m'] }} &rarr; {{ $caso['longitud_nueva_m'] }}
+                                @else
+                                    {{ $caso['longitud_nueva_m'] ?? $caso['longitud_actual_m'] ?? '—' }}
+                                @endif
+                            </td>
+                            <td>{!! $caso['svg'] ?? '<span class="text-muted small">sin geometría</span>' !!}</td>
                             <td class="text-muted small">
                                 @if ($caso['accion'] === 'modificada')
-                                    {{ $caso['tipo_anterior'] }} / {{ $caso['nombre_anterior'] }}
+                                    Código/numeración cambió ({{ $caso['tipo_anterior'] }} / {{ $caso['nombre_anterior'] }} sigue igual)
+                                @elseif ($caso['accion'] === 'empate')
+                                    Misma vía, recodificada — se borra la versión vieja y se agrega la nueva
+                                @elseif ($caso['grupo_ambiguo'] ?? false)
+                                    Nombre repetido ({{ $caso['grupo_tamano']['nuevas'] }} nueva(s) / {{ $caso['grupo_tamano']['eliminadas'] }} eliminada(s) con este mismo tipo+nombre) — no se puede saber cuál es cuál, revisar a mano
                                 @else
                                     —
                                 @endif
@@ -82,9 +121,9 @@
             function marcarTodos(valor) {
                 document.querySelectorAll('.caso-checkbox').forEach(function (c) { c.checked = valor; });
             }
-            function marcarCompletados() {
+            function marcarClase(clase) {
                 marcarTodos(false);
-                document.querySelectorAll('.caso-completado').forEach(function (c) { c.checked = true; });
+                document.querySelectorAll('.' + clase).forEach(function (c) { c.checked = true; });
             }
         </script>
     @endif

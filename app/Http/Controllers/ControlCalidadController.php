@@ -324,14 +324,15 @@ class ControlCalidadController extends Controller
      * aplicar nada, a diferencia de MyDB::juntaVias() que reconstruye toda
      * la tabla a ciegas.
      */
-    public function revisarVias($esquema)
+    public function revisarVias(Request $request, $esquema)
     {
         $this->autorizarVias();
 
-        $diff = MyDB::diffViasDesdeEsquema($esquema);
+        $fondo = in_array($request->query('fondo'), ['esri', 'osm']) ? $request->query('fondo') : 'esri';
+        $diff = MyDB::diffViasDesdeEsquema($esquema, $fondo);
         $historialEsquema = ViaActualizacion::with('usuario')->where('esquema', $esquema)->latest('created_at')->get();
 
-        return view('control-calidad.vias-esquema', compact('esquema', 'diff', 'historialEsquema'));
+        return view('control-calidad.vias-esquema', compact('esquema', 'diff', 'historialEsquema', 'fondo'));
     }
 
     /**
@@ -360,6 +361,28 @@ class ControlCalidadController extends Controller
             : flash($resultado['mensaje'])->warning();
 
         return redirect()->route('controles-calidad.vias', $esquema);
+    }
+
+    /**
+     * Detalle de una vía puntual: SVG grande con las calles vecinas de
+     * contexto, atributos actual/nuevo lado a lado, e historial filtrado a
+     * ESTE link (no el del esquema entero). `link` viaja por query string,
+     * no como segmento de ruta, porque puede traer espacios/caracteres que
+     * no conviene forzar a través del router.
+     */
+    public function detalleVia(Request $request, $esquema)
+    {
+        $this->autorizarVias();
+
+        $link = $request->query('link', '');
+        $fondo = in_array($request->query('fondo'), ['esri', 'osm']) ? $request->query('fondo') : 'esri';
+
+        $detalle = MyDB::detalleVia($esquema, $link, $fondo);
+        if ($detalle === null) {
+            abort(404, 'Esa vía no existe ni en vias ni en la cartografía actual del esquema.');
+        }
+
+        return view('control-calidad.via-detalle', compact('esquema', 'detalle', 'fondo'));
     }
 
     /**
