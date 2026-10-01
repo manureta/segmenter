@@ -2532,12 +2532,18 @@ order by 1,2
         $stroke = max($width, $height, 0.00005) * 0.035;
         $halo = max($width, $height, 0.00005) * 0.06;
 
-        // Otras calles del área, finas y grises, solo de contexto -- no son
-        // seleccionables ni tienen halo, van por debajo de todo lo demás.
+        // Otras calles del área, de contexto -- no son seleccionables, van
+        // por debajo de todo lo demás. Gris pálido (#adb5bd) sin halo era
+        // invisible en la práctica (se perdía contra el fondo); ahora un
+        // gris bien oscuro + halo blanco fino, igual que el trazo
+        // principal, para que se note pero sin competir con el color por
+        // tipo de la vía que se está revisando.
         $contexto = '';
+        $strokeContexto = $stroke * 0.6;
         foreach ($contextoPaths as $p) {
             if ($p) {
-                $contexto .= '<path d="'.e($p).'" fill="none" stroke="#adb5bd" stroke-width="'.($stroke * 0.5).'" stroke-linecap="round" />';
+                $contexto .= '<path d="'.e($p).'" fill="none" stroke="#fff" stroke-width="'.($strokeContexto * 2).'" stroke-linecap="round" opacity="0.7" />'
+                    .'<path d="'.e($p).'" fill="none" stroke="#343a40" stroke-width="'.$strokeContexto.'" stroke-linecap="round" />';
             }
         }
 
@@ -2551,7 +2557,7 @@ order by 1,2
         // centro del trazo coloreado, mostrando borde de color y centro
         // transparente -- el truco estándar de SVG para "tubo hueco" sin
         // tener que calcular geometría offset aparte en SQL.
-        $trazo = function ($path, $dasharray = null) use ($color, $stroke, $halo, $hueco) {
+        $trazo = function ($path, $dasharray = null) use ($color, $stroke, $halo, $hueco, $xMin, $yMinSvg, $width, $height) {
             if (! $path) {
                 return '';
             }
@@ -2560,8 +2566,17 @@ order by 1,2
             if ($hueco) {
                 $id = 'via-hueco-'.substr(md5($path.$color.$dasharray), 0, 10);
                 $borde = max($stroke * 0.4, 0.00002);
+                // mask con maskUnits="userSpaceOnUse" pero SIN x/y/width/height
+                // propios cae al default (-10%,-10%,120%,120%) interpretado
+                // en unidades de usuario -- en coordenadas geográficas chicas
+                // (grados) eso cae lejísimos de donde está el path, y la
+                // máscara tapaba TODO (nada se veía). Hay que darle región
+                // propia, igual o más grande que el viewBox del SVG.
+                $margen = max($stroke, 0.00005);
+                $maskRegion = 'x="'.($xMin - $margen).'" y="'.($yMinSvg - $margen).'" '
+                    .'width="'.($width + 2 * $margen).'" height="'.($height + 2 * $margen).'"';
 
-                return '<mask id="'.$id.'" maskUnits="userSpaceOnUse">'
+                return '<mask id="'.$id.'" maskUnits="userSpaceOnUse" '.$maskRegion.'>'
                     .'<path d="'.e($path).'" stroke="#fff" stroke-width="'.$stroke.'" fill="none" stroke-linecap="round"'.$dash.' />'
                     .'<path d="'.e($path).'" stroke="#000" stroke-width="'.max($stroke - 2 * $borde, 0).'" fill="none" stroke-linecap="round"'.$dash.' />'
                     .'</mask>'
@@ -2684,6 +2699,10 @@ order by 1,2
      */
     private static function tileBackgroundUrl($proveedor, array $bboxGeografico, $anchoPx, $altoPx)
     {
+        if ($proveedor === 'ninguno') {
+            return [];
+        }
+
         [$x0, $y0, $x1, $y1] = $bboxGeografico;
 
         if ($proveedor === 'osm') {

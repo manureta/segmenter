@@ -17,7 +17,9 @@
         <a href="?fondo=esri" class="{{ $fondo === 'esri' ? 'font-weight-bold' : '' }}">satelital (ESRI)</a>
         ·
         <a href="?fondo=osm" class="{{ $fondo === 'osm' ? 'font-weight-bold' : '' }}">calles (OSM)</a>
-        <span class="text-muted">— servicios públicos externos</span>
+        ·
+        <a href="?fondo=ninguno" class="{{ $fondo === 'ninguno' ? 'font-weight-bold' : '' }}">sin fondo</a>
+        <span class="text-muted">— esri/osm son servicios públicos externos</span>
         ·
         <label class="mb-0">
             <input type="checkbox" id="toggle-fondo" checked onchange="toggleFondo(this.checked)">

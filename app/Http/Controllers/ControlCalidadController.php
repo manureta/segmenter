@@ -328,7 +328,7 @@ class ControlCalidadController extends Controller
     {
         $this->autorizarVias();
 
-        $fondo = in_array($request->query('fondo'), ['esri', 'osm']) ? $request->query('fondo') : 'esri';
+        $fondo = in_array($request->query('fondo'), ['esri', 'osm', 'ninguno']) ? $request->query('fondo') : 'esri';
         $diff = MyDB::diffViasDesdeEsquema($esquema, $fondo);
         $historialEsquema = ViaActualizacion::with('usuario')->where('esquema', $esquema)->latest('created_at')->get();
 
@@ -375,7 +375,7 @@ class ControlCalidadController extends Controller
         $this->autorizarVias();
 
         $link = $request->query('link', '');
-        $fondo = in_array($request->query('fondo'), ['esri', 'osm']) ? $request->query('fondo') : 'esri';
+        $fondo = in_array($request->query('fondo'), ['esri', 'osm', 'ninguno']) ? $request->query('fondo') : 'esri';
 
         $detalle = MyDB::detalleVia($esquema, $link, $fondo);
         if ($detalle === null) {

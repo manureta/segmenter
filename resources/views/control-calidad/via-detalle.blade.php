@@ -15,6 +15,8 @@
         ·
         <a href="?link={{ urlencode($detalle['link']) }}&fondo=osm" class="{{ $fondo === 'osm' ? 'font-weight-bold' : '' }}">calles (OSM)</a>
         ·
+        <a href="?link={{ urlencode($detalle['link']) }}&fondo=ninguno" class="{{ $fondo === 'ninguno' ? 'font-weight-bold' : '' }}">sin fondo</a>
+        ·
         <label class="mb-0">
             <input type="checkbox" id="toggle-fondo" checked onchange="document.querySelectorAll('.svg-fondo').forEach(i=>i.style.display=this.checked?'':'none')">
             mostrar imagen de fondo
