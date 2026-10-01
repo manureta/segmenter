@@ -421,9 +421,15 @@ WITH shapes (geom, attribute, tipo) AS (
 	    )
  FROM paths;
 ");
-            return $svg[0]->concat;
-        } else { 
-            return "Por el momento no se puede previsualizar el radio."; 
+            // El fondo se inserta como primer hijo del <svg> del MAPA
+            // (id="radio_<codigo>"), no del de la botonera (misma cadena
+            // trae los dos <svg>, ver arriba) -- de ahí el id exacto en la
+            // regex en vez de reemplazar el primer <svg> que aparezca.
+            $fondo = \App\MyDB::fondoSvgParaExtent($extent, $this->esquema.'.listado_geo');
+
+            return preg_replace('/(<svg id="radio_'.preg_quote($this->codigo, '/').'"[^>]*>)/', '$1'.$fondo, $svg[0]->concat, 1);
+        } else {
+            return "Por el momento no se puede previsualizar el radio.";
         }
     }
 

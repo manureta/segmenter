@@ -339,7 +339,8 @@ WITH shapes (geom, attribute,bgcolor) AS (
  FROM paths;
 ");
         if ($svg[0]->concat) {
-          return $svg[0]->concat;
+          $fondo = \App\MyDB::fondoSvgParaExtent($extent, 'e'.$this->codigo.'.radios');
+          return preg_replace('/(<svg[^>]*>)/', '$1'.$fondo, $svg[0]->concat, 1);
         }else{ return "no SVG"; }
      }else{ return "No se pueden previsualizar los radios"; }
 
@@ -412,7 +413,8 @@ WITH shapes (geom, attribute) AS (
  FROM paths;
 ");
         if ($svg[0]->concat) {
-          return $svg[0]->concat;
+          $fondo = \App\MyDB::fondoSvgParaExtent($extent, 'e'.$this->codigo.'.arc');
+          return preg_replace('/(<svg[^>]*>)/', '$1'.$fondo, $svg[0]->concat, 1);
         }else{ return "no SVG"; }
         }else{ return "No se puede previsualizar"; }
 
