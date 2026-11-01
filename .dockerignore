@@ -1,0 +1,6 @@
+.git
+vendor
+node_modules
+storage/debugbar
+storage/logs
+.phpunit.cache

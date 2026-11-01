@@ -1,0 +1,61 @@
+services:
+  app:
+    build: ./docker/php
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  horizon:
+    build: ./docker/php
+    command: ["php", "artisan", "horizon"]
+    volumes:
+      - .:/var/www/html
+    env_file: .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  node:
+    image: node:24-bookworm-slim
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-laravel}
+      POSTGRES_USER: ${DB_USERNAME:-laravel}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - sigeo_db_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-laravel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  sigeo_db_data:
