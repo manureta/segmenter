@@ -18,6 +18,7 @@ class SeedFuenteTable extends Migration
         if (DB::table('fuente')->count() == 0) {
             $sql = file_get_contents(app_path() . '/developer_docs/fuente.sql');
             DB::unprepared($sql);
+            DB::statement('SET search_path TO public');
         }
     }
 
