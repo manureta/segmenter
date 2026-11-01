@@ -3,7 +3,7 @@
 
 Hola, bienvenide!
 
-Aquí están las instrucciones para instalar el entorno de desarrollo de este proyecto.
+Aquí están las instrucciones para instalar el entorno de desarrollo y el de producción de este proyecto.
 Ésta es la parte web[1](nacida del segmentador asistido para el censo de población, hogares y viviendas de la ronda 2020 de Argentina.)
 
 Pensado como una interfaz para ejecutar el **Segmentador-core** y también como interfaz de carga de los datos mínimos necesarios para éste.
@@ -23,66 +23,101 @@ En este repositorio se encunetran 4 ramas principales.
 - uat     versión de testing
 - prd     versión para producción
 
-## Prerrequisitos (las instrucciones asumen que se está usando Ubuntu)
-* PHP 8.1 o superior: php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl composer
-```
-sudo apt install php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl
-curl -sS https://getcomposer.org/installer | php
-```
-* gdal (ogr2ogr)
-```
-sudo apt-get install python3.6
-sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
-sudo apt-get update
-sudo apt-get install gdal-bin
-sudo apt-get install libgdal-dev
-export CPLUS_INCLUDE_PATH=/usr/include/gdal
-export C_INCLUDE_PATH=/usr/include/gdal
-```
-* pgdbf postgis
-```
-sudo apt install pgdbf postgis
-```
-* python3 pip psycopg2
-```
-sudo apt install python3-dev python3-pip
-pip3 install psycopg2
-pip3 install GDAL
-```
---- pip3 install psycopg2-binary ---
-
-* y usamos NodeJs también. Lo manejamos con n y instalamos la versión 12
-```
-sudo apt install npm
-npm install -g n
-n 12
-```
-## Para instalar el entorno de desarrollo se debe, (según extracto de [guia][1]):
-
-- Clonar repositorio GitHub
-```git
-git clone https://github.com/manureta/segmenter.git --recurse-submodules 
-```
-- cambiar directorio a su proyecto
+- Clonar repositorio con el submódulo de Segmentacion-CORE
 ```bash
+git clone https://github.com/manureta/segmenter.git --recurse-submodules
 cd segmenter
 ```
+Si el submódulo no se inició con `--recurse-submodules` en el clone:
+```bash
+git submodule init
+git submodule update
+```
 
-- Instalar Composer Dependencias
+## Desarrollo (Docker)
+
+El entorno de desarrollo corre en contenedores (`docker-compose.yml` + `docker/`): PHP 8.4, PostgreSQL+PostGIS, Redis y un contenedor Node para Vite. No requiere instalar nada de esto en la máquina — solo Docker.
+
+- Definir el entorno: `cp .env.example .env` (los valores de `DB_HOST`/`REDIS_HOST` se pisan automáticamente para apuntar a los contenedores `db`/`redis`, no hace falta tocarlos).
+
+- Levantar la base y Redis, instalar dependencias (composer/npm se instalan solos la primera vez vía `docker/php/entrypoint.sh`) y generar la app key:
+```bash
+docker compose up -d db redis
+docker compose run --rm app composer install
+docker compose run --rm app php artisan key:generate
+```
+
+- Crear la estructura de la base y cargar datos:
+```bash
+docker compose run --rm app php artisan migrate
+docker compose run --rm app php artisan db:seed
+```
+`db:seed` por sí solo deja la app sin Departamento/Fracción/Radio/topología
+cargados (esos seeders vienen comentados en `DatabaseSeeder` porque cargan
+el dump nacional completo). Para tener la jerarquía completa operable en
+minutos con datos ficticios (provincia demo, código 98, con topología real
+generada por `cargarTopologia()`):
+```bash
+docker compose run --rm app php artisan db:seed --class=DemoProvinciaSeeder
+```
+Para probar además el flujo real de carga de listado de viviendas
+(`/segmentador`: C1 + cartografía → `listado_geo`), con columnas y
+convención de lados/manzana reales, no inventadas:
+```bash
+docker compose run --rm app php artisan db:seed --class=DemoListadoSeeder
+```
+Esto carga directo a la base (sin pasar por el form). Para probar el form
+en sí con un operario real, los mismos datos están descargables en
+`app/developer_docs/demo/`: `c1_e98001001.csv` (listado, ya con el
+delimitador `|` que espera el importador) y `shapefile_arc/` +
+`shapefile_lab/` (cartografía, shp/shx/dbf/prj) — se puede subir esa
+carpeta tal cual por `/segmentador`.
+
+- Levantar la app, el worker de colas (Horizon) y Vite:
+```bash
+docker compose up -d app horizon node
+```
+- App: http://localhost:8000
+- Horizon (dashboard de colas): http://localhost:8000/horizon
+- Vite (HMR de assets): puerto 5173
+
+- Para correr comandos sueltos (artisan, composer, tinker, tests) dentro del contenedor:
+```bash
+docker compose run --rm app php artisan test
+docker compose run --rm app php artisan tinker
+```
+
+## Producción / instalación nativa
+
+Para un servidor sin Docker (ver también `deploy_apache.md` para la configuración del virtualhost de Apache y `horizon.md`/`horizon.conf` para correr el worker de colas vía supervisor).
+
+* PHP 8.4 o superior: php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl php-intl php-bcmath php-pgsql composer
+```bash
+sudo apt install php-mbstring php-dom php-zip php-gd php-pdo-pgsql php-cli php-curl php-intl php-bcmath php-pgsql
+curl -sS https://getcomposer.org/installer | php
+```
+* gdal (ogr2ogr), postgis, pgdbf, python3+psycopg2
+```bash
+sudo apt-get install gdal-bin postgresql-client pgdbf postgis python3 python3-psycopg2
+```
+* NodeJS (versión LTS actual, ver `.nvmrc`)
+```bash
+sudo apt install npm
+npm install -g n
+n lts
+```
+
+- Instalar dependencias
 ```bash
 composer install
-```
-
-- Instalar NPM Dependencias
-```bash
 npm install
 ```
-- Definir el entorno creando usando `.env` como template,   
-`cp .env.example .env`   
-editarlo para configurar la aplicación a que direccione a la BD   
+
+- Definir el entorno creando usando `.env` como template,
+`cp .env.example .env`
+editarlo para configurar la aplicación a que direccione a la BD
 
 ```
-
 APP_URL=<url_del_servidor_donde_corre_la_aplicacion_laravel>:<puerto_del_servicio_de_la_aplicación>
 
 DB_HOST=<url_del_servidor_de_DB_postgresql>
@@ -91,79 +126,32 @@ DB_USERNAME=<usuario_del_segmentador>
 DB_PASSWORD=<clave_del_usuario_del_segmentador>
 ```
 
-
 - Generar una app encryption key
-```
+```bash
 php artisan key:generate
 ```
 
-- Crear la base de datos mencionada en .env, conectarse, cargar postgis y crear el usuario del segmentador
+- Crear la base de datos mencionada en .env, conectarse, cargar postgis (y postgis_topology) y crear el usuario del segmentador
 ```bash
 createdb <base_de_datos> -h <url_del_servidor_de_DB_postgresql> -U <algun_db_admin>
-psql <base_de_datos> -h <url_del_servidor_de_DB_postgresql> -U <algun_db_admin> -c 'create extension postgis;' 
+psql <base_de_datos> -h <url_del_servidor_de_DB_postgresql> -U <algun_db_admin> -c 'create extension postgis; create extension postgis_topology;'
 ```
 
-
-- Crear la estructura de la base de datos usando migrate
+- Crear la estructura de la base y cargar datos
 ```bash
 php artisan migrate
-```
-
-
-- Cargar los datos usando db:seed
-```bash
 php artisan db:seed
 ```
 
-- `db:seed` por sí solo deja la app sin Departamento/Fracción/Radio/topología
-  cargados (esos seeders vienen comentados en `DatabaseSeeder` porque cargan
-  el dump nacional completo). Para tener la jerarquía completa operable en
-  minutos con datos ficticios (provincia demo, código 98, con topología real
-  generada por `cargarTopologia()`), correr aparte:
-```bash
-php artisan db:seed --class=DemoProvinciaSeeder
-```
-
-- Para probar además el flujo real de carga de listado de viviendas
-  (`/segmentador`: C1 + cartografía → `listado_geo`), con columnas y
-  convención de lados/manzana reales, no inventadas:
-```bash
-php artisan db:seed --class=DemoListadoSeeder
-```
-  Esto carga directo a la base (sin pasar por el form). Para probar el form
-  en sí con un operario real, los mismos datos están descargables en
-  `app/developer_docs/demo/`: `c1_e98001001.csv` (listado, ya con el
-  delimitador `|` que espera el importador) y `shapefile_arc/` +
-  `shapefile_lab/` (cartografía, shp/shx/dbf/prj) — se puede subir esa
-  carpeta tal cual por `/segmentador`.
-
-- Para configurar las tareas programadas de laravel agregamos al cron (vía crontab -e)
+- Para configurar las tareas programadas de Laravel, agregar al cron (vía `crontab -e`)
 ```
 * * * * * cd segmenter && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-
-- En caso que no haya iniciado el submodule con ```--recursive``` al hacer el clone principal.
-
-Debera agrega como submodule el proyecto de Segmentacion-CORE, para iniciarlo luego de clonar el repo principal debe ejecutar:
-```bash
-git submodule init
-git submodule update
-```
-
-
-- Para correr la aplicación en desarrollo: 
-
-Run app in http://localhost:8000
-```bash
-php artisan serve
-```
-usar el parámetro APP_URL definido en el .env
-y elegir un puerto libre para que la app laravel esté escuchando
+- Para correr la aplicación (detrás de Apache, ver `deploy_apache.md`), o para probar suelto:
 ```bash
 php artisan serve --host=<url_del_servidor_donde_corre_la_aplicacion_laravel> --port=<puerto_del_servicio_de_la_aplicación>
 ```
 
-[1]: https://devmarketer.io/learn/setup-laravel-project-cloned-github-com/
 [logo]: https://www.indec.gob.ar/Images_WEBINDEC/Logo/Logo_Indec.png
 
